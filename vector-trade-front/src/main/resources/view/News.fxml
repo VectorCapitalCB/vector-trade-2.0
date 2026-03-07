@@ -8,8 +8,8 @@
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1"
             xmlns="http://javafx.com/javafx/17.0.2-ea"
             fx:controller="cl.vc.blotter.controller.NewsController">
-    <VBox spacing="8" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10"
-          AnchorPane.bottomAnchor="10">
+    <VBox spacing="12" AnchorPane.topAnchor="6" AnchorPane.leftAnchor="6" AnchorPane.rightAnchor="6"
+          AnchorPane.bottomAnchor="6" styleClass="news-wrapper">
         <Label fx:id="lblNewsState" text="NEWS: OFF" style="-fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
         <ListView fx:id="newsListView" prefWidth="980" prefHeight="650" VBox.vgrow="ALWAYS"/>
     </VBox>

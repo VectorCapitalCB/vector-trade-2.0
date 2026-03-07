@@ -20,6 +20,7 @@ import javafx.stage.Stage;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
@@ -40,6 +41,7 @@ public class StadisticsController {
     @FXML private ComboBox<String> cmbSymbol;
     @FXML private ComboBox<String> cmbHistoryRange;
     @FXML private ComboBox<String> cmbHistoryTf;
+    @FXML private DatePicker dpStatsDate;
     @FXML private FlowPane kpiWrap;
 
 
@@ -77,6 +79,7 @@ public class StadisticsController {
 
     private final ObservableList<MarketDataMessage.RankinSymbol> tableItems = FXCollections.observableArrayList();
     private volatile MarketDataMessage.BolsaStats lastStats;
+    private volatile LocalDate selectedStatsDate;
 
 
     private final DecimalFormat dfPrice  = new DecimalFormat("#,##0.########");
@@ -128,6 +131,9 @@ public class StadisticsController {
             cmbHistoryTf.getSelectionModel().select("1d");
             cmbHistoryTf.valueProperty().addListener((obs, o, n) -> refreshHistoryChart());
         }
+        if (dpStatsDate != null) {
+            dpStatsDate.setValue(LocalDate.now(ZoneId.of("America/Santiago")));
+        }
 
         // Combo mercado
         if (cmbSecurityExchange != null) {
@@ -139,6 +145,9 @@ public class StadisticsController {
 
         if (Repository.getStats() != null) {
             lastStats = Repository.getStats();
+            if (dpStatsDate != null) {
+                dpStatsDate.setValue(resolveStatsDate(lastStats));
+            }
             updateHeader(lastStats);
             refreshSymbolCombo(lastStats);
             refreshTable();
@@ -185,6 +194,12 @@ public class StadisticsController {
 
     public void add(MarketDataMessage.BolsaStats stats) {
         if (stats == null) return;
+        if (selectedStatsDate != null) {
+            LocalDate incomingDate = resolveStatsDate(stats);
+            if (!selectedStatsDate.equals(incomingDate)) {
+                return;
+            }
+        }
         lastStats = stats;
         Platform.runLater(() -> {
             try {
@@ -202,7 +217,13 @@ public class StadisticsController {
         if (stats == null) {
             return;
         }
-        Platform.runLater(this::refreshHistoryChart);
+        Platform.runLater(() -> {
+            if (selectedStatsDate != null) {
+                refreshBySelectedDate();
+            } else {
+                refreshHistoryChart();
+            }
+        });
     }
 
     private void updateHeader(MarketDataMessage.BolsaStats s) {
@@ -325,6 +346,67 @@ public class StadisticsController {
         marketOverviewChart.getData().setAll(indiceSerie, montoSerie);
     }
 
+    @FXML
+    private void applyDateFilter() {
+        if (dpStatsDate == null) {
+            return;
+        }
+        selectedStatsDate = dpStatsDate.getValue();
+        refreshBySelectedDate();
+    }
+
+    @FXML
+    private void clearDateFilter() {
+        selectedStatsDate = null;
+        if (dpStatsDate != null) {
+            dpStatsDate.setValue(LocalDate.now(ZoneId.of("America/Santiago")));
+        }
+        MarketDataMessage.BolsaStats live = Repository.getStats();
+        if (live != null) {
+            lastStats = live;
+            updateHeader(live);
+            refreshSymbolCombo(live);
+            refreshTable();
+            refreshCharts(live);
+        } else {
+            tableItems.clear();
+            refreshHistoryChart();
+        }
+    }
+
+    private void refreshBySelectedDate() {
+        if (selectedStatsDate == null) {
+            return;
+        }
+        MarketDataMessage.BolsaStats selected = Repository.getBolsaStatsHistory().stream()
+                .filter(s -> selectedStatsDate.equals(resolveStatsDate(s)))
+                .max(Comparator.comparing(this::resolveStatsInstant))
+                .orElse(null);
+
+        if (selected == null) {
+            MarketDataMessage.BolsaStats empty = MarketDataMessage.BolsaStats.newBuilder()
+                    .setTendenciaGeneral("neutral")
+                    .build();
+            lastStats = empty;
+            updateHeader(empty);
+            refreshSymbolCombo(empty);
+            tableItems.clear();
+            if (topVolumeChart != null) {
+                topVolumeChart.getData().clear();
+            }
+            if (marketOverviewChart != null) {
+                marketOverviewChart.getData().clear();
+            }
+            return;
+        }
+
+        lastStats = selected;
+        updateHeader(selected);
+        refreshSymbolCombo(selected);
+        refreshTable();
+        refreshHistoryChart();
+    }
+
     private Instant computeFromInstant() {
         String range = cmbHistoryRange != null && cmbHistoryRange.getValue() != null ? cmbHistoryRange.getValue() : "7D";
         ZoneId cl = ZoneId.of("America/Santiago");
@@ -363,6 +445,36 @@ public class StadisticsController {
         } catch (DateTimeParseException e) {
             return fallback;
         }
+    }
+
+    private LocalDate resolveStatsDate(MarketDataMessage.BolsaStats stats) {
+        Instant ts = resolveStatsInstant(stats);
+        return ts.atZone(ZoneId.of("America/Santiago")).toLocalDate();
+    }
+
+    private Instant resolveStatsInstant(MarketDataMessage.BolsaStats stats) {
+        if (stats == null) {
+            return Instant.EPOCH;
+        }
+        String id = stats.getId();
+        if (id != null && id.startsWith("hist:")) {
+            String[] parts = id.split(":", 3);
+            if (parts.length == 3) {
+                return parseInstantSafe(parts[2], Instant.EPOCH);
+            }
+        }
+        Instant byHoraFin = parseInstantSafe(stats.getHoraFin(), Instant.EPOCH);
+        if (!Instant.EPOCH.equals(byHoraFin)) {
+            return byHoraFin;
+        }
+        String day = stats.getHoraInicio();
+        if (day != null && !day.isBlank()) {
+            try {
+                return LocalDateTime.parse(day).atZone(ZoneId.of("America/Santiago")).toInstant();
+            } catch (Exception ignored) {
+            }
+        }
+        return Instant.EPOCH;
     }
 
     private void refreshTopVolumeChart(List<MarketDataMessage.RankinSymbol> source) {

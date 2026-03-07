@@ -1,13 +1,16 @@
 .notification {
-    -background-color: rgba(15, 15, 15, 0.8);
-    -foreground-color: white;
-    -icon-color: white;
+    -background-color: rgba(33, 38, 47, 0.96);
+    -foreground-color: #e5eaf2;
+    -icon-color: #9fc5ef;
 }
 
 .notification .body {
     -fx-background-color: -background-color;
-    -fx-background-radius: 5;
-    -fx-effect: innershadow(two-pass-box, rgba(255, 255, 255, 0.6), 5.0, 0.25, 0, 0);
+    -fx-background-radius: 8;
+    -fx-border-color: #3a4454;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 10, 0.2, 0, 2);
 }
 
 .notification .title {
@@ -21,6 +24,39 @@
     -fx-content-display: left;
     -fx-graphic-text-gap: 10;
     -fx-text-fill: -foreground-color;
+}
+
+.news-wrapper {
+    -fx-padding: 12px;
+}
+
+.news-card {
+    -fx-background-color: linear-gradient(to bottom, #1f242b, #232830);
+    -fx-background-radius: 14;
+    -fx-border-radius: 14;
+    -fx-border-width: 1;
+    -fx-border-color: rgba(255, 255, 255, 0.08);
+    -fx-padding: 16;
+    -fx-spacing: 6;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.45), 12, 0.25, 0, 3);
+}
+
+.news-card .news-title {
+    -fx-font-size: 16px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #e5eaf2;
+}
+
+.news-card .news-summary {
+    -fx-font-size: 13px;
+    -fx-text-fill: #9fc5ef;
+    -fx-line-spacing: 1.2;
+}
+
+.news-card .news-link {
+    -fx-font-size: 12px;
+    -fx-text-fill: #7ed1ff;
+    -fx-underline: true;
 }
 
 

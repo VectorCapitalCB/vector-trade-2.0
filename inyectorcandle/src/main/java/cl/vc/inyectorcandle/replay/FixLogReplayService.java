@@ -72,6 +72,7 @@ public class FixLogReplayService {
 
     private final Map<String, InstrumentKey> mdReqToKey = new ConcurrentHashMap<>();
     private final Set<LocalDate> purgedDays = ConcurrentHashMap.newKeySet();
+    private final Set<LocalDate> replayDays = ConcurrentHashMap.newKeySet();
 
     private long processedLines;
     private long parsedTrades;
@@ -125,6 +126,10 @@ public class FixLogReplayService {
                 processedLines, parsedTrades, rawTradeMarkers, mdReqToKey.size(), elapsedMs, linesPerSec);
         LOG.info("REPLAY_COMPLETADO inputPath={} lineasProcesadas={} tradesParseados={}",
                 inputPath, processedLines, parsedTrades);
+    }
+
+    public Set<LocalDate> injectedDays() {
+        return Set.copyOf(replayDays);
     }
 
     private List<Path> resolveFiles(Path input) {
@@ -225,8 +230,10 @@ public class FixLogReplayService {
             return;
         }
 
+        LocalDate day = lineTimestamp.atZone(logZone).toLocalDate();
+        replayDays.add(day);
+
         if (purgeDayBeforeInject) {
-            LocalDate day = lineTimestamp.atZone(logZone).toLocalDate();
             if (purgedDays.add(day)) {
                 LOG.info("Replay purge dia {} antes de reinyectar", day);
                 actorSystem.purgeDay(day, logZone);

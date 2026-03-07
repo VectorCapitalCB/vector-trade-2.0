@@ -9,6 +9,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -46,6 +47,10 @@ public class MarketActorSystem implements AutoCloseable {
 
     public void purgeDay(LocalDate day, ZoneId zoneId) {
         repository.purgeDay(day, zoneId);
+    }
+
+    public void logInjectionAnalysis(Set<LocalDate> days, ZoneId zoneId, int topN) {
+        repository.logInjectionAnalysis(days, zoneId, topN);
     }
 
     public List<InstrumentStats> currentStats() {

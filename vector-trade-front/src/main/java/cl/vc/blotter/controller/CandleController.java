@@ -14,9 +14,13 @@ import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.fx.ChartViewer;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
+import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.xy.DefaultOHLCDataset;
 import org.jfree.data.xy.OHLCDataItem;
 import org.jfree.data.xy.OHLCDataset;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
+import org.jfree.data.xy.XYDataset;
 
 import java.awt.Color;
 import java.net.URL;
@@ -117,6 +121,18 @@ public class CandleController implements Initializable {
         candleRenderer.setUseOutlinePaint(false);
 
         XYPlot plot = new XYPlot(dataset, timeAxis, priceAxis, candleRenderer);
+        plot.setDataset(0, dataset);
+        plot.setRenderer(0, candleRenderer);
+
+        XYDataset sma20Dataset = buildMovingAverageDataset("SMA 20", built.items, 20, false);
+        XYLineAndShapeRenderer sma20Renderer = buildLineRenderer(new Color(0xFF, 0xD1, 0x66));
+        plot.setDataset(1, sma20Dataset);
+        plot.setRenderer(1, sma20Renderer);
+
+        XYDataset ema20Dataset = buildMovingAverageDataset("EMA 20", built.items, 20, true);
+        XYLineAndShapeRenderer ema20Renderer = buildLineRenderer(new Color(0x6B, 0xD4, 0xFF));
+        plot.setDataset(2, ema20Dataset);
+        plot.setRenderer(2, ema20Renderer);
 
         Color bg = new Color(0x1c, 0x1c, 0x1c);
         plot.setBackgroundPaint(bg);
@@ -197,7 +213,7 @@ public class CandleController implements Initializable {
         }
 
         OHLCDataset dataset = new DefaultOHLCDataset("OHLC", items.toArray(new OHLCDataItem[0]));
-        return new DatasetBuildResult(dataset, closes, first, last, firstTradeAt, lastTradeAt);
+        return new DatasetBuildResult(dataset, items, closes, first, last, firstTradeAt, lastTradeAt);
     }
 
     private void refreshSymbolList() {
@@ -224,6 +240,8 @@ public class CandleController implements Initializable {
         }
         if (current != null && items.contains(current)) {
             cmbSymbol.getSelectionModel().select(current);
+        } else if (items.size() > 1) {
+            cmbSymbol.getSelectionModel().select(1);
         } else {
             cmbSymbol.getSelectionModel().selectFirst();
         }
@@ -435,6 +453,59 @@ public class CandleController implements Initializable {
         };
     }
 
+    private XYDataset buildMovingAverageDataset(String name, List<OHLCDataItem> items, int period, boolean emaMode) {
+        XYSeries series = new XYSeries(name);
+        if (items == null || items.size() < period || period <= 0) {
+            XYSeriesCollection out = new XYSeriesCollection();
+            out.addSeries(series);
+            return out;
+        }
+
+        double emaValue = 0d;
+        double multiplier = 2.0d / (period + 1.0d);
+
+        for (int i = 0; i < items.size(); i++) {
+            double close = items.get(i).getClose().doubleValue();
+            if (!emaMode) {
+                if (i < period - 1) {
+                    continue;
+                }
+                double sum = 0d;
+                for (int j = i - period + 1; j <= i; j++) {
+                    sum += items.get(j).getClose().doubleValue();
+                }
+                double value = sum / period;
+                series.add(items.get(i).getDate().getTime(), value);
+                continue;
+            }
+
+            if (i == period - 1) {
+                double seed = 0d;
+                for (int j = 0; j < period; j++) {
+                    seed += items.get(j).getClose().doubleValue();
+                }
+                emaValue = seed / period;
+                series.add(items.get(i).getDate().getTime(), emaValue);
+                continue;
+            }
+            if (i >= period) {
+                emaValue = ((close - emaValue) * multiplier) + emaValue;
+                series.add(items.get(i).getDate().getTime(), emaValue);
+            }
+        }
+
+        XYSeriesCollection out = new XYSeriesCollection();
+        out.addSeries(series);
+        return out;
+    }
+
+    private XYLineAndShapeRenderer buildLineRenderer(Color color) {
+        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
+        renderer.setDefaultPaint(color);
+        renderer.setDefaultStroke(new java.awt.BasicStroke(1.8f));
+        return renderer;
+    }
+
     private Instant bucketize(Instant instant, int minutes) {
         ZonedDateTime z = instant.atZone(ZoneOffset.UTC).truncatedTo(ChronoUnit.MINUTES);
         if (minutes <= 1) {
@@ -491,6 +562,7 @@ public class CandleController implements Initializable {
 
     private static class DatasetBuildResult {
         final OHLCDataset dataset;
+        final List<OHLCDataItem> items;
         final List<Double> closes;
         final Instant firstBucket;
         final Instant lastBucket;
@@ -499,6 +571,7 @@ public class CandleController implements Initializable {
 
         DatasetBuildResult(
                 OHLCDataset dataset,
+                List<OHLCDataItem> items,
                 List<Double> closes,
                 Instant firstBucket,
                 Instant lastBucket,
@@ -506,6 +579,7 @@ public class CandleController implements Initializable {
                 Instant lastTradeAt
         ) {
             this.dataset = dataset;
+            this.items = items;
             this.closes = closes;
             this.firstBucket = firstBucket;
             this.lastBucket = lastBucket;
@@ -516,6 +590,7 @@ public class CandleController implements Initializable {
         static DatasetBuildResult empty() {
             return new DatasetBuildResult(
                     new DefaultOHLCDataset("OHLC", new OHLCDataItem[0]),
+                    new ArrayList<>(),
                     new ArrayList<>(),
                     null,
                     null,

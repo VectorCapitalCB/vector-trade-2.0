@@ -10,6 +10,8 @@ import cl.vc.inyectorcandle.replay.FixLogReplayService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.ZoneId;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 
 public class Main {
@@ -23,8 +25,10 @@ public class Main {
         actorSystem.startRankings(config.rankingInterval());
 
         if (config.replayEnabled()) {
+            FixLogReplayService replay = null;
+            boolean actorClosed = false;
             try {
-                FixLogReplayService replay = new FixLogReplayService(
+                replay = new FixLogReplayService(
                         actorSystem,
                         config.replayLogZoneId(),
                         config.replaySleepMs(),
@@ -35,9 +39,15 @@ public class Main {
                         config.replayPurgeDayBeforeInject()
                 );
                 replay.replay(config.replayInputPath());
+                actorSystem.close();
+                actorClosed = true;
+                Set<java.time.LocalDate> days = replay.injectedDays();
+                repository.logInjectionAnalysis(days, ZoneId.of(config.replayLogZoneId()), 10);
             } finally {
                 LOG.info("Shutting down inyectorcandle replay");
-                actorSystem.close();
+                if (!actorClosed) {
+                    actorSystem.close();
+                }
                 repository.close();
             }
             return;

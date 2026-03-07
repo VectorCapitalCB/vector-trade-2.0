@@ -1,0 +1,13 @@
+Analisis fuente FIX.4.4...messages_20260302.log.gz
+Trades parseados (sin TEST-STGOX): 94979
+Top 10 por volumen:
+1. LTM vol=1787355598.00 monto=41822381473.70 trades=16388 var%=-2.3148
+2. CHILE vol=173885304.00 monto=30940270805.03 trades=8584 var%=-0.6790
+3. BSANTANDER vol=126218242.00 monto=9155222243.84 trades=12268 var%=-1.3736
+4. VAPORES vol=84626489.00 monto=4145596017.78 trades=2197 var%=2.3532
+5. ENELAM vol=72533722.00 monto=5687733570.04 trades=3846 var%=0.6883
+6. ENELCHILE vol=36791009.00 monto=2661147513.72 trades=3073 var%=-2.5034
+7. ORO BLANCO vol=30547667.00 monto=305964700.15 trades=484 var%=0.0000
+8. COLBUN vol=7148151.00 monto=1027681841.41 trades=695 var%=-0.6944
+9. NITRATOS vol=6302425.00 monto=31532976.56 trades=18 var%=-3.8462
+10. MULTI X vol=6050014.00 monto=2002552741.14 trades=3 var%=2.6407

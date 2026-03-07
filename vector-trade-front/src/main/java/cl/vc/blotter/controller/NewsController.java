@@ -73,9 +73,10 @@ public class NewsController {
         private NewsCell() {
             title.setWrapText(true);
             summary.setWrapText(true);
-            title.setStyle("-fx-font-size: 13px; -fx-font-weight: normal; -fx-text-fill: #eef3fb;");
-            summary.setStyle("-fx-font-size: 12px; -fx-font-weight: normal; -fx-text-fill: #9fc5ef;");
-            link.setStyle("-fx-text-fill: #9fc5ef;");
+            box.getStyleClass().add("news-card");
+            title.getStyleClass().add("news-title");
+            summary.getStyleClass().add("news-summary");
+            link.getStyleClass().add("news-link");
             // Link arriba para que siempre se vea, incluso con textos largos
             box.getChildren().addAll(link, title, summary);
             setPrefWidth(0);

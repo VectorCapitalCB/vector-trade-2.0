@@ -18,7 +18,13 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.Duration;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class MongoMarketRepository implements AutoCloseable {
@@ -225,6 +231,103 @@ public class MongoMarketRepository implements AutoCloseable {
                 day, mdDeleted.getDeletedCount(), tradesDeleted.getDeletedCount(), candlesDeleted.getDeletedCount());
     }
 
+    public void logInjectionAnalysis(Set<LocalDate> days, ZoneId zoneId, int topN) {
+        if (days == null || days.isEmpty()) {
+            LOG.info("[INYECCION][ANALISIS] Sin dias para analizar");
+            return;
+        }
+        List<LocalDate> sorted = new ArrayList<>(days);
+        sorted.sort(LocalDate::compareTo);
+        for (LocalDate day : sorted) {
+            logDayInjectionAnalysis(day, zoneId, topN);
+        }
+    }
+
+    private void logDayInjectionAnalysis(LocalDate day, ZoneId zoneId, int topN) {
+        Instant dayStart = day.atStartOfDay(zoneId).toInstant();
+        Instant dayEnd = day.plusDays(1).atStartOfDay(zoneId).toInstant();
+
+        Map<String, TradeSummary> bySymbol = new LinkedHashMap<>();
+        for (Document doc : tradesCollection.find(Filters.and(
+                Filters.gte("eventTime", dayStart.toString()),
+                Filters.lt("eventTime", dayEnd.toString())
+        ))) {
+            String symbol = stringVal(doc.get("symbol")).trim().toUpperCase();
+            if (symbol.isBlank() || "TEST-STGOX".equals(symbol)) {
+                continue;
+            }
+
+            Instant t = parseInstantSafe(stringVal(doc.get("eventTime")));
+            double price = numberVal(doc.get("price"));
+            double qty = numberVal(doc.get("quantity"));
+            double amount = numberVal(doc.get("amount"));
+            if (amount <= 0 && price > 0 && qty > 0) {
+                amount = price * qty;
+            }
+            if (price <= 0) {
+                continue;
+            }
+
+            String settlement = stringVal(doc.get("settlement"));
+            TradeSummary s = bySymbol.computeIfAbsent(symbol, k -> new TradeSummary(symbol, settlement));
+            s.update(t, price, qty, amount);
+        }
+
+        if (bySymbol.isEmpty()) {
+            LOG.info("[INYECCION][ANALISIS][{}] sin trades para analizar", day);
+            return;
+        }
+
+        List<TradeSummary> rows = new ArrayList<>(bySymbol.values());
+        double totalVol = rows.stream().mapToDouble(r -> r.volume).sum();
+        double totalMonto = rows.stream().mapToDouble(r -> r.amount).sum();
+        long totalTrades = rows.stream().mapToLong(r -> r.count).sum();
+        double sentimientoPos = rows.stream().filter(r -> r.variationPct() > 0).count() * 100.0 / rows.size();
+        double sentimientoNeg = rows.stream().filter(r -> r.variationPct() < 0).count() * 100.0 / rows.size();
+        double volProm = rows.stream().mapToDouble(r -> Math.abs(r.variationPct())).average().orElse(0.0) / 100.0;
+        double rangoProm = rows.stream().mapToDouble(r -> r.high - r.low).average().orElse(0.0);
+        double indiceProm = totalVol > 0 ? rows.stream().mapToDouble(r -> r.last * r.volume).sum() / totalVol : 0.0;
+        double indiceMax = totalVol > 0 ? rows.stream().mapToDouble(r -> r.high * r.volume).sum() / totalVol : 0.0;
+        double indiceMin = totalVol > 0 ? rows.stream().mapToDouble(r -> r.low * r.volume).sum() / totalVol : 0.0;
+        double tendenciaProm = rows.stream().mapToDouble(TradeSummary::variationPct).average().orElse(0.0);
+
+        LOG.info("[INYECCION][ANALISIS][{}] totalVolumen={} montoTotal={} numeroTrades={} volatilidadPromedio={} rangoPromedio={} indicePromedio={} indiceMaximo={} indiceMinimo={} sentimientoPositivo={} sentimientoNegativo={} tendenciaPromedio={}",
+                day, fmt(totalVol), fmt(totalMonto), totalTrades, fmt(volProm), fmt(rangoProm), fmt(indiceProm), fmt(indiceMax), fmt(indiceMin), fmt(sentimientoPos), fmt(sentimientoNeg), fmt(tendenciaProm));
+
+        logTop(day, "TOP_10_MAS_TRANZADO", rows.stream()
+                .sorted(Comparator.comparingDouble((TradeSummary r) -> r.volume).reversed())
+                .limit(Math.max(1, topN))
+                .toList());
+        logTop(day, "TOP_10_MENOS_TRANZADO", rows.stream()
+                .sorted(Comparator.comparingDouble(r -> r.volume))
+                .limit(Math.max(1, topN))
+                .toList());
+        logTop(day, "TOP_10_MAS_VOLATIL", rows.stream()
+                .sorted(Comparator.comparingDouble((TradeSummary r) -> Math.abs(r.variationPct())).reversed())
+                .limit(Math.max(1, topN))
+                .toList());
+        logTop(day, "TOP_10_MEJORES", rows.stream()
+                .sorted(Comparator.comparingDouble(TradeSummary::variationPct).reversed())
+                .limit(Math.max(1, topN))
+                .toList());
+        logTop(day, "TOP_10_PEORES", rows.stream()
+                .sorted(Comparator.comparingDouble(TradeSummary::variationPct))
+                .limit(Math.max(1, topN))
+                .toList());
+    }
+
+    private void logTop(LocalDate day, String title, List<TradeSummary> rows) {
+        String joined = rows.stream()
+                .limit(10)
+                .map(r -> String.format(Locale.US, "%s(vol=%s,monto=%s,varPct=%s,last=%s,settl=%s)",
+                        r.symbol, fmt(r.volume), fmt(r.amount), fmt(r.variationPct()), fmt(r.last), r.settlement))
+                .toList()
+                .stream()
+                .reduce((a, b) -> a + " | " + b)
+                .orElse("");
+        LOG.info("[INYECCION][ANALISIS][{}][{}] {}", day, title, joined);
+    }
+
     private void logProgress(String op, long count) {
         if (count == 1 || count % PROGRESS_LOG_EVERY == 0) {
             LOG.info("Mongo progreso {} count={}", op, count);
@@ -258,6 +361,36 @@ public class MongoMarketRepository implements AutoCloseable {
         return value == null ? null : value.doubleValue();
     }
 
+    private static String stringVal(Object value) {
+        return value == null ? "" : String.valueOf(value);
+    }
+
+    private static double numberVal(Object value) {
+        if (value instanceof Number n) {
+            return n.doubleValue();
+        }
+        if (value == null) {
+            return 0.0;
+        }
+        try {
+            return Double.parseDouble(String.valueOf(value));
+        } catch (Exception e) {
+            return 0.0;
+        }
+    }
+
+    private static Instant parseInstantSafe(String value) {
+        try {
+            return Instant.parse(value);
+        } catch (Exception e) {
+            return Instant.EPOCH;
+        }
+    }
+
+    private static String fmt(double v) {
+        return String.format(Locale.US, "%.6f", v);
+    }
+
     private static BigDecimal toBigDecimal(Object value) {
         if (value == null) {
             return null;
@@ -282,5 +415,51 @@ public class MongoMarketRepository implements AutoCloseable {
                 upsertedStats.get(),
                 upsertedRankings.get());
         client.close();
+    }
+
+    private static class TradeSummary {
+        final String symbol;
+        final String settlement;
+        double first;
+        double last;
+        double high;
+        double low;
+        double volume;
+        double amount;
+        long count;
+        Instant firstTs;
+        Instant lastTs;
+
+        TradeSummary(String symbol, String settlement) {
+            this.symbol = symbol;
+            this.settlement = settlement == null ? "" : settlement;
+        }
+
+        void update(Instant ts, double price, double qty, double amount) {
+            if (firstTs == null || ts.isBefore(firstTs)) {
+                firstTs = ts;
+                first = price;
+            }
+            if (lastTs == null || ts.isAfter(lastTs)) {
+                lastTs = ts;
+                last = price;
+            }
+            if (high == 0 || price > high) {
+                high = price;
+            }
+            if (low == 0 || price < low) {
+                low = price;
+            }
+            volume += Math.max(0, qty);
+            this.amount += Math.max(0, amount);
+            count++;
+        }
+
+        double variationPct() {
+            if (first <= 0 || last <= 0) {
+                return 0.0;
+            }
+            return ((last - first) / first) * 100.0;
+        }
     }
 }

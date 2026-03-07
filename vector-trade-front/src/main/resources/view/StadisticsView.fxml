@@ -164,6 +164,21 @@
                 </VBox>
 
                 <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="Fecha Stats" />
+                    <DatePicker fx:id="dpStatsDate" prefWidth="220" promptText="YYYY-MM-DD" />
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text=" " />
+                    <Button text="Aplicar Fecha" onAction="#applyDateFilter" prefWidth="220"/>
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text=" " />
+                    <Button text="Limpiar Fecha" onAction="#clearDateFilter" prefWidth="220"/>
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
                     <Label styleClass="data-label" text=" " />
                     <Button text="Ver Velas" onAction="#openCandlesForSymbol" prefWidth="220"/>
                 </VBox>
