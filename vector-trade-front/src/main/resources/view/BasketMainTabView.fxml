@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/8.0.91"
+            HBox.hgrow="ALWAYS"
+            fx:controller="cl.vc.blotter.controller.BasketTabController">
+    <children>
+
+        <VBox HBox.hgrow="ALWAYS" AnchorPane.bottomAnchor="0.0" spacing="10"
+              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+
+                <VBox alignment="CENTER">
+
+                    <TableView fx:id="basketMainTable" maxHeight="70">
+                        <columns>
+                            <TableColumn fx:id="basketName" text="Basket"/>
+                            <TableColumn fx:id="nBuy" text="Qty Buy"/>
+                            <TableColumn fx:id="nSell" text="Qty Sell"/>
+                            <TableColumn fx:id="totalAmount" text="Total Amount (PxQ)"/>
+                            <TableColumn fx:id="totalAmountDone" text="Total Amount Done"/>
+                            <TableColumn fx:id="totalAmountLeft" text="Total Amount Left"/>
+                            <TableColumn fx:id="amountPercDone" text="Amount % Done"/>
+                            <TableColumn fx:id="amountPercLeft" text="Amount % Left"/>
+                            <TableColumn fx:id="totalQty" text="Total Qty"/>
+                            <TableColumn fx:id="totalQtyDone" text="Total Qty Done"/>
+                            <TableColumn fx:id="totalQtyLeft" text="Total Qty Left"/>
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                    </TableView>
+
+                </VBox>
+
+                <HBox maxHeight="300" fx:id="chartContainer" spacing="10" alignment="CENTER">
+
+                </HBox>
+
+                <VBox spacing="10">
+                    <fx:include fx:id="executionsOrder" source="Executions.fxml"/>
+                </VBox>
+
+
+                <HBox styleClass="black-hbox" alignment="CENTER_LEFT" prefHeight="24.0" HBox.hgrow="ALWAYS"
+                      spacing="30">
+                    <padding>
+                        <Insets bottom="10" top="10" right="10"/>
+                    </padding>
+                    <Button fx:id="execButton" onAction="#execAll" mnemonicParsing="false" prefWidth="80.0"
+                            text="Exec All"/>
+                    <Button fx:id="cancelOrder" disable="true" onAction="#cancelOrder" mnemonicParsing="false"
+                            prefWidth="80.0" text="Cxl Order"/>
+                    <Button fx:id="cancelAll" onAction="#cancelAll" mnemonicParsing="false" prefWidth="80.0"
+                            text="Cxl All"/>
+                </HBox>
+
+
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>
+

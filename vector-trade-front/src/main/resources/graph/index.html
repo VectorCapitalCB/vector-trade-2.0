@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="tv.js" type="text/javascript"></script>
+    <script type="text/javascript">
+        console.log("TradingView script loaded."); // Depuración
+
+        function loadChart(symbol) {
+            console.log("Loading chart for symbol: " + symbol); // Depuración
+            new TradingView.widget({
+                "width": 1100,
+                "height": 810,
+                "autosize": true,
+                "symbol": symbol,
+                "interval": "D",
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "3",
+                "locale": "en",
+                "enable_publishing": false,
+                "allow_symbol_change": false,
+                "calendar": false,
+                "hide_top_toolbar": true,
+                "save_image": false,
+                "container_id": "tradingview_widget"
+            });
+        }
+
+        function updateChart(symbol) {
+            console.log("Updating chart to symbol: " + symbol); // Depuración
+            loadChart(symbol);
+        }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            console.log("DOM fully loaded and parsed."); // Depuración
+            loadChart('BCS:COPEC'); // Cargar gráfico inicial
+        });
+    </script>
+</head>
+<body>
+<div>
+    <label for="symbolInput">Enter Symbol:</label>
+    <input id="symbolInput" name="symbolInput" required type="text">
+    <button onclick="updateChartFromInput()" type="button">Update Chart</button>
+</div>
+<div id="tradingview_widget"></div>
+
+<script type="text/javascript">
+    function updateChartFromInput() {
+        const symbol = document.getElementById('symbolInput').value;
+        updateChart(symbol);
+    }
+</script>
+</body>
+</html>

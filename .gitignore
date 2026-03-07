@@ -1,0 +1,10 @@
+# Build outputs
+**/target/
+
+# Large compressed artifacts
+*.gz
+*.log
+vector-trade-front/src/main/resources/libs/ios/libjfxwebkit.dylib
+
+# IntelliJ IDEA project metadata (XML)
+**/.idea/*.xml

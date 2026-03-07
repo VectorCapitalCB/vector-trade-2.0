@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="anchorPane"
+            minHeight="-Infinity" minWidth="-Infinity" pickOnBounds="false"
+            prefHeight="610.0" prefWidth="580.0" scaleShape="false"
+            xmlns="http://javafx.com/javafx/17.0.2-ea"
+            fx:controller="cl.vc.blotter.controller.LoginController">
+
+    <children>
+
+        <ImageView fitWidth="580" fitHeight="610" pickOnBounds="true" >
+            <image>
+
+                <Image url="@../blotter/img/login.jpg"/>
+            </image>
+        </ImageView>
+
+        <Pane prefHeight="610.0" prefWidth="586.0">
+
+            <children>
+
+                <VBox alignment="CENTER" prefHeight="480" prefWidth="580.0" spacing="40">
+                    <Label prefHeight="38.0" prefWidth="93.0" text="Sign In" textFill="#1553b1"
+                           style="-fx-font-weight: bold; -fx-text-fill: #2b3178; -fx-font-size: 26px;">
+                        <font>
+                            <Font size="26.0"/>
+                        </font>
+                    </Label>
+
+                    <VBox alignment="CENTER" prefHeight="152.0" prefWidth="580.0" spacing="20">
+
+                        <HBox spacing="20" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <TextField fx:id="txtUsername" maxWidth="200" prefHeight="25.0" prefWidth="200"
+                                       promptText="Usuario*"/>
+                            <VBox.margin>
+                                <Insets left="190.0"/>
+                            </VBox.margin>
+                        </HBox>
+
+                        <HBox spacing="20" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <PasswordField fx:id="password" maxWidth="200" prefHeight="25.0" prefWidth="200"
+                                           promptText="Contraseña*"/>
+
+                            <TextField fx:id="txtPassword" managed="false" maxWidth="200" prefHeight="25.0"
+                                       prefWidth="200" promptText="Password"/>
+
+                            <VBox.margin>
+                                <Insets left="190.0"/>
+                            </VBox.margin>
+                        </HBox>
+
+                        <HBox spacing="20" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <ComboBox fx:id="enviroment" maxWidth="200" prefHeight="25.0" prefWidth="200"/>
+
+                            <VBox.margin>
+                                <Insets left="190.0"/>
+                            </VBox.margin>
+                        </HBox>
+
+                        <HBox spacing="20" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                            <CheckBox fx:id="chkGuardarContrasena" text="Guardar Usuario y Contraseña"
+                                      style="-fx-font-weight: bold; -fx-text-fill: #0b0c0f; -fx-font-size: 12px;"/>
+                            <VBox.margin>
+                                <Insets left="190.0"/>
+                            </VBox.margin>
+                        </HBox>
+
+                        <HBox alignment="CENTER" spacing="5">
+
+                            <Button styleClass="btn-ingresar-style" fx:id="btnIngresar" mnemonicParsing="false"
+                                    onAction="#login" prefHeight="25.0" prefWidth="203.0" text="Ingresar">
+                            </Button>
+                        </HBox>
+
+                        <HBox fx:id="loading" alignment="CENTER" spacing="30">
+                            <Label fx:id="label" prefHeight="30.0" prefWidth="75.0" text="" textFill="WHITE">
+                                <font>
+                                    <Font size="10.0"/>
+                                </font>
+                            </Label>
+                        </HBox>
+
+                    </VBox>
+                    <opaqueInsets>
+                        <Insets left="60.0"/>
+                    </opaqueInsets>
+                </VBox>
+            </children>
+        </Pane>
+    </children>
+</AnchorPane>

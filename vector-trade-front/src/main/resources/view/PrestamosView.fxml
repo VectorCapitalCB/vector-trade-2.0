@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/17.0.2-ea"
+            fx:controller="cl.vc.blotter.controller.PrestamosController">
+
+    <children>
+        <VBox spacing="5" styleClass="black-hbox" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <HBox spacing="5" minHeight="30" minWidth="500" maxWidth="1000" alignment="BASELINE_LEFT">
+                    <ButtonBar maxHeight="30" prefHeight="30" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+                               HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                        <buttons>
+                            <Label alignment="BASELINE_RIGHT">Cuenta</Label>
+                            <TextField fx:id="accountFilter" promptText="Filtra cuenta…" minWidth="150" prefWidth="150"/>
+                        </buttons>
+                    </ButtonBar>
+                </HBox>
+
+                <TableView fx:id="tableView" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="nemotecnico" text="Nemotécnico" prefWidth="100"/>
+                        <TableColumn fx:id="cantidad_vigente" text="Cantidad Vigente" prefWidth="150"/>
+                        <TableColumn fx:id="precio_ayer" text="Precio ayer" prefWidth="100"/>
+                        <TableColumn fx:id="monto" text="Monto" prefWidth="100"/>
+                        <TableColumn fx:id="fecha_ingreso" text="Fecha ingreso" prefWidth="110"/>
+                        <TableColumn fx:id="plazo_pimo" text="Plazo" prefWidth="110"/>
+                        <TableColumn fx:id="fecha_vencimiento" text="Fecha Vencimiento" prefWidth="120"/>
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                </TableView>
+            </children>
+        </VBox>
+
+    </children>
+
+</AnchorPane>

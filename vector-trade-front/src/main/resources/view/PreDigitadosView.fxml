@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="cl.vc.blotter.controller.PreDigitadosController">
+    <children>
+        <TableView fx:id="tableExecutionReports"
+                   AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
+                   AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
+            <columns>
+                <TableColumn fx:id="time" text="Hora"/>
+                <TableColumn fx:id="side" text="Lado"/>
+                <TableColumn fx:id="symbol" text="Símbolo"/>
+                <TableColumn fx:id="settltypeOrder" text="Condición"/>
+                <TableColumn fx:id="market" text="Mercado"/>
+                <TableColumn fx:id="qty" text="Cantidad"/>
+                <TableColumn fx:id="px" text="Precio"/>
+                <TableColumn fx:id="amount" text="Monto"/>
+                <TableColumn fx:id="account" text="Cuenta"/>
+                <TableColumn fx:id="limit" text="Límite"/>
+            </columns>
+        </TableView>
+    </children>
+</AnchorPane>

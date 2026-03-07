@@ -1,0 +1,695 @@
+.notification {
+    -background-color: rgba(15, 15, 15, 0.8);
+    -foreground-color: white;
+    -icon-color: white;
+}
+
+.notification .body {
+    -fx-background-color: -background-color;
+    -fx-background-radius: 5;
+    -fx-effect: innershadow(two-pass-box, rgba(255, 255, 255, 0.6), 5.0, 0.25, 0, 0);
+}
+
+.notification .title {
+    -fx-font-size: 1.083333em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -foreground-color;
+}
+
+.notification .message {
+    -fx-font-size: 1.0em;
+    -fx-content-display: left;
+    -fx-graphic-text-gap: 10;
+    -fx-text-fill: -foreground-color;
+}
+
+
+.label-bid-green {
+
+    -fx-text-fill: #18fc00;
+}
+
+.label-ask-red {
+
+    -fx-text-fill: #e50606;
+}
+
+
+.vc {
+    -fx-background-color: #2b3178;
+    -fx-text-fill: white;
+    -fx-alignment: center;
+    -fx-border-color: #A30000FF;
+    -fx-font-weight: bold;
+
+}
+.notvc {
+    -fx-text-fill: white;
+    -fx-alignment: center;
+    -fx-font-weight: bold;
+}
+
+.table-view.scroll-inverted .scroll-bar:vertical {
+    -fx-translate-x: -100%;
+}
+
+
+.downloadExcel {
+    -fx-background-color: linear-gradient(to bottom, #4F6228 0%, #9BBB59 100%),
+    radial-gradient(center 50% 50%, radius 100%, rgba(255, 255, 255, 0.9), #9BBB59);
+    -fx-background-insets: 0, 1;
+    -fx-padding: 5.0 10.0 5.0 10.0;
+    -fx-alignment: CENTER;
+    -fx-content-display: LEFT;
+    -fx-text-fill: #000000; /* Color de texto negro */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0, 0, 0);
+    -fx-border-color: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), #4F6228); /* Borde con gradiente verde oscuro */
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+}
+
+.downloadExcel:pressed {
+    -fx-background-color: linear-gradient(to bottom, #3E5120 0%, #6C8E4B 100%), /* Gradiente más oscuro para el clic */ radial-gradient(center 50% 50%, radius 100%, rgba(255, 255, 255, 0.8), #6C8E4B); /* Gradiente radial más oscuro */
+    -fx-background-insets: 0, 1;
+    -fx-padding: 5.0 10.0 5.0 10.0;
+    -fx-alignment: CENTER;
+    -fx-content-display: LEFT;
+    -fx-text-fill: #000000; /* Color de texto negro */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 8, 0, 0, 0); /* Efecto de sombra ligeramente diferente */
+    -fx-border-color: linear-gradient(to bottom, rgba(255, 255, 255, 0.7), #3E5120); /* Borde con gradiente más oscuro */
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+}
+
+.table-row-cell.row-success {
+    -fx-background-color: green;
+    -fx-text-fill: white;
+}
+
+.table-row-cell.row-info {
+    -fx-background-color: blue;
+    -fx-text-fill: white;
+}
+
+.table-row-cell.row-error, .table-row-cell.row-fatal {
+    -fx-background-color: red;
+    -fx-text-fill: white;
+}
+
+.table-row-cell.row-warn {
+    -fx-background-color: orange;
+    -fx-text-fill: black;
+}
+
+.root {
+    -fx-base: #181a21;
+    -fx-background: #161a1f;
+}
+
+.tab-label {
+    -fx-font-weight: bold;
+}
+
+.bold-label {
+    -fx-font-weight: bold;
+}
+
+.button {
+    -fx-font-weight: bold;
+}
+
+.table-view {
+    -fx-background-color: #413f3f;
+}
+
+.table-cell {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+
+.table-row-cell:odd {
+    -fx-background-color: #2f2f2f;
+    -fx-text-fill: #ffffff;
+}
+
+.table-row-cell:even {
+    -fx-background-color: #2a2929;
+    -fx-text-fill: #e6e6e6;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #d1b30b;
+    -fx-text-fill: #ffffff;
+}
+
+.table-row-cell:row-selection {
+    -fx-background-color: #666666;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+
+.buyOrder:pressed {
+    -fx-background-color: linear-gradient(to bottom, rgba(0, 117, 2, 0.8), rgba(0, 117, 2, 1));
+}
+
+.sellOrder:pressed {
+    -fx-background-color: linear-gradient(to bottom, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 1));
+}
+
+.label-bid-green {
+
+    -fx-text-fill: #18fc00;
+}
+
+.label-ask-red {
+
+    -fx-text-fill: #e50606;
+}
+
+.label-last {
+
+    -fx-text-fill: #f3f0f0;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #232222;
+    -fx-text-fill: #ffffff;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #2b3178; /* Color de fondo para la pestaña seleccionada */
+    -fx-text-fill: #2b2b2c; /* Color del texto para la pestaña seleccionada */
+    -fx-font-weight: bold;
+}
+
+.buyOrder {
+    -fx-text-fill: #23a126;
+}
+
+
+.sellOrder {
+    -fx-text-fill: #de292c;
+}
+
+.highlight {
+    -fx-font-size: 16px; /* Cambia el tamaño de la fuente solo para las puntas */
+    -fx-font-weight: bold; /* Negrita */
+}
+
+
+.grid-pane {
+    -fx-background-color: #2b2b2b;
+    -fx-padding: 10px;
+}
+
+.combo-box {
+    -fx-background-color: #fdfdfe;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: #161a1f;
+    -fx-font-weight: bold;
+}
+
+.form-pane .button {
+    -fx-font-weight: bold;
+}
+
+.form-pane .vbox-button {
+    -fx-alignment: CENTER;
+    -fx-spacing: 5;
+    -fx-padding: 10px;
+}
+
+.black-hbox {
+    -fx-background-color: #181a21;
+}
+
+.white-background {
+    -fx-control-inner-background: #ffffff;
+    -fx-text-fill: #000000;
+}
+
+#myCheckBox {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #ccc;
+    -fx-border-radius: 5;
+    -fx-padding: 10px;
+}
+
+.check-box .box {
+    -fx-border-color: #666;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #09C000;
+}
+
+#btnAceptar {
+    -fx-background-color: #4CAF50;
+}
+
+#btnCancelar {
+    -fx-background-color: #f44336;
+}
+
+#acceptButton {
+    -fx-background-color: #4CAF50;
+}
+
+#cancelButton {
+    -fx-background-color: #f44336;
+}
+
+#titelpanelLauncher {
+    -fx-border-width: 0;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-color: #2b3178;
+    -fx-pref-width: 1px;
+}
+
+.btn-ingresar-style {
+    -fx-background-color: linear-gradient(#2b3178, #0073e6);
+}
+
+.btn-ingresar-style:hover {
+    -fx-background-color: linear-gradient(#4CAF50, #81C784);
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(#2b3178, #2b3178);
+}
+
+.buyButton {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.buyButton:hover {
+    -fx-background-color: #08480b;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.sellButton {
+    -fx-background-color: #F44336;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.sellButton:hover {
+    -fx-background-color: #811e16;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.split-pane-divider {
+    -fx-padding: 0 0 6 0;   /* ← el valor “6” define el grosor del divisor */
+    -fx-background-color: derive(#444,20%); /* color opcional */
+    -fx-cursor: v-resize;   /* cursor vertical */
+}
+
+.btn-replaceOrder-style {
+    -fx-background-color: #df7f01;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.btn-replaceOrder-style:hover {
+    -fx-background-color: #88643a;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+
+.table-row-cell:selected {
+    -fx-background-color: #2b3178;
+    -fx-text-fill: #ffffff;
+}
+
+
+.search-icon-label {
+    -fx-background-color: transparent;
+    -fx-alignment: center-right;
+    -fx-translate-x: 100px;
+    -fx-pref-width: 30px;
+    -fx-pref-height: 30px;
+    -fx-layout-x: 230px;
+}
+
+.defaultButton {
+    -fx-background-color: #2b3178;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.buyButton {
+    -fx-background-color: #4CAF50;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.sellButton {
+    -fx-background-color: #F44336;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+
+.replaceButton {
+    -fx-background-color: #e8c648;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.replaceButton:hover {
+    -fx-background-color: #57460c;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.total-available-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: green;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #007f01;
+}
+
+.total-ph-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: orange;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #FFA500;
+}
+
+.total-pm-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: orange;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #FFA500;
+}
+
+.total-operations-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: #6464e5;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #6464e5;
+}
+
+.total-simultaneous-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: b474b4;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #b474b4;
+}
+
+.total-guarantees-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: #fd0016;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #fd0016;
+}
+
+.saldo-box {
+    -fx-background-color: #181a22;
+    -fx-border-color: #2b3178;
+}
+
+#replaceOrder:disabled {
+    -fx-opacity: 0.5;
+    -fx-background-color: grey; /* Puedes ajustar esto según lo que necesites */
+    -fx-text-fill: white; /* Ajusta el color del texto si es necesario */
+}
+
+.errorStyle {
+    -fx-opacity: 0.5;
+    -fx-background-color: grey; /* Puedes ajustar esto según lo que necesites */
+    -fx-text-fill: white; /* Ajusta el color del texto si es necesario */
+}
+
+.bestBid {
+    -fx-background-color: #229f26;
+    -fx-text-fill: black;
+}
+
+.bestOffer {
+    -fx-background-color: #c1292a;
+    -fx-text-fill: black;
+}
+
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #2b3178;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #1e2029;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: derive(-fx-base, 20%);
+    -fx-padding: 0.0em;
+    -fx-border-color: transparent;
+}
+
+.btn-cancelOrder-style {
+    -fx-background-color: #3498db;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-border-color: #2980b9;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-padding: 1px 1px;
+}
+
+.btn-cancelOrder-style:hover {
+    -fx-background-color: #2d6d98;
+}
+
+
+/* Estilos para los botones de compra */
+.buybutton-hoverable {
+    -fx-background-color: #4bae50; /* Verde */
+}
+
+.buybutton-hoverable:hover {
+    -fx-background-color: #437347; /* Verde más oscuro */
+}
+
+.buybutton-hoverable:disabled {
+    -fx-background-color: #4bae50; /* Verde */
+}
+
+/* Estilos para los botones de venta */
+.sellbutton-hoverable {
+    -fx-background-color: #f24237; /* Rojo */
+}
+
+.sellbutton-hoverable:hover {
+    -fx-background-color: #94292f; /* Rojo más oscuro */
+}
+
+.sellbutton-hoverable:disabled {
+    -fx-background-color: #f24237; /* Rojo */
+}
+
+
+.btn-stop-style {
+    -fx-background-color: #f24237;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-padding: 1px 1px;
+}
+
+.btn-stop-style:hover {
+    -fx-background-color: #94292f;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5px;
+    -fx-border-radius: 5px;
+    -fx-padding: 1px 1px;
+}
+
+.BTNSubscribebook {
+    -fx-background-color: #007736;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-padding: 5px; /* Ajusta el padding si quieres reducir el tamaño */
+    -fx-background-radius: 5px;
+}
+
+.BTNSubscribebook:hover {
+    -fx-background-color: #09381f;
+    -fx-text-fill: white;
+    -fx-font-size: 10px;
+    -fx-padding: 5px;
+    -fx-background-radius: 5px;
+}
+
+.ticket {
+    -fx-border-color: #4bae50;
+    -fx-border-width: 2px;
+    -fx-border-radius: 5px;
+    -fx-control-inner-background: #ffffff;
+    -fx-text-fill: #000000;
+}
+
+.toolBarContainer {
+    -fx-padding: 5 10 5 10;
+    -fx-border-radius: 15;
+}
+
+.text-field-custom {
+    -fx-font-size: 9px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-color: #161a20;
+    -fx-border-color: #796416;
+}
+
+.text-field-custom-label {
+    -fx-font-size: 10px;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-color: #161a20;
+
+}
+
+
+.table-view:vertical .scroll-bar:vertical {
+    -fx-side: left;
+}
+
+.table-view {
+    -fx-padding: 0;
+    -fx-background-insets: 0;
+    -fx-border-insets: 0;
+}
+/* Solo celdas numéricas del libro (4 columnas) */
+.table-cell.book-num {
+  -fx-font-size: 12px;              /* achica la letra (prueba 9–11) */
+  -fx-padding: 0 4 0 4;             /* menos padding lateral */
+  -fx-font-family: "Consolas","Menlo","SF Mono","Courier New",monospace; /* números más compactos/legibles */
+}
+/* Botón redondo de lanzamiento */
+.launch-btn {
+    -fx-background-color: linear-gradient(#fad336, #fad336); /* rojo vivo */
+    -fx-text-fill: white;
+    -fx-font-weight: 700;
+    -fx-font-size: 10px;            /* pequeño para caber en el Tab */
+    -fx-padding: 0;                 /* lo haremos “perfectamente” circular con pref size */
+    -fx-background-radius: 999;     /* borde totalmente redondo */
+    -fx-border-radius: 999;
+    -fx-min-width: 18px;
+    -fx-min-height: 18px;
+    -fx-pref-width: 18px;
+    -fx-pref-height: 18px;
+    -fx-alignment: center;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.45), 8, 0.2, 0, 2);
+}
+
+/* Hover: un poco más claro */
+.launch-btn:hover {
+    -fx-background-color: linear-gradient(#595840, #595840);
+}
+
+/* Pressed: sensación de click */
+.launch-btn:pressed {
+    -fx-translate-y: 1;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.35), 6, 0.2, 0, 1);
+}
+
+/* Para tabs: separa un pelín del texto y centra verticalmente */
+.tab .launch-wrap {
+    -fx-alignment: center;
+    -fx-spacing: 6;
+}
+
+/* Variante más grande, por si la quieres usar en otros lugares */
+.launch-btn--md {
+    -fx-min-width: 22px;
+    -fx-min-height: 22px;
+    -fx-pref-width: 22px;
+    -fx-pref-height: 22px;
+    -fx-font-size: 11px;
+}
+
+.hint-host .chip-hint {
+    -fx-background-color: rgba(0,0,0,0.75);
+    -fx-text-fill: white;
+    -fx-padding: 2 6 2 6;
+    -fx-background-radius: 6;
+    -fx-font-size: 10px;
+    -fx-opacity: 0;            /* oculta por defecto */
+}
+.hint-host:hover .chip-hint {
+    -fx-opacity: 1;            /* aparece al hover */
+}
+
+
+
+
+

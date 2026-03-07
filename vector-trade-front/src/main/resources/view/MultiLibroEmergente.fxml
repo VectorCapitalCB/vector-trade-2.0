@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            xmlns="http://javafx.com/javafx"
+            fx:controller="cl.vc.blotter.controller.LibroEmergentePrincipalController"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+            AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+    <children>
+        <GridPane hgap="10" vgap="10" AnchorPane.topAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                  AnchorPane.rightAnchor="0.0" AnchorPane.bottomAnchor="0.0"
+                  GridPane.hgrow="ALWAYS" GridPane.vgrow="ALWAYS">
+
+            <columnConstraints>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="20"/>
+                <ColumnConstraints percentWidth="20"/>
+            </columnConstraints>
+
+            <rowConstraints>
+                <RowConstraints percentHeight="50"/>
+                <RowConstraints percentHeight="50"/>
+            </rowConstraints>
+
+            <!-- Fila 1 -->
+            <fx:include fx:id="libroEmergente0" source="LibroEmergente.fxml" GridPane.columnIndex="0"
+                        GridPane.rowIndex="0"/>
+            <fx:include fx:id="libroEmergente1" source="LibroEmergente.fxml" GridPane.columnIndex="1"
+                        GridPane.rowIndex="0"/>
+            <fx:include fx:id="libroEmergente2" source="LibroEmergente.fxml" GridPane.columnIndex="2"
+                        GridPane.rowIndex="0"/>
+            <fx:include fx:id="libroEmergente3" source="LibroEmergente.fxml" GridPane.columnIndex="3"
+                        GridPane.rowIndex="0"/>
+            <fx:include fx:id="libroEmergente4" source="LibroEmergente.fxml" GridPane.columnIndex="4"
+                        GridPane.rowIndex="0"/>
+
+            <!-- Fila 2 -->
+            <fx:include fx:id="libroEmergente5" source="LibroEmergente.fxml" GridPane.columnIndex="0"
+                        GridPane.rowIndex="1"/>
+            <fx:include fx:id="libroEmergente6" source="LibroEmergente.fxml" GridPane.columnIndex="1"
+                        GridPane.rowIndex="1"/>
+            <fx:include fx:id="libroEmergente7" source="LibroEmergente.fxml" GridPane.columnIndex="2"
+                        GridPane.rowIndex="1"/>
+            <fx:include fx:id="libroEmergente8" source="LibroEmergente.fxml" GridPane.columnIndex="3"
+                        GridPane.rowIndex="1"/>
+            <fx:include fx:id="libroEmergente9" source="LibroEmergente.fxml" GridPane.columnIndex="4"
+                        GridPane.rowIndex="1"/>
+
+        </GridPane>
+    </children>
+</AnchorPane>

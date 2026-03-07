@@ -1,0 +1,387 @@
+{
+  "resources":{
+  "includes":[{
+    "pattern":".*\\.fxml"
+  }, {
+    "pattern":"Enzo:\\Qeu/hansolo/enzo/notification/error.png\\E"
+  }, {
+    "pattern":"Enzo:\\Qeu/hansolo/enzo/notification/info.png\\E"
+  }, {
+    "pattern":"Enzo:\\Qeu/hansolo/enzo/notification/success.png\\E"
+  }, {
+    "pattern":"Enzo:\\Qeu/hansolo/enzo/notification/warning.png\\E"
+  }, {
+    "pattern":"\\QMETA-INF/MANIFEST.MF\\E"
+  }, {
+    "pattern":"\\QMETA-INF/fonts.mf\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/ch.qos.logback.classic.spi.Configurator\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.net.spi.URLStreamHandlerProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.nio.channels.spi.SelectorProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/java.util.prefs.PreferencesFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/javax.ws.rs.ext.Providers\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/javax.ws.rs.ext.RuntimeDelegate\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/javax.xml.parsers.SAXParserFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/javax.xml.stream.XMLInputFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.eclipse.jetty.http.HttpFieldPreEncoder\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.eclipse.jetty.websocket.api.extensions.Extension\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.eclipse.jetty.websocket.common.RemoteEndpointFactory\\E"
+  }, {
+    "pattern":"\\QMETA-INF/services/org.slf4j.spi.SLF4JServiceProvider\\E"
+  }, {
+    "pattern":"\\Qapplication.conf\\E"
+  }, {
+    "pattern":"\\Qapplication.json\\E"
+  }, {
+    "pattern":"\\Qapplication.properties\\E"
+  }, {
+    "pattern":"\\Qjetty-logging-windows-11.properties\\E"
+  }, {
+    "pattern":"\\Qjetty-logging.properties\\E"
+  }, {
+    "pattern":"\\Qjetty-websocket-httpclient.xml\\E"
+  }, {
+    "pattern":"\\Qlogback-test.scmo\\E"
+  }, {
+    "pattern":"\\Qlogback-test.xml\\E"
+  }, {
+    "pattern":"\\Qlogback.scmo\\E"
+  }, {
+    "pattern":"\\Qlogback.xml\\E"
+  }, {
+    "pattern":"\\Qorg/apache/http/client/version.properties\\E"
+  }, {
+    "pattern":"\\Qorg/eclipse/jetty/version/build.properties\\E"
+  }, {
+    "pattern":"\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"
+  }, {
+    "pattern":"\\Qreference.conf\\E"
+  }, {
+    "pattern":"\\Qversion.conf\\E"
+  }, {
+    "pattern":"\\Qversion.json\\E"
+  }, {
+    "pattern":"\\Qversion.properties\\E"
+  }, {
+    "pattern":"blotter/css/*.*"
+  }, {
+    "pattern":"blotter/enviroment/*.*"
+  }, {
+    "pattern":"blotter/enviroment/application.localhost.properties"
+  }, {
+    "pattern":"blotter/enviroment/application.properties"
+  }, {
+    "pattern":"blotter/enviroment/applicationqa.properties"
+  }, {
+    "pattern":"blotter/img/*.*"
+  }, {
+    "pattern":"excel/basket.xlsx"
+  }, {
+    "pattern":"front:\\Qblotter/css/style.css\\E"
+  }, {
+    "pattern":"front:\\Qblotter/enviroment/application.v3.properties\\E"
+  }, {
+    "pattern":"front:\\Qblotter/enviroment/applicationqa.properties\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/admin.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/aprobado.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/basket.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/conexions.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/excel.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/icono.jpg\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/mail_7500726.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/news.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/notification.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/sound.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/sun.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/tuerca.png\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/fxplugins.dll\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/glass.dll\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/glib-lite.dll\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/gstreamer-lite.dll\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/javafx_font.dll\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/jfxmedia.dll\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/jfxwebkit.dll\\E"
+  }, {
+    "pattern":"front:\\Qlibs/win/msvcp140_2.dll\\E"
+  }, {
+    "pattern":"front:\\Qsounds/new.mp3\\E"
+  }, {
+    "pattern":"front:\\Qsounds/rejected.mp3\\E"
+  }, {
+    "pattern":"front:\\Qsounds/trade.mp3\\E"
+  }, {
+    "pattern":"front:\\Qview/Login.fxml\\E"
+  }, {
+    "pattern":"front:\\Qview/MarketDataPortfolioView.fxml\\E"
+  }, {
+    "pattern":"front:\\Qview/PrincipalView.fxml\\E"
+  }, {
+    "pattern":"graph/index.html"
+  }, {
+    "pattern":"graph/tv.js"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/ubidi.icu\\E"
+  }, {
+    "pattern":"java.base:\\Qjdk/internal/icu/impl/data/icudt72b/uprops.icu\\E"
+  }, {
+    "pattern":"java.base:\\Qsun/net/idn/uidna.spp\\E"
+  }, {
+    "pattern":"java.base:\\Qsun/net/www/content-types.properties\\E"
+  }, {
+    "pattern":"javafx.base:\\Qcom/sun/javafx/reflect/Trampoline.class\\E"
+  }, {
+    "pattern":"javafx.controls:\\Qcom/sun/javafx/scene/control/skin/modena/modena.bss\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-console-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-console-l1-2-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-datetime-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-debug-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-errorhandling-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-file-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-file-l1-2-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-file-l2-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-handle-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-heap-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-interlocked-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-libraryloader-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-localization-l1-2-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-memory-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-namedpipe-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-processenvironment-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-processthreads-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-processthreads-l1-1-1.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-profile-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-rtlsupport-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-string-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-synch-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-synch-l1-2-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-sysinfo-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-timezone-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-core-util-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-conio-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-convert-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-environment-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-filesystem-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-heap-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-locale-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-math-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-multibyte-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-private-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-process-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-runtime-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-stdio-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-string-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-time-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qapi-ms-win-crt-utility-l1-1-0.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/glass/utils/NativeLibLoader.class\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/DrawPgram_Color.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/DrawRoundRect_Color.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/FillPgram_Color.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/FillPgram_LinearGradient_PAD.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/FillRoundRect_Color.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Solid_Color.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Solid_TextureFirstPassLCD.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Solid_TextureRGB.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Solid_TextureSecondPassLCD.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Texture_Color.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Texture_LinearGradient_PAD.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/Blend_SRC_ATOP.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/Blend_SRC_IN.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/InvertMask.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_12.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_20.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_4.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qglass.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qjavafx_font.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qjavafx_iio.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qmsvcp140.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qmsvcp140_1.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qmsvcp140_2.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qprism_d3d.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qucrtbase.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qvcruntime140.dll\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qvcruntime140_1.dll\\E"
+  }, {
+    "pattern":"javafx.media:\\Qfxplugins.dll\\E"
+  }, {
+    "pattern":"javafx.media:\\Qglib-lite.dll\\E"
+  }, {
+    "pattern":"javafx.media:\\Qgstreamer-lite.dll\\E"
+  }, {
+    "pattern":"javafx.media:\\Qjfxmedia.dll\\E"
+  }, {
+    "pattern":"libs/ios/libfxplugins.dylib"
+  }, {
+    "pattern":"libs/ios/libglass.dylib"
+  }, {
+    "pattern":"libs/ios/libglib-lite.dylib"
+  }, {
+    "pattern":"libs/ios/libgstreamer-lite.dylib"
+  }, {
+    "pattern":"libs/ios/libjavafx_font.dylib"
+  }, {
+    "pattern":"libs/ios/libjfxmedia.dylib"
+  }, {
+    "pattern":"libs/win/fxplugins.dll"
+  }, {
+    "pattern":"libs/win/glass.dll"
+  }, {
+    "pattern":"libs/win/glib-lite.dll"
+  }, {
+    "pattern":"libs/win/gstreamer-lite.dll"
+  }, {
+    "pattern":"libs/win/javafx_font.dll"
+  }, {
+    "pattern":"libs/win/jfxmedia.dll"
+  }, {
+    "pattern":"libs/win/jfxwebkit.dll"
+  }, {
+    "pattern":"libs/win/msvcp140_2.dll"
+  }, {
+    "pattern":"libs/win/prism_d3d.dll"
+  }, {
+    "pattern":"libs/win/prism_sw.dll"
+  }, {
+    "pattern":"lobs/*.*"
+  }, {
+    "pattern":"sounds/.*\\.mp3"
+  }, {
+    "pattern":"sounds/.*\\.wav"
+  }, {
+    "pattern":"sounds/new.mp3"
+  }, {
+    "pattern":"sounds/new.wav"
+  }, {
+    "pattern":"view/*.*"
+  }, {
+    "pattern":"view/Login.fxml"
+  }]},
+  "bundles":[{
+    "name":"MediaErrors"
+  }, {
+    "name":"com.sun.javafx.tk.quantum.QuantumMessagesBundle",
+    "locales":["", "es", "und"]
+  }, {
+    "name":"com.sun.swing.internal.plaf.basic.resources.basic",
+    "classNames":["com.sun.swing.internal.plaf.basic.resources.basic"]
+  }, {
+    "name":"com.sun.swing.internal.plaf.metal.resources.metal",
+    "classNames":["com.sun.swing.internal.plaf.metal.resources.metal"]
+  }, {
+    "name":"com/sun/glass/ui/win/themes",
+    "locales":["", "es", "und"]
+  }, {
+    "name":"com/sun/javafx/scene/control/skin/resources/controls",
+    "locales":["", "es", "und"]
+  }, {
+    "name":"sun.awt.resources.awt",
+    "classNames":["sun.awt.resources.awt"]
+  }]
+}

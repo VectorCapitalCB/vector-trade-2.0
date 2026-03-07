@@ -1,0 +1,2942 @@
+[
+{
+  "name":"[B"
+},
+{
+  "name":"[D"
+},
+{
+  "name":"[Lakka.actor.LightArrayRevolverScheduler$TaskQueue;"
+},
+{
+  "name":"[Ljava.lang.Class;"
+},
+{
+  "name":"[Ljava.lang.Object;"
+},
+{
+  "name":"[Ljava.lang.String;"
+},
+{
+  "name":"[Ljavafx.collections.transformation.SortedList$Element;"
+},
+{
+  "name":"[Ljavax.ws.rs.client.ClientRequestFilter;"
+},
+{
+  "name":"[Ljavax.ws.rs.client.ClientResponseFilter;"
+},
+{
+  "name":"[Ljavax.ws.rs.ext.ReaderInterceptor;"
+},
+{
+  "name":"[Ljavax.ws.rs.ext.WriterInterceptor;"
+},
+{
+  "name":"[Lsun.security.pkcs.SignerInfo;"
+},
+{
+  "name":"akka.actor.ActorCell",
+  "fields":[{"name":"akka$actor$dungeon$Children$$_childrenRefsDoNotCallMeDirectly"}, {"name":"akka$actor$dungeon$Children$$_functionRefsDoNotCallMeDirectly"}, {"name":"akka$actor$dungeon$Children$$_nextNameDoNotCallMeDirectly"}, {"name":"akka$actor$dungeon$Dispatch$$_mailboxDoNotCallMeDirectly"}]
+},
+{
+  "name":"akka.actor.ActorSystemImpl",
+  "fields":[{"name":"0bitmap$1"}]
+},
+{
+  "name":"akka.actor.Address",
+  "fields":[{"name":"0bitmap$1"}]
+},
+{
+  "name":"akka.actor.DefaultSupervisorStrategy",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"akka.actor.LightArrayRevolverScheduler",
+  "methods":[{"name":"<init>","parameterTypes":["com.typesafe.config.Config","akka.event.LoggingAdapter","java.util.concurrent.ThreadFactory"] }]
+},
+{
+  "name":"akka.actor.LightArrayRevolverScheduler$TaskHolder",
+  "fields":[{"name":"task"}]
+},
+{
+  "name":"akka.actor.LocalActorRefProvider",
+  "fields":[{"name":"0bitmap$1"}],
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String","akka.actor.ActorSystem$Settings","akka.event.EventStream","akka.actor.DynamicAccess"] }]
+},
+{
+  "name":"akka.actor.LocalActorRefProvider$Guardian",
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.SupervisorStrategy"] }]
+},
+{
+  "name":"akka.actor.LocalActorRefProvider$SystemGuardian",
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.SupervisorStrategy","akka.actor.ActorRef"] }]
+},
+{
+  "name":"akka.actor.Props$EmptyActor",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"akka.actor.RepointableActorRef",
+  "fields":[{"name":"_cellDoNotCallMeDirectly"}, {"name":"_lookupDoNotCallMeDirectly"}]
+},
+{
+  "name":"akka.dispatch.AbstractNodeQueue",
+  "fields":[{"name":"_tailDoNotCallMeDirectly"}]
+},
+{
+  "name":"akka.dispatch.AbstractNodeQueue$Node",
+  "fields":[{"name":"_nextDoNotCallMeDirectly"}]
+},
+{
+  "name":"akka.dispatch.BoundedControlAwareMessageQueueSemantics"
+},
+{
+  "name":"akka.dispatch.BoundedDequeBasedMessageQueueSemantics"
+},
+{
+  "name":"akka.dispatch.BoundedMessageQueueSemantics"
+},
+{
+  "name":"akka.dispatch.ControlAwareMessageQueueSemantics"
+},
+{
+  "name":"akka.dispatch.DequeBasedMessageQueueSemantics"
+},
+{
+  "name":"akka.dispatch.Dispatcher",
+  "fields":[{"name":"executorServiceDelegate"}]
+},
+{
+  "name":"akka.dispatch.Dispatcher$LazyExecutorServiceDelegate",
+  "fields":[{"name":"0bitmap$1"}]
+},
+{
+  "name":"akka.dispatch.Mailbox",
+  "fields":[{"name":"_statusDoNotCallMeDirectly"}, {"name":"_systemQueueDoNotCallMeDirectly"}]
+},
+{
+  "name":"akka.dispatch.MessageDispatcher",
+  "fields":[{"name":"_inhabitantsDoNotCallMeDirectly"}, {"name":"_shutdownScheduleDoNotCallMeDirectly"}]
+},
+{
+  "name":"akka.dispatch.MessageDispatcher$",
+  "fields":[{"name":"0bitmap$1"}]
+},
+{
+  "name":"akka.dispatch.MultipleConsumerSemantics"
+},
+{
+  "name":"akka.dispatch.UnboundedControlAwareMessageQueueSemantics"
+},
+{
+  "name":"akka.dispatch.UnboundedDequeBasedMessageQueueSemantics"
+},
+{
+  "name":"akka.dispatch.UnboundedMailbox",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ActorSystem$Settings","com.typesafe.config.Config"] }]
+},
+{
+  "name":"akka.dispatch.UnboundedMessageQueueSemantics"
+},
+{
+  "name":"akka.event.DeadLetterListener",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"akka.event.EventStream",
+  "fields":[{"name":"0bitmap$1"}]
+},
+{
+  "name":"akka.event.EventStreamUnsubscriber",
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["akka.event.EventStream","boolean"] }]
+},
+{
+  "name":"akka.event.LoggerMailboxType",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ActorSystem$Settings","com.typesafe.config.Config"] }]
+},
+{
+  "name":"akka.event.LoggerMessageQueueSemantics"
+},
+{
+  "name":"akka.event.slf4j.Slf4jLogger",
+  "fields":[{"name":"0bitmap$1"}],
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"akka.event.slf4j.Slf4jLoggingFilter",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ActorSystem$Settings","akka.event.EventStream"] }]
+},
+{
+  "name":"akka.pattern.PromiseActorRef",
+  "fields":[{"name":"_stateDoNotCallMeDirectly"}, {"name":"_watchedByDoNotCallMeDirectly"}]
+},
+{
+  "name":"akka.routing.ConsistentHashingPool",
+  "methods":[{"name":"<init>","parameterTypes":["com.typesafe.config.Config"] }]
+},
+{
+  "name":"akka.routing.RoundRobinPool",
+  "methods":[{"name":"<init>","parameterTypes":["com.typesafe.config.Config"] }]
+},
+{
+  "name":"akka.routing.RoutedActorCell$RouterActorCreator",
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["akka.routing.RouterConfig"] }]
+},
+{
+  "name":"akka.serialization.BooleanSerializer",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ExtendedActorSystem"] }]
+},
+{
+  "name":"akka.serialization.ByteArraySerializer",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ExtendedActorSystem"] }]
+},
+{
+  "name":"akka.serialization.ByteStringSerializer",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ExtendedActorSystem"] }]
+},
+{
+  "name":"akka.serialization.DisabledJavaSerializer",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ExtendedActorSystem"] }]
+},
+{
+  "name":"akka.serialization.IntSerializer",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ExtendedActorSystem"] }]
+},
+{
+  "name":"akka.serialization.LongSerializer",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ExtendedActorSystem"] }]
+},
+{
+  "name":"akka.serialization.SerializationExtension$",
+  "fields":[{"name":"MODULE$"}]
+},
+{
+  "name":"akka.serialization.StringSerializer",
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ExtendedActorSystem"] }]
+},
+{
+  "name":"akka.util.ByteString$ByteString1"
+},
+{
+  "name":"akka.util.ByteString$ByteString1C"
+},
+{
+  "name":"akka.util.ByteString$ByteStrings"
+},
+{
+  "name":"ch.qos.logback.classic.Logger"
+},
+{
+  "name":"ch.qos.logback.classic.encoder.PatternLayoutEncoder",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.joran.SerializedModelConfigurator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.DateConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.LevelConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.LineOfCallerConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.LineSeparatorConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.LoggerConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.MDCConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.MessageConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.pattern.ThreadConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.classic.util.DefaultJoranConfigurator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.core.ConsoleAppender",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.core.FileAppender",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"ch.qos.logback.core.OutputStreamAppender",
+  "methods":[{"name":"setEncoder","parameterTypes":["ch.qos.logback.core.encoder.Encoder"] }]
+},
+{
+  "name":"ch.qos.logback.core.encoder.Encoder",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"ch.qos.logback.core.encoder.LayoutWrappingEncoder",
+  "methods":[{"name":"setParent","parameterTypes":["ch.qos.logback.core.spi.ContextAware"] }]
+},
+{
+  "name":"ch.qos.logback.core.pattern.PatternLayoutEncoderBase",
+  "methods":[{"name":"setPattern","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"ch.qos.logback.core.rolling.RollingFileAppender",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setFile","parameterTypes":["java.lang.String"] }, {"name":"setRollingPolicy","parameterTypes":["ch.qos.logback.core.rolling.RollingPolicy"] }]
+},
+{
+  "name":"ch.qos.logback.core.rolling.RollingPolicy",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"ch.qos.logback.core.rolling.RollingPolicyBase",
+  "methods":[{"name":"setFileNamePattern","parameterTypes":["java.lang.String"] }, {"name":"setParent","parameterTypes":["ch.qos.logback.core.FileAppender"] }]
+},
+{
+  "name":"ch.qos.logback.core.rolling.TimeBasedRollingPolicy",
+  "queryAllPublicMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setMaxHistory","parameterTypes":["int"] }]
+},
+{
+  "name":"ch.qos.logback.core.rolling.helper.DateTokenConverter",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"ch.qos.logback.core.spi.ContextAware",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"cl.tradelink.trademonitor.front.MainApp",
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"main","parameterTypes":["java.lang.String[]"] }]
+},
+{
+  "name":"cl.vc.blotter.MainApp",
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"main","parameterTypes":["java.lang.String[]"] }]
+},
+{
+  "name":"cl.vc.blotter.adaptor.ClientActor",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.adaptor.ParseMessageActor",
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ActorRef"] }]
+},
+{
+  "name":"cl.vc.blotter.controller.ActiveOrdersController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.BalanceController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.BasketController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.BookHorizontalController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.BookVerticalController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.ExecutionsController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.FooterController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.GraficoController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.LanzadorController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.LoginController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }, {"name":"login","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.MarketDataPortfolioViewController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.MarketDataViewerController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.PositionHistoricalController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.PositionSimultaneasController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.PositionsController",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.PreDigitadosController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.PrestamosController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.PrincipalController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.RoutingController",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"initialize","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.TradeGeneralesController",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.controller.TradeMKDController",
+  "allDeclaredFields":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.model.OrderBookEntry",
+  "methods":[{"name":"getPrice","parameterTypes":[] }, {"name":"getSize","parameterTypes":[] }, {"name":"priceProperty","parameterTypes":[] }, {"name":"setPrice","parameterTypes":["java.lang.String"] }, {"name":"setSize","parameterTypes":["java.lang.String"] }, {"name":"sizeProperty","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.blotter.model.StatisticVO",
+  "methods":[{"name":"amountProperty","parameterTypes":[] }, {"name":"amountTheoricProperty","parameterTypes":[] }, {"name":"askPxProperty","parameterTypes":[] }, {"name":"askQtyProperty","parameterTypes":[] }, {"name":"bidPxProperty","parameterTypes":[] }, {"name":"bidQtyProperty","parameterTypes":[] }, {"name":"closeProperty","parameterTypes":[] }, {"name":"desbalTheoricProperty","parameterTypes":[] }, {"name":"getAmount","parameterTypes":[] }, {"name":"getAmountTheoric","parameterTypes":[] }, {"name":"getAskPx","parameterTypes":[] }, {"name":"getAskQty","parameterTypes":[] }, {"name":"getBidPx","parameterTypes":[] }, {"name":"getBidQty","parameterTypes":[] }, {"name":"getClose","parameterTypes":[] }, {"name":"getDesbalTheoric","parameterTypes":[] }, {"name":"getHigh","parameterTypes":[] }, {"name":"getImbalance","parameterTypes":[] }, {"name":"getLow","parameterTypes":[] }, {"name":"getOpen","parameterTypes":[] }, {"name":"getPriceTheoric","parameterTypes":[] }, {"name":"getSecurityExchange","parameterTypes":[] }, {"name":"getSettlType","parameterTypes":[] }, {"name":"getSymbol","parameterTypes":[] }, {"name":"getVolume","parameterTypes":[] }, {"name":"highProperty","parameterTypes":[] }, {"name":"imbalanceProperty","parameterTypes":[] }, {"name":"lowProperty","parameterTypes":[] }, {"name":"openProperty","parameterTypes":[] }, {"name":"priceTheoricProperty","parameterTypes":[] }, {"name":"securityExchangeProperty","parameterTypes":[] }, {"name":"setAmount","parameterTypes":["java.lang.String"] }, {"name":"setAmountTheoric","parameterTypes":["java.lang.String"] }, {"name":"setAskPx","parameterTypes":["java.lang.String"] }, {"name":"setAskQty","parameterTypes":["java.lang.String"] }, {"name":"setBidPx","parameterTypes":["java.lang.String"] }, {"name":"setBidQty","parameterTypes":["java.lang.String"] }, {"name":"setClose","parameterTypes":["java.lang.String"] }, {"name":"setDesbalTheoric","parameterTypes":["java.lang.String"] }, {"name":"setHigh","parameterTypes":["java.lang.String"] }, {"name":"setImbalance","parameterTypes":["java.lang.String"] }, {"name":"setLow","parameterTypes":["java.lang.String"] }, {"name":"setOpen","parameterTypes":["java.lang.String"] }, {"name":"setPriceTheoric","parameterTypes":["java.lang.String"] }, {"name":"setSecurityExchange","parameterTypes":["java.lang.String"] }, {"name":"setSettlType","parameterTypes":["java.lang.String"] }, {"name":"setSymbol","parameterTypes":["java.lang.String"] }, {"name":"setVolume","parameterTypes":["java.lang.String"] }, {"name":"settlTypeProperty","parameterTypes":[] }, {"name":"symbolProperty","parameterTypes":[] }, {"name":"volumeProperty","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$Asset",
+  "methods":[{"name":"newBuilder","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$PortfolioRequest",
+  "methods":[{"name":"getAsset","parameterTypes":[] }, {"name":"getMarketdataControllerId","parameterTypes":[] }, {"name":"getMarketdataControllerIdBytes","parameterTypes":[] }, {"name":"getNamePortfolio","parameterTypes":[] }, {"name":"getNamePortfolioBytes","parameterTypes":[] }, {"name":"getStatusPortfolio","parameterTypes":[] }, {"name":"getStatusPortfolioValue","parameterTypes":[] }, {"name":"getUsername","parameterTypes":[] }, {"name":"getUsernameBytes","parameterTypes":[] }, {"name":"hasAsset","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$PortfolioRequest$Builder",
+  "methods":[{"name":"clearAsset","parameterTypes":[] }, {"name":"clearMarketdataControllerId","parameterTypes":[] }, {"name":"clearNamePortfolio","parameterTypes":[] }, {"name":"clearStatusPortfolio","parameterTypes":[] }, {"name":"clearUsername","parameterTypes":[] }, {"name":"getAsset","parameterTypes":[] }, {"name":"getAssetBuilder","parameterTypes":[] }, {"name":"getMarketdataControllerId","parameterTypes":[] }, {"name":"getNamePortfolio","parameterTypes":[] }, {"name":"getStatusPortfolio","parameterTypes":[] }, {"name":"getStatusPortfolioValue","parameterTypes":[] }, {"name":"getUsername","parameterTypes":[] }, {"name":"hasAsset","parameterTypes":[] }, {"name":"setAsset","parameterTypes":["cl.vc.module.protocolbuff.blotter.BlotterMessage$Asset"] }, {"name":"setMarketdataControllerId","parameterTypes":["java.lang.String"] }, {"name":"setMarketdataControllerIdBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setNamePortfolio","parameterTypes":["java.lang.String"] }, {"name":"setNamePortfolioBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setStatusPortfolio","parameterTypes":["cl.vc.module.protocolbuff.blotter.BlotterMessage$StatusPortfolio"] }, {"name":"setStatusPortfolioValue","parameterTypes":["int"] }, {"name":"setUsername","parameterTypes":["java.lang.String"] }, {"name":"setUsernameBytes","parameterTypes":["com.google.protobuf.ByteString"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$PositionHistory",
+  "methods":[{"name":"accountProperty","parameterTypes":[] }, {"name":"availableQuantityProperty","parameterTypes":[] }, {"name":"compraPlazoProperty","parameterTypes":[] }, {"name":"garantiaProperty","parameterTypes":[] }, {"name":"getAccount","parameterTypes":[] }, {"name":"getAvailableQuantity","parameterTypes":[] }, {"name":"getCompraPlazo","parameterTypes":[] }, {"name":"getGarantia","parameterTypes":[] }, {"name":"getGuarantee","parameterTypes":[] }, {"name":"getInstrument","parameterTypes":[] }, {"name":"getMarketPrice","parameterTypes":[] }, {"name":"guaranteeProperty","parameterTypes":[] }, {"name":"instrumentProperty","parameterTypes":[] }, {"name":"marketPriceProperty","parameterTypes":[] }, {"name":"setAccount","parameterTypes":["java.lang.String"] }, {"name":"setAvailableQuantity","parameterTypes":["double"] }, {"name":"setCompraPlazo","parameterTypes":["double"] }, {"name":"setGarantia","parameterTypes":["double"] }, {"name":"setGuarantee","parameterTypes":["double"] }, {"name":"setInstrument","parameterTypes":["java.lang.String"] }, {"name":"setMarketPrice","parameterTypes":["double"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$PreselectRequest",
+  "methods":[{"name":"getOrders","parameterTypes":[] }, {"name":"getStatusPreselect","parameterTypes":[] }, {"name":"getStatusPreselectValue","parameterTypes":[] }, {"name":"getUsername","parameterTypes":[] }, {"name":"getUsernameBytes","parameterTypes":[] }, {"name":"hasOrders","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$PreselectRequest$Builder",
+  "methods":[{"name":"clearOrders","parameterTypes":[] }, {"name":"clearStatusPreselect","parameterTypes":[] }, {"name":"clearUsername","parameterTypes":[] }, {"name":"getOrders","parameterTypes":[] }, {"name":"getOrdersBuilder","parameterTypes":[] }, {"name":"getStatusPreselect","parameterTypes":[] }, {"name":"getStatusPreselectValue","parameterTypes":[] }, {"name":"getUsername","parameterTypes":[] }, {"name":"hasOrders","parameterTypes":[] }, {"name":"setOrders","parameterTypes":["cl.vc.module.protocolbuff.routing.RoutingMessage$Order"] }, {"name":"setStatusPreselect","parameterTypes":["cl.vc.module.protocolbuff.blotter.BlotterMessage$StatusPreselect"] }, {"name":"setStatusPreselectValue","parameterTypes":["int"] }, {"name":"setUsername","parameterTypes":["java.lang.String"] }, {"name":"setUsernameBytes","parameterTypes":["com.google.protobuf.ByteString"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$Simultaneas",
+  "methods":[{"name":"cantidadOrigProperty","parameterTypes":[] }, {"name":"cantidadProperty","parameterTypes":[] }, {"name":"costoDiario2Property","parameterTypes":[] }, {"name":"fechaOperacionProperty","parameterTypes":[] }, {"name":"fechaVctoProperty","parameterTypes":[] }, {"name":"getCantidad","parameterTypes":[] }, {"name":"getCantidadOrig","parameterTypes":[] }, {"name":"getCostoDiario2","parameterTypes":[] }, {"name":"getFechaOperacion","parameterTypes":[] }, {"name":"getFechaVcto","parameterTypes":[] }, {"name":"getIdentCliente","parameterTypes":[] }, {"name":"getMontoContado","parameterTypes":[] }, {"name":"getMontoPlazo","parameterTypes":[] }, {"name":"getMontoPresente","parameterTypes":[] }, {"name":"getNemotecnico","parameterTypes":[] }, {"name":"getNombreCliente","parameterTypes":[] }, {"name":"getNumCuenta","parameterTypes":[] }, {"name":"getPlazo","parameterTypes":[] }, {"name":"getPlazoRem","parameterTypes":[] }, {"name":"getPrecioMercado","parameterTypes":[] }, {"name":"getPrecioPH","parameterTypes":[] }, {"name":"getPrecioPlazo","parameterTypes":[] }, {"name":"getTasa","parameterTypes":[] }, {"name":"identClienteProperty","parameterTypes":[] }, {"name":"montoContadoProperty","parameterTypes":[] }, {"name":"montoPlazoProperty","parameterTypes":[] }, {"name":"montoPresenteProperty","parameterTypes":[] }, {"name":"nemotecnicoProperty","parameterTypes":[] }, {"name":"nombreClienteProperty","parameterTypes":[] }, {"name":"numCuentaProperty","parameterTypes":[] }, {"name":"plazoProperty","parameterTypes":[] }, {"name":"plazoRemProperty","parameterTypes":[] }, {"name":"precioMercadoProperty","parameterTypes":[] }, {"name":"precioPHProperty","parameterTypes":[] }, {"name":"precioPlazoProperty","parameterTypes":[] }, {"name":"setCantidad","parameterTypes":["java.lang.String"] }, {"name":"setCantidadOrig","parameterTypes":["java.lang.String"] }, {"name":"setCostoDiario2","parameterTypes":["java.lang.String"] }, {"name":"setFechaOperacion","parameterTypes":["java.lang.String"] }, {"name":"setFechaVcto","parameterTypes":["java.lang.String"] }, {"name":"setIdentCliente","parameterTypes":["java.lang.String"] }, {"name":"setMontoContado","parameterTypes":["java.lang.String"] }, {"name":"setMontoPlazo","parameterTypes":["java.lang.String"] }, {"name":"setMontoPresente","parameterTypes":["java.lang.String"] }, {"name":"setNemotecnico","parameterTypes":["java.lang.String"] }, {"name":"setNombreCliente","parameterTypes":["java.lang.String"] }, {"name":"setNumCuenta","parameterTypes":["java.lang.String"] }, {"name":"setPlazo","parameterTypes":["java.lang.String"] }, {"name":"setPlazoRem","parameterTypes":["java.lang.String"] }, {"name":"setPrecioMercado","parameterTypes":["java.lang.String"] }, {"name":"setPrecioPH","parameterTypes":["java.lang.String"] }, {"name":"setPrecioPlazo","parameterTypes":["java.lang.String"] }, {"name":"setTasa","parameterTypes":["java.lang.String"] }, {"name":"tasaProperty","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$StatusPortfolio",
+  "methods":[{"name":"getValueDescriptor","parameterTypes":[] }, {"name":"valueOf","parameterTypes":["com.google.protobuf.Descriptors$EnumValueDescriptor"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.blotter.BlotterMessage$StatusPreselect",
+  "methods":[{"name":"getValueDescriptor","parameterTypes":[] }, {"name":"valueOf","parameterTypes":["com.google.protobuf.Descriptors$EnumValueDescriptor"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.mkd.MarketDataMessage$Depth",
+  "methods":[{"name":"getValueDescriptor","parameterTypes":[] }, {"name":"valueOf","parameterTypes":["com.google.protobuf.Descriptors$EnumValueDescriptor"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.mkd.MarketDataMessage$SecurityExchangeMarketData",
+  "methods":[{"name":"getValueDescriptor","parameterTypes":[] }, {"name":"valueOf","parameterTypes":["com.google.protobuf.Descriptors$EnumValueDescriptor"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.mkd.MarketDataMessage$Subscribe",
+  "methods":[{"name":"getBook","parameterTypes":[] }, {"name":"getBookQty","parameterTypes":[] }, {"name":"getDepth","parameterTypes":[] }, {"name":"getDepthValue","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"getIdBytes","parameterTypes":[] }, {"name":"getSecurityExchange","parameterTypes":[] }, {"name":"getSecurityExchangeValue","parameterTypes":[] }, {"name":"getSecurityType","parameterTypes":[] }, {"name":"getSecurityTypeValue","parameterTypes":[] }, {"name":"getSettlType","parameterTypes":[] }, {"name":"getSettlTypeValue","parameterTypes":[] }, {"name":"getStatistic","parameterTypes":[] }, {"name":"getSymbol","parameterTypes":[] }, {"name":"getSymbolBytes","parameterTypes":[] }, {"name":"getTrade","parameterTypes":[] }, {"name":"getTradeQty","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.mkd.MarketDataMessage$Subscribe$Builder",
+  "methods":[{"name":"clearBook","parameterTypes":[] }, {"name":"clearBookQty","parameterTypes":[] }, {"name":"clearDepth","parameterTypes":[] }, {"name":"clearId","parameterTypes":[] }, {"name":"clearSecurityExchange","parameterTypes":[] }, {"name":"clearSecurityType","parameterTypes":[] }, {"name":"clearSettlType","parameterTypes":[] }, {"name":"clearStatistic","parameterTypes":[] }, {"name":"clearSymbol","parameterTypes":[] }, {"name":"clearTrade","parameterTypes":[] }, {"name":"clearTradeQty","parameterTypes":[] }, {"name":"getBook","parameterTypes":[] }, {"name":"getBookQty","parameterTypes":[] }, {"name":"getDepth","parameterTypes":[] }, {"name":"getDepthValue","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"getSecurityExchange","parameterTypes":[] }, {"name":"getSecurityExchangeValue","parameterTypes":[] }, {"name":"getSecurityType","parameterTypes":[] }, {"name":"getSecurityTypeValue","parameterTypes":[] }, {"name":"getSettlType","parameterTypes":[] }, {"name":"getSettlTypeValue","parameterTypes":[] }, {"name":"getStatistic","parameterTypes":[] }, {"name":"getSymbol","parameterTypes":[] }, {"name":"getTrade","parameterTypes":[] }, {"name":"getTradeQty","parameterTypes":[] }, {"name":"setBook","parameterTypes":["boolean"] }, {"name":"setBookQty","parameterTypes":["int"] }, {"name":"setDepth","parameterTypes":["cl.vc.module.protocolbuff.mkd.MarketDataMessage$Depth"] }, {"name":"setDepthValue","parameterTypes":["int"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setIdBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setSecurityExchange","parameterTypes":["cl.vc.module.protocolbuff.mkd.MarketDataMessage$SecurityExchangeMarketData"] }, {"name":"setSecurityExchangeValue","parameterTypes":["int"] }, {"name":"setSecurityType","parameterTypes":["cl.vc.module.protocolbuff.routing.RoutingMessage$SecurityType"] }, {"name":"setSecurityTypeValue","parameterTypes":["int"] }, {"name":"setSettlType","parameterTypes":["cl.vc.module.protocolbuff.routing.RoutingMessage$SettlType"] }, {"name":"setSettlTypeValue","parameterTypes":["int"] }, {"name":"setStatistic","parameterTypes":["boolean"] }, {"name":"setSymbol","parameterTypes":["java.lang.String"] }, {"name":"setSymbolBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setTrade","parameterTypes":["boolean"] }, {"name":"setTradeQty","parameterTypes":["int"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.mkd.MarketDataMessage$Trade",
+  "methods":[{"name":"buyerProperty","parameterTypes":[] }, {"name":"getAmount","parameterTypes":[] }, {"name":"getBuyer","parameterTypes":[] }, {"name":"getBuyerBytes","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"getIdBytes","parameterTypes":[] }, {"name":"getPrice","parameterTypes":[] }, {"name":"getQty","parameterTypes":[] }, {"name":"getSecurityExchange","parameterTypes":[] }, {"name":"getSecurityExchangeValue","parameterTypes":[] }, {"name":"getSecurityType","parameterTypes":[] }, {"name":"getSecurityTypeValue","parameterTypes":[] }, {"name":"getSeller","parameterTypes":[] }, {"name":"getSellerBytes","parameterTypes":[] }, {"name":"getSettlType","parameterTypes":[] }, {"name":"getSettlTypeValue","parameterTypes":[] }, {"name":"getSymbol","parameterTypes":[] }, {"name":"getSymbolBytes","parameterTypes":[] }, {"name":"getT","parameterTypes":[] }, {"name":"hasT","parameterTypes":[] }, {"name":"priceProperty","parameterTypes":[] }, {"name":"qtyProperty","parameterTypes":[] }, {"name":"sellerProperty","parameterTypes":[] }, {"name":"setBuyer","parameterTypes":["java.lang.String"] }, {"name":"setPrice","parameterTypes":["double"] }, {"name":"setQty","parameterTypes":["double"] }, {"name":"setSeller","parameterTypes":["java.lang.String"] }, {"name":"setSymbol","parameterTypes":["java.lang.String"] }, {"name":"setT","parameterTypes":["com.google.protobuf.Timestamp"] }, {"name":"symbolProperty","parameterTypes":[] }, {"name":"tProperty","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.mkd.MarketDataMessage$Trade$Builder",
+  "methods":[{"name":"clearAmount","parameterTypes":[] }, {"name":"clearBuyer","parameterTypes":[] }, {"name":"clearId","parameterTypes":[] }, {"name":"clearPrice","parameterTypes":[] }, {"name":"clearQty","parameterTypes":[] }, {"name":"clearSecurityExchange","parameterTypes":[] }, {"name":"clearSecurityType","parameterTypes":[] }, {"name":"clearSeller","parameterTypes":[] }, {"name":"clearSettlType","parameterTypes":[] }, {"name":"clearSymbol","parameterTypes":[] }, {"name":"clearT","parameterTypes":[] }, {"name":"getAmount","parameterTypes":[] }, {"name":"getBuyer","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"getPrice","parameterTypes":[] }, {"name":"getQty","parameterTypes":[] }, {"name":"getSecurityExchange","parameterTypes":[] }, {"name":"getSecurityExchangeValue","parameterTypes":[] }, {"name":"getSecurityType","parameterTypes":[] }, {"name":"getSecurityTypeValue","parameterTypes":[] }, {"name":"getSeller","parameterTypes":[] }, {"name":"getSettlType","parameterTypes":[] }, {"name":"getSettlTypeValue","parameterTypes":[] }, {"name":"getSymbol","parameterTypes":[] }, {"name":"getT","parameterTypes":[] }, {"name":"getTBuilder","parameterTypes":[] }, {"name":"hasT","parameterTypes":[] }, {"name":"setAmount","parameterTypes":["double"] }, {"name":"setBuyer","parameterTypes":["java.lang.String"] }, {"name":"setBuyerBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setIdBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setPrice","parameterTypes":["double"] }, {"name":"setQty","parameterTypes":["double"] }, {"name":"setSecurityExchange","parameterTypes":["cl.vc.module.protocolbuff.mkd.MarketDataMessage$SecurityExchangeMarketData"] }, {"name":"setSecurityExchangeValue","parameterTypes":["int"] }, {"name":"setSecurityType","parameterTypes":["cl.vc.module.protocolbuff.routing.RoutingMessage$SecurityType"] }, {"name":"setSecurityTypeValue","parameterTypes":["int"] }, {"name":"setSeller","parameterTypes":["java.lang.String"] }, {"name":"setSellerBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setSettlType","parameterTypes":["cl.vc.module.protocolbuff.routing.RoutingMessage$SettlType"] }, {"name":"setSettlTypeValue","parameterTypes":["int"] }, {"name":"setSymbol","parameterTypes":["java.lang.String"] }, {"name":"setSymbolBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setT","parameterTypes":["com.google.protobuf.Timestamp"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.mkd.MarketDataMessage$TradeGeneral",
+  "methods":[{"name":"buyerProperty","parameterTypes":[] }, {"name":"getBuyer","parameterTypes":[] }, {"name":"getPrice","parameterTypes":[] }, {"name":"getQty","parameterTypes":[] }, {"name":"getSeller","parameterTypes":[] }, {"name":"getSymbol","parameterTypes":[] }, {"name":"getT","parameterTypes":[] }, {"name":"priceProperty","parameterTypes":[] }, {"name":"qtyProperty","parameterTypes":[] }, {"name":"sellerProperty","parameterTypes":[] }, {"name":"setBuyer","parameterTypes":["java.lang.String"] }, {"name":"setPrice","parameterTypes":["double"] }, {"name":"setQty","parameterTypes":["double"] }, {"name":"setSeller","parameterTypes":["java.lang.String"] }, {"name":"setSymbol","parameterTypes":["java.lang.String"] }, {"name":"setT","parameterTypes":["com.google.protobuf.Timestamp"] }, {"name":"symbolProperty","parameterTypes":[] }, {"name":"tProperty","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.notification.NotificationMessage$Component",
+  "methods":[{"name":"getValueDescriptor","parameterTypes":[] }, {"name":"valueOf","parameterTypes":["com.google.protobuf.Descriptors$EnumValueDescriptor"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.routing.RoutingMessage$Order",
+  "methods":[{"name":"newBuilder","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.routing.RoutingMessage$SecurityType",
+  "methods":[{"name":"getValueDescriptor","parameterTypes":[] }, {"name":"valueOf","parameterTypes":["com.google.protobuf.Descriptors$EnumValueDescriptor"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.routing.RoutingMessage$SettlType",
+  "methods":[{"name":"getValueDescriptor","parameterTypes":[] }, {"name":"valueOf","parameterTypes":["com.google.protobuf.Descriptors$EnumValueDescriptor"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.session.SessionsMessage$Connect",
+  "methods":[{"name":"getComponent","parameterTypes":[] }, {"name":"getComponentValue","parameterTypes":[] }, {"name":"getDefaultInstance","parameterTypes":[] }, {"name":"getDestination","parameterTypes":[] }, {"name":"getDestinationBytes","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"getIdBytes","parameterTypes":[] }, {"name":"getPassword","parameterTypes":[] }, {"name":"getPasswordBytes","parameterTypes":[] }, {"name":"getText","parameterTypes":[] }, {"name":"getTextBytes","parameterTypes":[] }, {"name":"getToken","parameterTypes":[] }, {"name":"getTokenBytes","parameterTypes":[] }, {"name":"getUsername","parameterTypes":[] }, {"name":"getUsernameBytes","parameterTypes":[] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.session.SessionsMessage$Connect$Builder",
+  "methods":[{"name":"clearComponent","parameterTypes":[] }, {"name":"clearDestination","parameterTypes":[] }, {"name":"clearId","parameterTypes":[] }, {"name":"clearPassword","parameterTypes":[] }, {"name":"clearText","parameterTypes":[] }, {"name":"clearToken","parameterTypes":[] }, {"name":"clearUsername","parameterTypes":[] }, {"name":"getComponent","parameterTypes":[] }, {"name":"getComponentValue","parameterTypes":[] }, {"name":"getDestination","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"getPassword","parameterTypes":[] }, {"name":"getText","parameterTypes":[] }, {"name":"getToken","parameterTypes":[] }, {"name":"getUsername","parameterTypes":[] }, {"name":"setComponent","parameterTypes":["cl.vc.module.protocolbuff.notification.NotificationMessage$Component"] }, {"name":"setComponentValue","parameterTypes":["int"] }, {"name":"setDestination","parameterTypes":["java.lang.String"] }, {"name":"setDestinationBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setIdBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setPassword","parameterTypes":["java.lang.String"] }, {"name":"setPasswordBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setText","parameterTypes":["java.lang.String"] }, {"name":"setTextBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setToken","parameterTypes":["java.lang.String"] }, {"name":"setTokenBytes","parameterTypes":["com.google.protobuf.ByteString"] }, {"name":"setUsername","parameterTypes":["java.lang.String"] }, {"name":"setUsernameBytes","parameterTypes":["com.google.protobuf.ByteString"] }]
+},
+{
+  "name":"cl.vc.module.protocolbuff.tcp.ParseMessageActor",
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["akka.actor.ActorRef"] }]
+},
+{
+  "name":"com.fasterxml.jackson.databind.ext.Java7HandlersImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.fasterxml.jackson.jaxrs.base.ProviderBase",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"com.fasterxml.jackson.jaxrs.json.JacksonJaxbJsonProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"com.fasterxml.jackson.module.jaxb.JaxbAnnotationIntrospector",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.fasterxml.jackson.module.jaxb.deser.DataHandlerJsonDeserializer",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.fasterxml.jackson.module.jaxb.ser.DataHandlerJsonSerializer",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.google.protobuf.ExtensionRegistry",
+  "methods":[{"name":"getEmptyRegistry","parameterTypes":[] }]
+},
+{
+  "name":"com.google.protobuf.Timestamp",
+  "methods":[{"name":"newBuilder","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.AESCipher$General",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.ARCFOURCipher",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.ChaCha20Cipher$ChaCha20Poly1305",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.DESCipher",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.DESedeCipher",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.DHParameters",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.GaloisCounterMode$AESGCM",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.HmacCore$HmacSHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.HmacCore$HmacSHA384",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.TlsKeyMaterialGenerator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.TlsMasterSecretGenerator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.crypto.provider.TlsPrfGenerator$V12",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.glass.ui.Screen"
+},
+{
+  "name":"com.sun.javafx.font.directwrite.DWFactory",
+  "methods":[{"name":"getFactory","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.javafx.fxml.builder.web.WebViewBuilder",
+  "methods":[{"name":"build","parameterTypes":[] }, {"name":"create","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.javafx.logging.PrintLogger",
+  "methods":[{"name":"createInstance","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.javafx.logging.jfr.JFRPulseLogger",
+  "methods":[{"name":"createInstance","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.javafx.reflect.Trampoline",
+  "methods":[{"name":"invoke","parameterTypes":["java.lang.reflect.Method","java.lang.Object","java.lang.Object[]"] }]
+},
+{
+  "name":"com.sun.javafx.scene.control.skin.Utils",
+  "methods":[{"name":"getResource","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"com.sun.javafx.tk.quantum.QuantumToolkit",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.javafx.webkit.theme.ScrollBarWidget"
+},
+{
+  "name":"com.sun.media.jfxmedia.Media",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true
+},
+{
+  "name":"com.sun.media.jfxmedia.MediaPlayer",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true
+},
+{
+  "name":"com.sun.media.jfxmediaimpl.MediaUtils",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"com.sun.media.jfxmediaimpl.NativeMediaManager",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true,
+  "methods":[{"name":"getPlayer","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"com.sun.media.jfxmediaimpl.NativeMediaManager$NativeMediaManagerInitializer",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"com.sun.media.jfxmediaimpl.platform.gstreamer.GSTPlatform",
+  "methods":[{"name":"getPlatformInstance","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.prism.GraphicsPipeline",
+  "methods":[{"name":"getFontFactory","parameterTypes":[] }, {"name":"getPipeline","parameterTypes":[] }]
+},
+{
+  "name":"com.sun.prism.shader.DrawPgram_Color_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.DrawRoundRect_Color_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.FillPgram_Color_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.FillPgram_LinearGradient_PAD_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.FillPgram_RadialGradient_PAD_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.FillRoundRect_Color_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.FillRoundRect_LinearGradient_PAD_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.Mask_TextureRGB_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.Solid_Color_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.Solid_TextureFirstPassLCD_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.Solid_TextureRGB_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.Solid_TextureSecondPassLCD_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.Texture_Color_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.prism.shader.Texture_LinearGradient_PAD_Loader",
+  "methods":[{"name":"loadShader","parameterTypes":["com.sun.prism.ps.ShaderFactory","java.io.InputStream"] }]
+},
+{
+  "name":"com.sun.scenario.effect.impl.prism.PrRenderer",
+  "methods":[{"name":"createRenderer","parameterTypes":["com.sun.scenario.effect.FilterContext"] }]
+},
+{
+  "name":"com.sun.scenario.effect.impl.prism.ps.PPSBlend_SRC_ATOPPeer",
+  "methods":[{"name":"<init>","parameterTypes":["com.sun.scenario.effect.FilterContext","com.sun.scenario.effect.impl.Renderer","java.lang.String"] }]
+},
+{
+  "name":"com.sun.scenario.effect.impl.prism.ps.PPSBlend_SRC_INPeer",
+  "methods":[{"name":"<init>","parameterTypes":["com.sun.scenario.effect.FilterContext","com.sun.scenario.effect.impl.Renderer","java.lang.String"] }]
+},
+{
+  "name":"com.sun.scenario.effect.impl.prism.ps.PPSInvertMaskPeer",
+  "methods":[{"name":"<init>","parameterTypes":["com.sun.scenario.effect.FilterContext","com.sun.scenario.effect.impl.Renderer","java.lang.String"] }]
+},
+{
+  "name":"com.sun.scenario.effect.impl.prism.ps.PPSLinearConvolveShadowPeer",
+  "methods":[{"name":"<init>","parameterTypes":["com.sun.scenario.effect.FilterContext","com.sun.scenario.effect.impl.Renderer","java.lang.String"] }]
+},
+{
+  "name":"com.sun.scenario.effect.impl.prism.ps.PPSRenderer",
+  "methods":[{"name":"createRenderer","parameterTypes":["com.sun.scenario.effect.FilterContext"] }]
+},
+{
+  "name":"com.sun.webkit.FileSystem",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"com.sun.webkit.WebPage",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"com.sun.webkit.network.CookieJar",
+  "allDeclaredFields":true,
+  "allDeclaredMethods":true
+},
+{
+  "name":"groovy.lang.Binding"
+},
+{
+  "name":"java.awt.Component",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.awt.Container",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.awt.Frame",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.awt.SequencedEvent"
+},
+{
+  "name":"java.awt.Window",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.awt.event.KeyEvent",
+  "fields":[{"name":"VK_CONTEXT_MENU"}, {"name":"VK_F10"}]
+},
+{
+  "name":"java.io.FilePermission"
+},
+{
+  "name":"java.io.Serializable",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.AnchorPane"
+},
+{
+  "name":"java.lang.Boolean",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Button"
+},
+{
+  "name":"java.lang.ButtonBar"
+},
+{
+  "name":"java.lang.Byte",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Character",
+  "methods":[{"name":"isIdeographic","parameterTypes":["int"] }]
+},
+{
+  "name":"java.lang.Class",
+  "methods":[{"name":"forName","parameterTypes":["java.lang.Module","java.lang.String"] }, {"name":"getModule","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.ClassValue"
+},
+{
+  "name":"java.lang.Cloneable",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.Double",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Float",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.HBox"
+},
+{
+  "name":"java.lang.Integer",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Label"
+},
+{
+  "name":"java.lang.Long",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Module",
+  "methods":[{"name":"getDescriptor","parameterTypes":[] }, {"name":"getLayer","parameterTypes":[] }, {"name":"getName","parameterTypes":[] }, {"name":"getResourceAsStream","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.ModuleLayer",
+  "methods":[{"name":"boot","parameterTypes":[] }, {"name":"configuration","parameterTypes":[] }, {"name":"findModule","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.Number",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.lang.Region"
+},
+{
+  "name":"java.lang.RuntimePermission"
+},
+{
+  "name":"java.lang.Short",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.String",
+  "fields":[{"name":"value"}]
+},
+{
+  "name":"java.lang.TableColumn"
+},
+{
+  "name":"java.lang.TableView"
+},
+{
+  "name":"java.lang.TextField"
+},
+{
+  "name":"java.lang.Thread",
+  "fields":[{"name":"threadLocalRandomProbe"}]
+},
+{
+  "name":"java.lang.Throwable",
+  "methods":[{"name":"getSuppressed","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.ToolBar"
+},
+{
+  "name":"java.lang.VBox"
+},
+{
+  "name":"java.lang.invoke.VarHandle",
+  "methods":[{"name":"releaseFence","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.management.ManagementFactory",
+  "methods":[{"name":"getRuntimeMXBean","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.management.RuntimeMXBean",
+  "methods":[{"name":"getUptime","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.module.Configuration",
+  "methods":[{"name":"findModule","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"java.lang.module.ModuleReference",
+  "methods":[{"name":"location","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.module.ResolvedModule",
+  "methods":[{"name":"reference","parameterTypes":[] }]
+},
+{
+  "name":"java.lang.reflect.AccessibleObject",
+  "fields":[{"name":"override"}]
+},
+{
+  "name":"java.net.NetPermission"
+},
+{
+  "name":"java.net.SocketPermission"
+},
+{
+  "name":"java.net.URL"
+},
+{
+  "name":"java.net.URLConnection",
+  "methods":[{"name":"getContentLengthLong","parameterTypes":[] }]
+},
+{
+  "name":"java.net.URLPermission",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String","java.lang.String"] }]
+},
+{
+  "name":"java.nio.Buffer",
+  "fields":[{"name":"address"}]
+},
+{
+  "name":"java.nio.ByteBuffer",
+  "methods":[{"name":"order","parameterTypes":["java.nio.ByteOrder"] }]
+},
+{
+  "name":"java.nio.ByteOrder",
+  "methods":[{"name":"nativeOrder","parameterTypes":[] }]
+},
+{
+  "name":"java.security.AlgorithmParametersSpi"
+},
+{
+  "name":"java.security.AllPermission"
+},
+{
+  "name":"java.security.KeyStoreSpi"
+},
+{
+  "name":"java.security.SecureRandomParameters"
+},
+{
+  "name":"java.security.SecurityPermission"
+},
+{
+  "name":"java.security.cert.PKIXRevocationChecker"
+},
+{
+  "name":"java.security.interfaces.DSAPrivateKey"
+},
+{
+  "name":"java.security.interfaces.DSAPublicKey"
+},
+{
+  "name":"java.security.interfaces.ECPrivateKey"
+},
+{
+  "name":"java.security.interfaces.ECPublicKey"
+},
+{
+  "name":"java.security.interfaces.RSAPrivateKey"
+},
+{
+  "name":"java.security.interfaces.RSAPublicKey"
+},
+{
+  "name":"java.security.spec.DSAParameterSpec"
+},
+{
+  "name":"java.sql.Date"
+},
+{
+  "name":"java.util.AbstractMap",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.util.AnchorPane"
+},
+{
+  "name":"java.util.Button"
+},
+{
+  "name":"java.util.ButtonBar"
+},
+{
+  "name":"java.util.Date"
+},
+{
+  "name":"java.util.HBox"
+},
+{
+  "name":"java.util.HashMap",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.util.HashSet",
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"java.util.Label"
+},
+{
+  "name":"java.util.Map",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"java.util.PropertyPermission"
+},
+{
+  "name":"java.util.Region"
+},
+{
+  "name":"java.util.TableColumn"
+},
+{
+  "name":"java.util.TableView"
+},
+{
+  "name":"java.util.TextField"
+},
+{
+  "name":"java.util.ToolBar"
+},
+{
+  "name":"java.util.VBox"
+},
+{
+  "name":"java.util.concurrent.ForkJoinTask",
+  "fields":[{"name":"aux"}, {"name":"status"}]
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicBoolean",
+  "fields":[{"name":"value"}]
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicMarkableReference",
+  "fields":[{"name":"pair"}]
+},
+{
+  "name":"java.util.concurrent.atomic.AtomicReference",
+  "fields":[{"name":"value"}]
+},
+{
+  "name":"java.util.concurrent.atomic.Striped64",
+  "fields":[{"name":"base"}, {"name":"cellsBusy"}]
+},
+{
+  "name":"javafx.animation.KeyValue"
+},
+{
+  "name":"javafx.fxml.FXMLLoader"
+},
+{
+  "name":"javafx.geometry.AnchorPane"
+},
+{
+  "name":"javafx.geometry.BorderPane"
+},
+{
+  "name":"javafx.geometry.Button"
+},
+{
+  "name":"javafx.geometry.ButtonBar"
+},
+{
+  "name":"javafx.geometry.CheckBox"
+},
+{
+  "name":"javafx.geometry.ChoiceBox"
+},
+{
+  "name":"javafx.geometry.ColumnConstraints"
+},
+{
+  "name":"javafx.geometry.ComboBox"
+},
+{
+  "name":"javafx.geometry.GridPane"
+},
+{
+  "name":"javafx.geometry.HBox"
+},
+{
+  "name":"javafx.geometry.HPos",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.geometry.Insets",
+  "queryAllPublicMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["double"] }, {"name":"<init>","parameterTypes":["double","double","double","double"] }]
+},
+{
+  "name":"javafx.geometry.Label"
+},
+{
+  "name":"javafx.geometry.NodeOrientation",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.geometry.Orientation",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.geometry.Pane"
+},
+{
+  "name":"javafx.geometry.PasswordField"
+},
+{
+  "name":"javafx.geometry.Pos",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.geometry.Region"
+},
+{
+  "name":"javafx.geometry.RowConstraints"
+},
+{
+  "name":"javafx.geometry.ScrollPane"
+},
+{
+  "name":"javafx.geometry.Side",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.geometry.SplitPane"
+},
+{
+  "name":"javafx.geometry.StackPane"
+},
+{
+  "name":"javafx.geometry.Tab"
+},
+{
+  "name":"javafx.geometry.TabPane"
+},
+{
+  "name":"javafx.geometry.TableColumn"
+},
+{
+  "name":"javafx.geometry.TableView"
+},
+{
+  "name":"javafx.geometry.TextField"
+},
+{
+  "name":"javafx.geometry.TitledPane"
+},
+{
+  "name":"javafx.geometry.TreeTableColumn"
+},
+{
+  "name":"javafx.geometry.TreeTableView"
+},
+{
+  "name":"javafx.geometry.VBox"
+},
+{
+  "name":"javafx.scene.AnchorPane"
+},
+{
+  "name":"javafx.scene.Button"
+},
+{
+  "name":"javafx.scene.ButtonBar"
+},
+{
+  "name":"javafx.scene.Camera"
+},
+{
+  "name":"javafx.scene.Cursor"
+},
+{
+  "name":"javafx.scene.Group"
+},
+{
+  "name":"javafx.scene.HBox"
+},
+{
+  "name":"javafx.scene.Label"
+},
+{
+  "name":"javafx.scene.Node",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"getId","parameterTypes":[] }, {"name":"getStyleClass","parameterTypes":[] }, {"name":"setAccessibleHelp","parameterTypes":["java.lang.String"] }, {"name":"setDisable","parameterTypes":["boolean"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setLayoutX","parameterTypes":["double"] }, {"name":"setLayoutY","parameterTypes":["double"] }, {"name":"setManaged","parameterTypes":["boolean"] }, {"name":"setNodeOrientation","parameterTypes":["javafx.geometry.NodeOrientation"] }, {"name":"setPickOnBounds","parameterTypes":["boolean"] }, {"name":"setRotate","parameterTypes":["double"] }, {"name":"setStyle","parameterTypes":["java.lang.String"] }, {"name":"setVisible","parameterTypes":["boolean"] }]
+},
+{
+  "name":"javafx.scene.ParallelCamera"
+},
+{
+  "name":"javafx.scene.Parent",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"javafx.scene.Region"
+},
+{
+  "name":"javafx.scene.Scene"
+},
+{
+  "name":"javafx.scene.TableColumn"
+},
+{
+  "name":"javafx.scene.TableView"
+},
+{
+  "name":"javafx.scene.TextField"
+},
+{
+  "name":"javafx.scene.ToolBar"
+},
+{
+  "name":"javafx.scene.VBox"
+},
+{
+  "name":"javafx.scene.control.AnchorPane"
+},
+{
+  "name":"javafx.scene.control.BorderPane"
+},
+{
+  "name":"javafx.scene.control.Button",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.ButtonBar",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getButtons","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.ButtonBase",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"setOnAction","parameterTypes":["javafx.event.EventHandler"] }]
+},
+{
+  "name":"javafx.scene.control.CheckBox",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setSelected","parameterTypes":["boolean"] }]
+},
+{
+  "name":"javafx.scene.control.ChoiceBox",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.ColumnConstraints"
+},
+{
+  "name":"javafx.scene.control.ComboBox",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.ComboBoxBase",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"setPromptText","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.control.ContentDisplay",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.control.Control",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"javafx.scene.control.GridPane"
+},
+{
+  "name":"javafx.scene.control.HBox"
+},
+{
+  "name":"javafx.scene.control.Label",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.Labeled",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"setAlignment","parameterTypes":["javafx.geometry.Pos"] }, {"name":"setContentDisplay","parameterTypes":["javafx.scene.control.ContentDisplay"] }, {"name":"setFont","parameterTypes":["javafx.scene.text.Font"] }, {"name":"setGraphic","parameterTypes":["javafx.scene.Node"] }, {"name":"setGraphicTextGap","parameterTypes":["double"] }, {"name":"setMnemonicParsing","parameterTypes":["boolean"] }, {"name":"setText","parameterTypes":["java.lang.String"] }, {"name":"setTextFill","parameterTypes":["javafx.scene.paint.Paint"] }]
+},
+{
+  "name":"javafx.scene.control.Pane"
+},
+{
+  "name":"javafx.scene.control.PasswordField",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.Region"
+},
+{
+  "name":"javafx.scene.control.RowConstraints"
+},
+{
+  "name":"javafx.scene.control.ScrollPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getContent","parameterTypes":[] }, {"name":"setContent","parameterTypes":["javafx.scene.Node"] }, {"name":"setFitToHeight","parameterTypes":["boolean"] }, {"name":"setFitToWidth","parameterTypes":["boolean"] }, {"name":"setPannable","parameterTypes":["boolean"] }]
+},
+{
+  "name":"javafx.scene.control.Separator",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.SplitPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getItems","parameterTypes":[] }, {"name":"getResizableWithParent","parameterTypes":["javafx.scene.Node"] }, {"name":"getResizableWithParent","parameterTypes":["javafx.scene.Parent"] }, {"name":"getResizableWithParent","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"getResizableWithParent","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getResizableWithParent","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isResizableWithParent","parameterTypes":["javafx.scene.Node"] }, {"name":"isResizableWithParent","parameterTypes":["javafx.scene.Parent"] }, {"name":"isResizableWithParent","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"isResizableWithParent","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isResizableWithParent","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"setDividerPositions","parameterTypes":["double[]"] }, {"name":"setOrientation","parameterTypes":["javafx.geometry.Orientation"] }, {"name":"setResizableWithParent","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.Node","java.lang.Boolean"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.Parent","java.lang.Boolean"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.Boolean"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.String"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.layout.Pane","java.lang.Boolean"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.layout.Region","java.lang.Boolean"] }, {"name":"setResizableWithParent","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.control.StackPane"
+},
+{
+  "name":"javafx.scene.control.Tab",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getContent","parameterTypes":[] }, {"name":"getId","parameterTypes":[] }, {"name":"setClosable","parameterTypes":["boolean"] }, {"name":"setContent","parameterTypes":["javafx.scene.Node"] }, {"name":"setDisable","parameterTypes":["boolean"] }, {"name":"setGraphic","parameterTypes":["javafx.scene.Node"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setText","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.control.TabPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getTabs","parameterTypes":[] }, {"name":"setSide","parameterTypes":["javafx.geometry.Side"] }, {"name":"setTabClosingPolicy","parameterTypes":["javafx.scene.control.TabPane$TabClosingPolicy"] }]
+},
+{
+  "name":"javafx.scene.control.TabPane$TabClosingPolicy",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.control.TableColumn",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getColumns","parameterTypes":[] }, {"name":"setSortType","parameterTypes":["javafx.scene.control.TableColumn$SortType"] }]
+},
+{
+  "name":"javafx.scene.control.TableColumn$SortType",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.control.TableColumnBase",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"getId","parameterTypes":[] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setMinWidth","parameterTypes":["double"] }, {"name":"setPrefWidth","parameterTypes":["double"] }, {"name":"setText","parameterTypes":["java.lang.String"] }, {"name":"setVisible","parameterTypes":["boolean"] }]
+},
+{
+  "name":"javafx.scene.control.TableView",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "fields":[{"name":"CONSTRAINED_RESIZE_POLICY"}, {"name":"UNCONSTRAINED_RESIZE_POLICY"}],
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getColumns","parameterTypes":[] }, {"name":"setColumnResizePolicy","parameterTypes":["javafx.util.Callback"] }]
+},
+{
+  "name":"javafx.scene.control.TextField",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.TextInputControl",
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"setEditable","parameterTypes":["boolean"] }, {"name":"setPromptText","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.control.TitledPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getContent","parameterTypes":[] }, {"name":"setAnimated","parameterTypes":["boolean"] }, {"name":"setCollapsible","parameterTypes":["boolean"] }, {"name":"setContent","parameterTypes":["javafx.scene.Node"] }]
+},
+{
+  "name":"javafx.scene.control.ToolBar",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getItems","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.TreeTableColumn",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.TreeTableView",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getColumns","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.VBox"
+},
+{
+  "name":"javafx.scene.effect.Effect"
+},
+{
+  "name":"javafx.scene.image.Image"
+},
+{
+  "name":"javafx.scene.image.ImageView",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setFitHeight","parameterTypes":["double"] }, {"name":"setFitWidth","parameterTypes":["double"] }, {"name":"setImage","parameterTypes":["javafx.scene.image.Image"] }, {"name":"setPreserveRatio","parameterTypes":["boolean"] }]
+},
+{
+  "name":"javafx.scene.layout.AnchorPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.Node"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getBottomAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.Node"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getLeftAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.Node"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getRightAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.Node"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getTopAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isBottomAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isLeftAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isRightAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.Parent"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.layout.BorderPane"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isTopAnchor","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"setBottomAnchor","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.Node","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.Parent","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.ToolBar","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.control.ToolBar","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.Double"] }, {"name":"setBottomAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.Node","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.Parent","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.ToolBar","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.control.ToolBar","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.Double"] }, {"name":"setLeftAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.Node","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.Parent","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.ButtonBar","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.ButtonBar","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.ToolBar","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.control.ToolBar","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.Double"] }, {"name":"setRightAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.Node","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.Parent","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.ButtonBar","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.ButtonBar","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.SplitPane","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.TabPane","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.TableView","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.control.TitledPane","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.BorderPane","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.Double"] }, {"name":"setTopAnchor","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.layout.BorderPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getAlignment","parameterTypes":["javafx.scene.Node"] }, {"name":"getAlignment","parameterTypes":["javafx.scene.Parent"] }, {"name":"getAlignment","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getAlignment","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getAlignment","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isAlignment","parameterTypes":["javafx.scene.Parent"] }, {"name":"isAlignment","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isAlignment","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isAlignment","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"setAlignment","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.Node","javafx.geometry.Pos"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.Parent","javafx.geometry.Pos"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.layout.HBox","javafx.geometry.Pos"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.layout.Pane","javafx.geometry.Pos"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setAlignment","parameterTypes":["javafx.scene.layout.Region","javafx.geometry.Pos"] }, {"name":"setBottom","parameterTypes":["javafx.scene.Node"] }, {"name":"setCenter","parameterTypes":["javafx.scene.Node"] }, {"name":"setTop","parameterTypes":["javafx.scene.Node"] }]
+},
+{
+  "name":"javafx.scene.layout.ColumnConstraints",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setHalignment","parameterTypes":["javafx.geometry.HPos"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Priority"] }, {"name":"setMinWidth","parameterTypes":["double"] }]
+},
+{
+  "name":"javafx.scene.layout.ConstraintsBase",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"javafx.scene.layout.GridPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getColumnConstraints","parameterTypes":[] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.Node"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.Parent"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.control.Label"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getColumnIndex","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"getColumnSpan","parameterTypes":["javafx.scene.Node"] }, {"name":"getColumnSpan","parameterTypes":["javafx.scene.Parent"] }, {"name":"getColumnSpan","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getColumnSpan","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getColumnSpan","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.Node"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.GridPane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getRowConstraints","parameterTypes":[] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.Node"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.Parent"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.control.Label"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getRowIndex","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.Node"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.GridPane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.Parent"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.control.Label"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isColumnIndex","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isColumnSpan","parameterTypes":["javafx.scene.Parent"] }, {"name":"isColumnSpan","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isColumnSpan","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isColumnSpan","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.GridPane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.Parent"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.control.Label"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isRowIndex","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.GridPane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"setAlignment","parameterTypes":["javafx.geometry.Pos"] }, {"name":"setColumnIndex","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.Node","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.Parent","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Control","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Label","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Label","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Labeled","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Skinnable","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.TextField","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.TextField","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.TextInputControl","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.control.TextInputControl","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.HBox","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.Pane","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.Region","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.VBox","java.lang.Integer"] }, {"name":"setColumnIndex","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.Node","java.lang.Integer"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.Parent","java.lang.Integer"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.layout.HBox","java.lang.Integer"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.layout.Pane","java.lang.Integer"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.layout.Region","java.lang.Integer"] }, {"name":"setColumnSpan","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setHgap","parameterTypes":["double"] }, {"name":"setHgrow","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Node","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Parent","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Control","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Skinnable","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TextField","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TextField","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TextInputControl","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TextInputControl","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.GridPane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.GridPane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Pane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Region","javafx.scene.layout.Priority"] }, {"name":"setRowIndex","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.Node","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.Parent","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Control","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Label","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Label","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Labeled","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Skinnable","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.TextField","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.TextField","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.TextInputControl","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.control.TextInputControl","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.HBox","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.Pane","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.Region","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.VBox","java.lang.Integer"] }, {"name":"setRowIndex","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }, {"name":"setVgap","parameterTypes":["double"] }, {"name":"setVgrow","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Node","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Parent","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.GridPane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.GridPane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Pane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Region","javafx.scene.layout.Priority"] }]
+},
+{
+  "name":"javafx.scene.layout.HBox",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getHgrow","parameterTypes":["javafx.scene.Node"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Button"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.ButtonBase"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.ComboBox"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.ComboBoxBase"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Label"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.ScrollPane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Separator"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.GridPane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getHgrow","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Button"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.ButtonBase"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.ComboBox"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.ComboBoxBase"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Label"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.ScrollPane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Separator"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.GridPane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isHgrow","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"setAlignment","parameterTypes":["javafx.geometry.Pos"] }, {"name":"setHgrow","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Node","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.Parent","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Button","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Button","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ButtonBar","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ButtonBar","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ButtonBase","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ButtonBase","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ComboBox","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ComboBox","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ComboBoxBase","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ComboBoxBase","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Control","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Label","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Label","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Labeled","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ScrollPane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ScrollPane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Separator","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Separator","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.Skinnable","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.SplitPane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.SplitPane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TabPane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TabPane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TableView","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TableView","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TitledPane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.TitledPane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ToolBar","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.control.ToolBar","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.AnchorPane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.GridPane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.GridPane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.HBox","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Pane","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.Region","javafx.scene.layout.Priority"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }, {"name":"setHgrow","parameterTypes":["javafx.scene.layout.VBox","javafx.scene.layout.Priority"] }, {"name":"setMargin","parameterTypes":["javafx.scene.Node","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.Parent","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.layout.HBox","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.layout.Pane","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.layout.Region","javafx.geometry.Insets"] }, {"name":"setSpacing","parameterTypes":["double"] }]
+},
+{
+  "name":"javafx.scene.layout.Pane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getChildren","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.layout.Priority",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.layout.Region",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setMaxHeight","parameterTypes":["double"] }, {"name":"setMaxWidth","parameterTypes":["double"] }, {"name":"setMinHeight","parameterTypes":["double"] }, {"name":"setMinWidth","parameterTypes":["double"] }, {"name":"setOpaqueInsets","parameterTypes":["javafx.geometry.Insets"] }, {"name":"setPadding","parameterTypes":["javafx.geometry.Insets"] }, {"name":"setPrefHeight","parameterTypes":["double"] }, {"name":"setPrefWidth","parameterTypes":["double"] }, {"name":"setScaleShape","parameterTypes":["boolean"] }]
+},
+{
+  "name":"javafx.scene.layout.RowConstraints",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Priority"] }]
+},
+{
+  "name":"javafx.scene.layout.StackPane",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAlignment","parameterTypes":["javafx.geometry.Pos"] }]
+},
+{
+  "name":"javafx.scene.layout.VBox",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getVgrow","parameterTypes":["javafx.scene.Node"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.ButtonBase"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.CheckBox"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.Control"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.Label"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.ScrollPane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.Separator"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.control.TreeTableView"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"getVgrow","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.Parent"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.ButtonBar"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.ButtonBase"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.CheckBox"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.Control"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.Label"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.Labeled"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.ScrollPane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.Separator"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.Skinnable"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.SplitPane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.TabPane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.TableView"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.TextField"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.TextInputControl"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.TitledPane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.ToolBar"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.control.TreeTableView"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.AnchorPane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.HBox"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.Pane"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.Region"] }, {"name":"isVgrow","parameterTypes":["javafx.scene.layout.VBox"] }, {"name":"setAlignment","parameterTypes":["javafx.geometry.Pos"] }, {"name":"setFillWidth","parameterTypes":["boolean"] }, {"name":"setMargin","parameterTypes":["javafx.scene.Node","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.Parent","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.control.Control","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.control.Label","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.control.Labeled","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.control.Skinnable","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.layout.HBox","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.layout.Pane","javafx.geometry.Insets"] }, {"name":"setMargin","parameterTypes":["javafx.scene.layout.Region","javafx.geometry.Insets"] }, {"name":"setSpacing","parameterTypes":["double"] }, {"name":"setVgrow","parameterTypes":["java.lang.Object","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.css.Styleable","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.event.EventTarget","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Node","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Node","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Parent","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.Parent","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ButtonBar","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ButtonBar","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ButtonBase","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ButtonBase","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.CheckBox","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.CheckBox","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Control","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Control","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Label","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Label","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Labeled","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Labeled","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ScrollPane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ScrollPane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Separator","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Separator","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Skinnable","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.Skinnable","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.SplitPane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.SplitPane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TabPane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TabPane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TableView","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TableView","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TextField","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TextField","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TextInputControl","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TextInputControl","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TitledPane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TitledPane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ToolBar","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.ToolBar","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TreeTableView","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.control.TreeTableView","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.AnchorPane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.AnchorPane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.HBox","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.HBox","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Pane","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Pane","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Region","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.Region","javafx.scene.layout.Priority"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.VBox","java.lang.String"] }, {"name":"setVgrow","parameterTypes":["javafx.scene.layout.VBox","javafx.scene.layout.Priority"] }]
+},
+{
+  "name":"javafx.scene.media.Media",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.media.MediaPlayer",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.media.MediaView",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.paint.Paint",
+  "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javafx.scene.shape.LineTo"
+},
+{
+  "name":"javafx.scene.shape.MoveTo"
+},
+{
+  "name":"javafx.scene.shape.Path"
+},
+{
+  "name":"javafx.scene.shape.PathElement"
+},
+{
+  "name":"javafx.scene.shape.Rectangle"
+},
+{
+  "name":"javafx.scene.shape.SVGPath"
+},
+{
+  "name":"javafx.scene.shape.Shape"
+},
+{
+  "name":"javafx.scene.text.Font"
+},
+{
+  "name":"javafx.scene.text.Text"
+},
+{
+  "name":"javafx.scene.transform.Transform"
+},
+{
+  "name":"javafx.scene.web.WebEngine",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.web.WebView",
+  "allDeclaredFields":true,
+  "allPublicFields":true,
+  "allDeclaredMethods":true,
+  "allPublicMethods":true,
+  "allDeclaredConstructors":true,
+  "allPublicConstructors":true
+},
+{
+  "name":"javafx.stage.PopupWindow"
+},
+{
+  "name":"javafx.stage.Stage"
+},
+{
+  "name":"javafx.stage.Window"
+},
+{
+  "name":"javax.management.ObjectName"
+},
+{
+  "name":"javax.security.auth.x500.X500Principal",
+  "fields":[{"name":"thisX500Name"}],
+  "methods":[{"name":"<init>","parameterTypes":["sun.security.x509.X500Name"] }]
+},
+{
+  "name":"javax.smartcardio.CardPermission"
+},
+{
+  "name":"javax.swing.JFrame",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"javax.swing.plaf.basic.BasicPanelUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"javax.swing.plaf.metal.MetalRootPaneUI",
+  "methods":[{"name":"createUI","parameterTypes":["javax.swing.JComponent"] }]
+},
+{
+  "name":"javax.ws.rs.core.NoContentException",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"javax.ws.rs.ext.Providers",
+  "methods":[{"name":"getContextResolver","parameterTypes":["java.lang.Class","javax.ws.rs.core.MediaType"] }]
+},
+{
+  "name":"jdk.internal.misc.Unsafe"
+},
+{
+  "name":"libcore.io.Memory"
+},
+{
+  "name":"org.apache.commons.logging.LogFactory"
+},
+{
+  "name":"org.apache.commons.logging.impl.Jdk14Logger",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.String"] }, {"name":"setLogFactory","parameterTypes":["org.apache.commons.logging.LogFactory"] }]
+},
+{
+  "name":"org.apache.commons.logging.impl.Log4JLogger"
+},
+{
+  "name":"org.apache.commons.logging.impl.LogFactoryImpl",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.commons.logging.impl.WeakHashtable",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.apache.log4j.LogManager"
+},
+{
+  "name":"org.apache.logging.log4j.Logger"
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.COMPOSITE$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.DH$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.DSA$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.DSTU4145$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.EC$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.ECGOST$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.EdEC$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.ElGamal$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.GM$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.GOST$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.IES$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.RSA$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.asymmetric.X509$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.Blake2b$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.Blake2s$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.DSTU7564$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.GOST3411$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.Haraka$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.Keccak$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.MD2$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.MD4$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.MD5$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.RIPEMD128$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.RIPEMD160$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.RIPEMD256$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.RIPEMD320$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.SHA1$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.SHA224$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.SHA256$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.SHA3$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.SHA384$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.SHA512$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.SM3$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.Skein$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.Tiger$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.digest.Whirlpool$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.drbg.DRBG$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.keystore.BC$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.keystore.BCFKS$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.keystore.PKCS12$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.AES$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.ARC4$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.ARIA$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Blowfish$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.CAST5$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.CAST6$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Camellia$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.ChaCha$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.DES$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.DESede$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.DSTU7624$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.GOST28147$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.GOST3412_2015$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Grain128$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Grainv1$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.HC128$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.HC256$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.IDEA$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Noekeon$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.OpenSSLPBKDF$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF1$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.PBEPBKDF2$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.PBEPKCS12$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Poly1305$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.RC2$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.RC5$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.RC6$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Rijndael$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.SCRYPT$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.SEED$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.SM4$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Salsa20$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Serpent$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Shacal2$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.SipHash$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.SipHash128$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Skipjack$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.TEA$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.TLSKDF$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Threefish$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Twofish$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.VMPC$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.VMPCKSA3$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.XSalsa20$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.XTEA$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.jcajce.provider.symmetric.Zuc$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.pqc.jcajce.provider.LMS$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.pqc.jcajce.provider.McEliece$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.pqc.jcajce.provider.NH$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.pqc.jcajce.provider.QTESLA$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.pqc.jcajce.provider.Rainbow$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.pqc.jcajce.provider.SPHINCS$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.bouncycastle.pqc.jcajce.provider.XMSS$Mappings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.eclipse.jetty.util.ModuleLocation",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.eclipse.jetty.util.log.Slf4jLog",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.eclipse.microprofile.config.spi.ConfigSource"
+},
+{
+  "name":"org.jboss.logmanager.LogManager"
+},
+{
+  "name":"org.jboss.resteasy.client.jaxrs.ClientHttpEngineBuilder43"
+},
+{
+  "name":"org.jboss.resteasy.client.jaxrs.i18n.Messages_$bundle",
+  "fields":[{"name":"INSTANCE"}]
+},
+{
+  "name":"org.jboss.resteasy.client.jaxrs.i18n.Messages_$bundle_es"
+},
+{
+  "name":"org.jboss.resteasy.client.jaxrs.i18n.Messages_$bundle_es_CL"
+},
+{
+  "name":"org.jboss.resteasy.client.jaxrs.internal.CompletionStageRxInvokerProvider"
+},
+{
+  "name":"org.jboss.resteasy.plugins.interceptors.CacheControlFeature",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.interceptors.encoding.ClientContentEncodingAnnotationFeature",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.interceptors.encoding.MessageSanitizerContainerResponseFilter"
+},
+{
+  "name":"org.jboss.resteasy.plugins.interceptors.encoding.ServerContentEncodingAnnotationFeature",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.AbstractEntityProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.ByteArrayProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.CompletionStageProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.DataSourceProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.DefaultBooleanWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.DefaultNumberWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.DefaultTextPlain",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.DocumentProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":["org.jboss.resteasy.spi.ResteasyConfiguration"] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.FileProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.FileRangeWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.FormUrlEncodedProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.IIOImageProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.InputStreamProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.JaxrsFormProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.ReactiveStreamProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.ReaderProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.SourceProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.StreamingOutputProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.StringTextStar",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jackson.PatchMethodFilter"
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jackson.ResteasyJackson2Provider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jackson.UnrecognizedPropertyExceptionHandler",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.AbstractJAXBContextFinder",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.AbstractJAXBProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.CollectionProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.JAXBElementProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.JAXBXmlRootElementProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.JAXBXmlSeeAlsoProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.JAXBXmlTypeProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.MapProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.XmlJAXBContextFinder",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.i18n.LogMessages_$logger",
+  "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.i18n.LogMessages_$logger_es"
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.jaxb.i18n.LogMessages_$logger_es_CL"
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.AbstractMultipartFormDataWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.AbstractMultipartRelatedWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.AbstractMultipartWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.ListMultipartReader",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.ListMultipartWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MapMultipartFormDataReader",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MapMultipartFormDataWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MimeMultipartProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartFormAnnotationReader",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartFormAnnotationWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataReader",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartFormDataWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartReader",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartRelatedReader",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartRelatedWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.MultipartWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.XopWithMultipartRelatedReader",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.multipart.XopWithMultipartRelatedWriter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.sse.SseEventProvider",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.jboss.resteasy.plugins.providers.sse.SseEventSinkInterceptor"
+},
+{
+  "name":"org.jboss.resteasy.resteasy_jaxrs.i18n.LogMessages_$logger",
+  "methods":[{"name":"<init>","parameterTypes":["org.jboss.logging.Logger"] }]
+},
+{
+  "name":"org.jboss.resteasy.resteasy_jaxrs.i18n.LogMessages_$logger_es"
+},
+{
+  "name":"org.jboss.resteasy.resteasy_jaxrs.i18n.LogMessages_$logger_es_CL"
+},
+{
+  "name":"org.jboss.resteasy.resteasy_jaxrs.i18n.Messages_$bundle",
+  "fields":[{"name":"INSTANCE"}]
+},
+{
+  "name":"org.jboss.resteasy.resteasy_jaxrs.i18n.Messages_$bundle_es"
+},
+{
+  "name":"org.jboss.resteasy.resteasy_jaxrs.i18n.Messages_$bundle_es_CL"
+},
+{
+  "name":"org.keycloak.Token",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.BasicAuthFilter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.BearerAuthFilter",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.GroupResource",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.GroupsResource",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.RealmResource",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.RealmsResource",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.RoleMappingResource",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.UserResource",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.resource.UsersResource",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.admin.client.token.TokenService",
+  "queryAllPublicMethods":true
+},
+{
+  "name":"org.keycloak.common.util.MultivaluedHashMap",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.json.StringListMapDeserializer",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.keycloak.json.StringOrArrayDeserializer",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.keycloak.representations.AccessToken",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setRealmAccess","parameterTypes":["org.keycloak.representations.AccessToken$Access"] }, {"name":"setResourceAccess","parameterTypes":["java.util.Map"] }, {"name":"setScope","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.keycloak.representations.AccessToken$Access",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"org.keycloak.representations.AccessToken$Authorization",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.AccessToken$CertConf",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.AccessTokenResponse",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setExpiresIn","parameterTypes":["long"] }, {"name":"setNotBeforePolicy","parameterTypes":["int"] }, {"name":"setRefreshExpiresIn","parameterTypes":["long"] }, {"name":"setRefreshToken","parameterTypes":["java.lang.String"] }, {"name":"setScope","parameterTypes":["java.lang.String"] }, {"name":"setSessionState","parameterTypes":["java.lang.String"] }, {"name":"setToken","parameterTypes":["java.lang.String"] }, {"name":"setTokenType","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.keycloak.representations.AddressClaimSet",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.IDToken",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"setAcr","parameterTypes":["java.lang.String"] }, {"name":"setEmail","parameterTypes":["java.lang.String"] }, {"name":"setEmailVerified","parameterTypes":["java.lang.Boolean"] }, {"name":"setFamilyName","parameterTypes":["java.lang.String"] }, {"name":"setGivenName","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }, {"name":"setPreferredUsername","parameterTypes":["java.lang.String"] }, {"name":"setSessionState","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.keycloak.representations.JsonWebToken",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "methods":[{"name":"setSubject","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.keycloak.representations.idm.ClientMappingsRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.idm.CredentialRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.idm.FederatedIdentityRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.idm.GroupRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAccess","parameterTypes":["java.util.Map"] }, {"name":"setAttributes","parameterTypes":["java.util.Map"] }, {"name":"setClientRoles","parameterTypes":["java.util.Map"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }, {"name":"setPath","parameterTypes":["java.lang.String"] }, {"name":"setRealmRoles","parameterTypes":["java.util.List"] }, {"name":"setSubGroups","parameterTypes":["java.util.List"] }]
+},
+{
+  "name":"org.keycloak.representations.idm.MappingsRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setRealmMappings","parameterTypes":["java.util.List"] }]
+},
+{
+  "name":"org.keycloak.representations.idm.RoleRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setClientRole","parameterTypes":["java.lang.Boolean"] }, {"name":"setComposite","parameterTypes":["boolean"] }, {"name":"setContainerId","parameterTypes":["java.lang.String"] }, {"name":"setDescription","parameterTypes":["java.lang.String"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setName","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.keycloak.representations.idm.RoleRepresentation$Composites",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.idm.SocialLinkRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.idm.UserConsentRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.keycloak.representations.idm.UserRepresentation",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"setAccess","parameterTypes":["java.util.Map"] }, {"name":"setAttributes","parameterTypes":["java.util.Map"] }, {"name":"setCreatedTimestamp","parameterTypes":["java.lang.Long"] }, {"name":"setDisableableCredentialTypes","parameterTypes":["java.util.Set"] }, {"name":"setEmail","parameterTypes":["java.lang.String"] }, {"name":"setEmailVerified","parameterTypes":["java.lang.Boolean"] }, {"name":"setEnabled","parameterTypes":["java.lang.Boolean"] }, {"name":"setFirstName","parameterTypes":["java.lang.String"] }, {"name":"setId","parameterTypes":["java.lang.String"] }, {"name":"setLastName","parameterTypes":["java.lang.String"] }, {"name":"setNotBefore","parameterTypes":["java.lang.Integer"] }, {"name":"setRequiredActions","parameterTypes":["java.util.List"] }, {"name":"setTotp","parameterTypes":["java.lang.Boolean"] }, {"name":"setUsername","parameterTypes":["java.lang.String"] }]
+},
+{
+  "name":"org.keycloak.representations.idm.authorization.Permission",
+  "allDeclaredFields":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllDeclaredConstructors":true
+},
+{
+  "name":"org.robolectric.Robolectric"
+},
+{
+  "name":"org.slf4j.spi.LocationAwareLogger",
+  "queryAllDeclaredMethods":true
+},
+{
+  "name":"scala.Boolean"
+},
+{
+  "name":"scala.Int"
+},
+{
+  "name":"scala.Long"
+},
+{
+  "name":"sun.awt.Symbol",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.awt.Win32FontManager",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.awt.windows.WingDings",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.java2d.marlin.DMarlinRenderingEngine",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.misc.Unsafe",
+  "allDeclaredFields":true,
+  "methods":[{"name":"arrayBaseOffset","parameterTypes":["java.lang.Class"] }, {"name":"arrayIndexScale","parameterTypes":["java.lang.Class"] }, {"name":"copyMemory","parameterTypes":["long","long","long"] }, {"name":"copyMemory","parameterTypes":["java.lang.Object","long","java.lang.Object","long","long"] }, {"name":"getBoolean","parameterTypes":["java.lang.Object","long"] }, {"name":"getByte","parameterTypes":["long"] }, {"name":"getByte","parameterTypes":["java.lang.Object","long"] }, {"name":"getDouble","parameterTypes":["java.lang.Object","long"] }, {"name":"getFloat","parameterTypes":["java.lang.Object","long"] }, {"name":"getInt","parameterTypes":["long"] }, {"name":"getInt","parameterTypes":["java.lang.Object","long"] }, {"name":"getLong","parameterTypes":["long"] }, {"name":"getLong","parameterTypes":["java.lang.Object","long"] }, {"name":"getObject","parameterTypes":["java.lang.Object","long"] }, {"name":"objectFieldOffset","parameterTypes":["java.lang.reflect.Field"] }, {"name":"putBoolean","parameterTypes":["java.lang.Object","long","boolean"] }, {"name":"putByte","parameterTypes":["long","byte"] }, {"name":"putByte","parameterTypes":["java.lang.Object","long","byte"] }, {"name":"putDouble","parameterTypes":["java.lang.Object","long","double"] }, {"name":"putFloat","parameterTypes":["java.lang.Object","long","float"] }, {"name":"putInt","parameterTypes":["long","int"] }, {"name":"putInt","parameterTypes":["java.lang.Object","long","int"] }, {"name":"putLong","parameterTypes":["long","long"] }, {"name":"putLong","parameterTypes":["java.lang.Object","long","long"] }, {"name":"putObject","parameterTypes":["java.lang.Object","long","java.lang.Object"] }]
+},
+{
+  "name":"sun.reflect.Reflection"
+},
+{
+  "name":"sun.security.pkcs12.PKCS12KeyStore",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.pkcs12.PKCS12KeyStore$DualFormatPKCS12",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.DRBG",
+  "methods":[{"name":"<init>","parameterTypes":["java.security.SecureRandomParameters"] }]
+},
+{
+  "name":"sun.security.provider.DSA$SHA1withDSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.DSA$SHA224withDSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.DSA$SHA256withDSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.DSAKeyFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.DSAParameters",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.JavaKeyStore$DualFormatJKS",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.JavaKeyStore$JKS",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.MD5",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA2$SHA224",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA2$SHA256",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA5$SHA384",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.SHA5$SHA512",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.X509Factory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.provider.certpath.PKIXCertPathValidator",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.PSSParameters",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.RSAKeyFactory$Legacy",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.RSAPSSSignature",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.RSASignature$SHA1withRSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.RSASignature$SHA224withRSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.rsa.RSASignature$SHA256withRSA",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ssl.KeyManagerFactoryImpl$SunX509",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ssl.SSLContextImpl$DefaultSSLContext",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ssl.SSLContextImpl$TLSContext",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.ssl.TrustManagerFactoryImpl$PKIXFactory",
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"sun.security.util.ObjectIdentifier"
+},
+{
+  "name":"sun.security.x509.AuthorityInfoAccessExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.AuthorityKeyIdentifierExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.BasicConstraintsExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.CRLDistributionPointsExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.CertificateExtensions"
+},
+{
+  "name":"sun.security.x509.CertificatePoliciesExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.ExtendedKeyUsageExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.IssuerAlternativeNameExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.KeyUsageExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.NetscapeCertTypeExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.PrivateKeyUsageExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.SubjectAlternativeNameExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"sun.security.x509.SubjectKeyIdentifierExtension",
+  "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+}
+]

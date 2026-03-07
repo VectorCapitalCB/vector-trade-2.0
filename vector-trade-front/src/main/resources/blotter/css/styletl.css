@@ -1,0 +1,510 @@
+
+.notification {
+    -background-color: rgba(15, 15, 15, 0.8);
+    -foreground-color: white;
+    -icon-color: white;
+}
+
+.notification .body {
+    -fx-background-color: -background-color;
+    -fx-background-radius: 5;
+    -fx-effect: innershadow(two-pass-box, rgb(43, 83, 87), 5.0, 0.25, 0, 0);
+}
+
+.notification .title {
+    -fx-font-size: 1.083333em;
+    -fx-font-weight: bold;
+    -fx-text-fill: -foreground-color;
+}
+
+.notification .message {
+    -fx-font-size: 1.0em;
+    -fx-content-display: left;
+    -fx-graphic-text-gap: 10;
+    -fx-text-fill: -foreground-color;
+}
+
+.vc {
+    -fx-background-color: #101817;
+    -fx-text-fill: white;
+    -fx-alignment: center;
+    -fx-border-color: #faaf3b;
+
+}
+
+.table-view.scroll-inverted {
+    -fx-padding: 0 0 0 14px;
+}
+
+.table-view.scroll-inverted .scroll-bar:vertical {
+    -fx-translate-x: -100%;
+    -fx-padding: 0;
+    -fx-background-color: transparent;
+}
+
+
+
+
+.downloadExcel {
+    -fx-background-color: linear-gradient(to bottom, #4F6228 0%, #9BBB59 100%),
+    radial-gradient(center 50% 50%, radius 100%, rgba(255, 255, 255, 0.9), #9BBB59);
+    -fx-background-insets: 0, 1;
+    -fx-padding: 5.0 10.0 5.0 10.0;
+    -fx-alignment: CENTER;
+    -fx-content-display: LEFT;
+    -fx-text-fill: #000000; /* Color de texto negro */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0, 0, 0);
+    -fx-border-color: linear-gradient(to bottom, rgba(255, 255, 255, 0.8), #4F6228); /* Borde con gradiente verde oscuro */
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+}
+
+.downloadExcel:pressed {
+    -fx-background-color: linear-gradient(to bottom, #3E5120 0%, #6C8E4B 100%), /* Gradiente más oscuro para el clic */ radial-gradient(center 50% 50%, radius 100%, rgba(255, 255, 255, 0.8), #6C8E4B); /* Gradiente radial más oscuro */
+    -fx-background-insets: 0, 1;
+    -fx-padding: 5.0 10.0 5.0 10.0;
+    -fx-alignment: CENTER;
+    -fx-content-display: LEFT;
+    -fx-text-fill: #000000; /* Color de texto negro */
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.6), 8, 0, 0, 0); /* Efecto de sombra ligeramente diferente */
+    -fx-border-color: linear-gradient(to bottom, rgba(255, 255, 255, 0.7), #3E5120); /* Borde con gradiente más oscuro */
+    -fx-border-width: 1;
+    -fx-border-radius: 5;
+}
+
+.table-row-cell.row-success {
+    -fx-background-color: green;
+    -fx-text-fill: white;
+}
+
+.table-row-cell.row-info {
+    -fx-background-color: blue;
+    -fx-text-fill: white;
+}
+
+.table-row-cell.row-error, .table-row-cell.row-fatal {
+    -fx-background-color: red;
+    -fx-text-fill: white;
+}
+
+.table-row-cell.row-warn {
+    -fx-background-color: orange;
+    -fx-text-fill: black;
+}
+
+.root {
+    -fx-base: #000101;
+    -fx-background: #101817;
+}
+
+.tab-label {
+    -fx-font-weight: bold;
+}
+
+.bold-label {
+    -fx-font-weight: bold;
+}
+
+.button {
+    -fx-font-weight: bold;
+}
+
+.table-view {
+    -fx-background-color: #707474;
+}
+
+.table-cell {
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+}
+
+
+#tableviewWithoutHead .column-header-background {
+    visibility: hidden;
+    -fx-max-height: 0;
+    -fx-pref-height: 0;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #101817;
+    -fx-text-fill: #ffffff;
+}
+
+.table-row-cell:even {
+    -fx-background-color: #181a21;
+    -fx-text-fill: #e6e6e6;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #72a1a1;
+    -fx-text-fill: #ffffff;
+}
+
+.table-row-cell:row-selection {
+    -fx-background-color: #181a21;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.buyOrder:hover {
+    -fx-background-color: linear-gradient(to bottom, rgba(0, 117, 2, 0.6), rgba(0, 117, 2, 0.8));
+}
+
+.buyOrder:pressed {
+    -fx-background-color: linear-gradient(to bottom, rgba(0, 117, 2, 0.8), rgba(0, 117, 2, 1));
+}
+
+.sellOrder:hover {
+    -fx-background-color: linear-gradient(to bottom, rgba(255, 0, 0, 0.6), rgba(255, 0, 0, 0.8));
+}
+
+.sellOrder:pressed {
+    -fx-background-color: linear-gradient(to bottom, rgba(255, 0, 0, 0.8), rgba(255, 0, 0, 1));
+}
+
+.label-bid-green {
+    -fx-background-color: linear-gradient(to bottom, #3d3b3b, #232222);
+    -fx-text-fill: #18fc00;
+}
+
+.label-ask-red {
+    -fx-background-color: linear-gradient(to bottom, #3d3b3b, #232222);
+    -fx-text-fill: #e50606;
+}
+
+.label-last {
+    -fx-background-color: linear-gradient(to bottom, #3d3b3b, #232222);
+    -fx-text-fill: #f3f0f0;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #232222;
+    -fx-text-fill: #ffffff;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: linear-gradient(to right, #2ba8e0, #faaf3b, #EC1B24FF,);
+
+    -fx-text-fill: #707474; /* Color del texto para la pestaña seleccionada */
+    -fx-font-weight: bold;
+}
+
+.buyOrder {
+    -fx-text-fill: #23a126;
+}
+
+.buyOrder:hover {
+    -fx-background-color: linear-gradient(to bottom, #24c664 0%, #3e5413 100%),
+    radial-gradient(center 50% 50%, radius 100%, rgb(36, 196, 100), #3e5413);
+    -fx-text-fill: #161a1f;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0, 0, 0);
+}
+
+.sellOrder {
+    -fx-text-fill: #de292c;
+}
+
+.sellOrder:hover {
+    -fx-background-color: linear-gradient(to bottom, #3A3A3A 0%, #202020 100%),
+    radial-gradient(center 10% 10%, radius 100%, rgba(255, 255, 255, 0.9), #DF0101);
+    -fx-text-fill: #161a1f;
+    -fx-effect: dropshadow(gaussian, rgba(0, 0, 0, 0.7), 10, 0, 0, 0);
+}
+
+.grid-pane {
+    -fx-background-color: #2b2b2b;
+    -fx-padding: 10px;
+}
+
+.combo-box {
+    -fx-background-color: #fdfdfe;
+}
+
+.combo-box .list-cell {
+    -fx-text-fill: #161a1f;
+    -fx-font-weight: bold;
+}
+
+.form-pane .button {
+    -fx-font-weight: bold;
+}
+
+.form-pane .vbox-button {
+    -fx-alignment: CENTER;
+    -fx-spacing: 5;
+    -fx-padding: 10px;
+}
+
+.black-hbox {
+    -fx-background-color: #181a21;
+}
+
+.white-background {
+    -fx-control-inner-background: #ffffff;
+    -fx-text-fill: #000000;
+}
+
+#myCheckBox {
+    -fx-background-color: #f0f0f0;
+    -fx-border-color: #ccc;
+    -fx-border-radius: 5;
+    -fx-padding: 10px;
+}
+
+.check-box .box {
+    -fx-border-color: #707474;
+}
+
+.check-box:selected .mark {
+    -fx-background-color: #09C000;
+}
+
+#btnAceptar {
+    -fx-background-color: #4CAF50;
+}
+
+#btnCancelar {
+    -fx-background-color: #f44336;
+}
+
+#acceptButton {
+    -fx-background-color: #4CAF50;
+}
+
+#cancelButton {
+    -fx-background-color: #f44336;
+}
+
+#titelpanelLauncher {
+    -fx-border-width: 0;
+}
+
+.split-pane:vertical > .split-pane-divider {
+    -fx-background-color: #2b3178;
+    -fx-pref-width: 1px;
+}
+
+.btn-ingresar-style {
+    -fx-background-color: linear-gradient(#2b3178, #0073e6);
+}
+
+.btn-ingresar-style:hover {
+    -fx-background-color: linear-gradient(#4CAF50, #81C784);
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(#f8ac3b, #f8ac3b);
+}
+
+.buyButton {
+    -fx-background-color: #00fd16;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.buyButton:hover {
+    -fx-background-color: #08480b;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.sellButton {
+    -fx-background-color: #F44336;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.sellButton:hover {
+    -fx-background-color: #811e16;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-text-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.btn-replaceOrder-style {
+    -fx-background-color: #29a9e2;
+}
+
+.btn-replaceOrder-style:hover {
+    -fx-background-color: #6cb4c4;
+}
+
+
+.table-row-cell:selected {
+    -fx-background-color: #f9ad3b;
+    -fx-text-fill: #ffffff;
+}
+
+
+.search-icon-label {
+    -fx-background-color: transparent;
+    -fx-alignment: center-right;
+    -fx-translate-x: 100px;
+    -fx-pref-width: 30px;
+    -fx-pref-height: 30px;
+    -fx-layout-x: 230px;
+}
+
+.defaultButton {
+    -fx-background-color: #2b3178;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.buyButton {
+    -fx-background-color: #39c241;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.sellButton {
+    -fx-background-color: #eb1f25;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+
+.replaceButton {
+    -fx-background-color: #3ba7d2;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.replaceButton:hover {
+    -fx-background-color: #2b5357;
+    -fx-text-fill: white;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+    -fx-alignment: center;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+}
+
+.total-available-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: green;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #007f01;
+}
+
+.total-ph-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: orange;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #FFA500;
+}
+
+.total-pm-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: orange;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #FFA500;
+}
+
+.total-operations-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: #6464e5;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #6464e5;
+}
+
+.total-simultaneous-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: b474b4;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #b474b4;
+}
+
+.total-guarantees-field {
+    -fx-background-color: #2b2b2c;
+    -fx-border-color: #fd0016;
+    -fx-border-width: 1px;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #fd0016;
+}
+
+.saldo-box {
+    -fx-background-color: #181a22;
+    -fx-border-color: #2b3178;
+}
+
+#replaceOrder:disabled {
+    -fx-opacity: 0.5;
+    -fx-background-color: grey;
+    -fx-text-fill: white;
+}
+
+.errorStyle {
+    -fx-opacity: 0.5;
+    -fx-background-color: grey;
+    -fx-text-fill: white;
+}
+
+.bestBid {
+    -fx-background-color: #229f26;
+    -fx-text-fill: black;
+}
+
+.bestOffer {
+    -fx-background-color: #c1292a;
+    -fx-text-fill: black;
+}
+
+
+.scroll-bar {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .increment-button,
+.scroll-bar .decrement-button {
+    -fx-background-color: transparent;
+}
+
+.scroll-bar .thumb {
+    -fx-background-color: #f8ac3b;
+}
+
+.scroll-bar .track {
+    -fx-background-color: #1e2029;
+}
+
+.table-view .column-header-background {
+    -fx-background-color: derive(-fx-base, 20%);
+    -fx-padding: 0.0em;
+    -fx-border-color: transparent;
+}

@@ -1,0 +1,23 @@
+{
+  "NUAM": {
+    "host": "10.0.1.9",
+    "port": 8011,
+    "status": "false"
+  },
+  "XSGO": {
+    "host": "localhost",
+    "port": 8011,
+    "status": "false"
+  },
+
+  "IB_SMART": {
+    "host": "10.0.1.9",
+    "port": 8011,
+    "status": "false"
+  },
+  "ALPACA": {
+    "host": "10.0.1.9",
+    "port": 8011,
+    "status": "false"
+  }
+}

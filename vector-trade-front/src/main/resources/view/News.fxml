@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/16"
+            fx:controller="cl.vc.blotter.controller.NewsController">
+    <TableView fx:id="newsTableView" AnchorPane.topAnchor="10" AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10"
+               AnchorPane.bottomAnchor="10">
+        <columns>
+            <TableColumn text="Hora" fx:id="horaColumn" prefWidth="200"></TableColumn>
+            <TableColumn text="Texto" fx:id="textoColumn" prefWidth="200"></TableColumn>
+            <TableColumn text="Line of Text" fx:id="lineoftextColumn" prefWidth="200"></TableColumn>
+            <TableColumn text="Security Exchange" fx:id="securityExchangeColumn" prefWidth="200"></TableColumn>
+        </columns>
+    </TableView>
+</AnchorPane>

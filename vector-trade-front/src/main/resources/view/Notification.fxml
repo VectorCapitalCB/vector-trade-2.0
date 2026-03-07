@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" prefWidth="500"
+            SplitPane.resizableWithParent="false" HBox.hgrow="ALWAYS"
+            xmlns="http://javafx.com/javafx/8.0.112"
+            fx:controller="cl.vc.blotter.controller.NotificationController"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0">
+
+    <children>
+        <TitledPane animated="false" collapsible="false" text="Message Console"
+                    AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                    AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <content>
+                <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                      AnchorPane.topAnchor="0.0">
+
+                    <TableView fx:id="notificationTableView" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                               AnchorPane.rightAnchor="0.0"
+                               AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                        <columns>
+
+                            <TableColumn fx:id="time" sortType="DESCENDING" text="Hour" minWidth="100" maxWidth="100"/>
+
+                            <TableColumn fx:id="action" text="Action" maxWidth="180" minWidth="100">
+                            </TableColumn>
+
+                            <TableColumn fx:id="type" text="Type" maxWidth="150" minWidth="150">
+                            </TableColumn>
+
+                            <TableColumn fx:id="message" text="Message" minWidth="150">
+                            </TableColumn>
+
+
+                            <TableColumn fx:id="title" text="Title" minWidth="100">
+                            </TableColumn>
+
+                            <TableColumn fx:id="comments" text="Comments" minWidth="150">
+                            </TableColumn>
+
+                            <TableColumn fx:id="securityExchange" text="Security Exchange" minWidth="80">
+                            </TableColumn>
+
+                            <TableColumn fx:id="component" text="Component" minWidth="80">
+                            </TableColumn>
+
+                            <TableColumn fx:id="state" text="State" minWidth="80">
+                            </TableColumn>
+
+                        </columns>
+
+                        <columnResizePolicy>
+                            <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+
+                    </TableView>
+                </VBox>
+            </content>
+            <HBox.margin>
+                <Insets bottom="5.0" left="5.0" right="5.0" top="5.0"/>
+            </HBox.margin>
+        </TitledPane>
+    </children>
+</AnchorPane>

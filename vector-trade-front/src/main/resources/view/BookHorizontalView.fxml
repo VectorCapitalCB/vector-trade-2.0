@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+            xmlns="http://javafx.com/javafx/17.0.2-ea"
+            fx:controller="cl.vc.blotter.controller.BookHorizontalController">
+    <children>
+        <HBox>
+            <TableView fx:id="bidViewTable">
+                <columns>
+                    <TableColumn fx:id="quantityBid" text="Cantidad" />
+                    <TableColumn fx:id="priceBid" text="Precio" />
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+            <TableView fx:id="offerViewTable">
+                <columns>
+                    <TableColumn fx:id="priceOffer" text="Precio" />
+                    <TableColumn fx:id="quantityOffer" text="Cantidad"  />
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+        </HBox>
+    </children>
+</AnchorPane>

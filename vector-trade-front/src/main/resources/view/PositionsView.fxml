@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            xmlns="http://javafx.com/javafx/17.0.2-ea"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+            AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+            fx:controller="cl.vc.blotter.controller.PositionsController">
+    <children>
+        <VBox spacing="5" styleClass="black-hbox" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <children>
+                <TabPane fx:id="tabPane" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE"
+                         AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+                         AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <tabs>
+                        <Tab text="Diarias">
+                            <content>
+                                <VBox spacing="2" styleClass="black-hbox" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <HBox spacing="5" minHeight="30" minWidth="500" maxWidth="1000"
+                                              alignment="BASELINE_LEFT">
+                                            <ButtonBar maxHeight="30" prefHeight="30" AnchorPane.rightAnchor="0.0"
+                                                       AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS"
+                                                       VBox.vgrow="ALWAYS">
+                                                <buttons>
+                                                    <Label alignment="BASELINE_RIGHT">Cuenta</Label>
+                                                    <TextField fx:id="accountFilter" promptText="Filtra cuenta…" minWidth="150" prefWidth="150"/>
+                                                    <Label alignment="BASELINE_RIGHT">Destino</Label>
+                                                    <ComboBox fx:id="securityExchangeFilter" minWidth="150"
+                                                              prefWidth="150"/>
+                                                    <Label alignment="BASELINE_RIGHT">Instrumento</Label>
+                                                    <TextField fx:id="symbolFilter" minWidth="150" prefWidth="150"/>
+                                                </buttons>
+                                            </ButtonBar>
+                                        </HBox>
+                                        <TableView fx:id="tablePositions" VBox.vgrow="ALWAYS">
+                                            <columns>
+                                                <TableColumn fx:id="symbol" prefWidth="65.0" text="Instrumento"/>
+                                                <TableColumn fx:id="market" prefWidth="65.0" text="Mercado"/>
+                                                <TableColumn fx:id="account" prefWidth="65.0" text="Cuenta"
+                                                             visible="false"/>
+                                                <TableColumn fx:id="buy" prefWidth="603.0" text="Compra">
+                                                    <columns>
+                                                        <TableColumn fx:id="buySent" visible="false" prefWidth="120.6"
+                                                                     text="Enviadas"/>
+                                                        <TableColumn fx:id="buyWorking" visible="false"
+                                                                     prefWidth="120.6" text="Trabajando"/>
+                                                        <TableColumn fx:id="buyTrade" prefWidth="120.6"
+                                                                     text="Ejecutadas"/>
+                                                        <TableColumn fx:id="buyPx" prefWidth="120.6" text="Precio"/>
+                                                        <TableColumn fx:id="buyCashBought" prefWidth="120.6"
+                                                                     text="Monto"/>
+                                                    </columns>
+                                                </TableColumn>
+                                                <TableColumn fx:id="sell" prefWidth="603.0" text="Venta">
+                                                    <columns>
+                                                        <TableColumn fx:id="sellSent" visible="false" prefWidth="120.6"
+                                                                     text="Enviadas"/>
+                                                        <TableColumn fx:id="sellWorking" visible="false"
+                                                                     prefWidth="120.6" text="Trabajando"/>
+                                                        <TableColumn fx:id="sellTrade" prefWidth="120.6"
+                                                                     text="Ejecutadas"/>
+                                                        <TableColumn fx:id="sellPx" prefWidth="120.6" text="Precio"/>
+                                                        <TableColumn fx:id="sellCash" prefWidth="120.6" text="Monto"/>
+                                                    </columns>
+                                                </TableColumn>
+                                                <TableColumn fx:id="net" prefWidth="603.0" text="NETO">
+                                                    <columns>
+                                                        <TableColumn fx:id="netQty" prefWidth="180.0" text="Cantidad"/>
+                                                        <TableColumn fx:id="netPx" prefWidth="190.1" text="Precio"/>
+                                                        <TableColumn fx:id="netAmount" prefWidth="135.1" text="Monto"/>
+                                                    </columns>
+                                                </TableColumn>
+                                            </columns>
+                                            <columnResizePolicy>
+                                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                            </columnResizePolicy>
+                                        </TableView>
+                                        <TableView fx:id="tvTotals" minHeight="50.0" prefHeight="50.0"
+                                                   VBox.vgrow="ALWAYS">
+                                            <columns>
+                                                <TableColumn fx:id="tcTotal" prefWidth="65.0" text=""/>
+                                                <TableColumn fx:id="tcTotalMarket" prefWidth="65.0"/>
+                                                <TableColumn fx:id="tcTotalBuy" text="Total Buy" prefWidth="120.6"/>
+                                                <TableColumn fx:id="tcTotalSell" prefWidth="120.6" text="Total Sell"/>
+                                                <TableColumn fx:id="tcTotalNet" prefWidth="135.1" text="Total Net"/>
+                                            </columns>
+                                            <padding>
+                                                <Insets right="5.0"/>
+                                            </padding>
+                                            <columnResizePolicy>
+                                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                            </columnResizePolicy>
+                                        </TableView>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </Tab>
+                        <Tab text="Históricas">
+                            <content>
+                                <VBox spacing="10" styleClass="black-hbox" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                    <children>
+                                        <AnchorPane VBox.vgrow="ALWAYS">
+                                            <fx:include fx:id="positionHistoricalView"
+                                                        source="PositionHistoricalView.fxml"
+                                                        AnchorPane.topAnchor="0.0"
+                                                        AnchorPane.rightAnchor="0.0"
+                                                        AnchorPane.bottomAnchor="0.0"
+                                                        AnchorPane.leftAnchor="0.0"/>
+                                        </AnchorPane>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </Tab>
+                        <Tab text="Saldo">
+                            <content>
+                                <VBox spacing="10" styleClass="black-hbox"
+                                      HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" fillWidth="true">
+                                    <children>
+                                        <AnchorPane VBox.vgrow="ALWAYS">
+                                            <fx:include fx:id="balanceView" source="Balance.fxml"
+                                                        AnchorPane.topAnchor="0.0"
+                                                        AnchorPane.rightAnchor="0.0"
+                                                        AnchorPane.bottomAnchor="0.0"
+                                                        AnchorPane.leftAnchor="0.0"/>
+                                        </AnchorPane>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </Tab>
+                        <Tab text="Simultaneas">
+                            <content>
+                                <VBox spacing="10" styleClass="black-hbox"
+                                      HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" fillWidth="true">
+                                    <children>
+                                        <AnchorPane VBox.vgrow="ALWAYS">
+                                            <fx:include fx:id="simultaneasView" source="PositionSimultaneas.fxml"
+                                                        AnchorPane.topAnchor="0.0"
+                                                        AnchorPane.rightAnchor="0.0"
+                                                        AnchorPane.bottomAnchor="0.0"
+                                                        AnchorPane.leftAnchor="0.0"/>
+                                        </AnchorPane>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </Tab>
+                        <Tab text="Préstamos">
+                            <content>
+                                <VBox spacing="10" styleClass="black-hbox"
+                                      HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" fillWidth="true">
+                                    <children>
+                                        <AnchorPane VBox.vgrow="ALWAYS">
+                                            <fx:include fx:id="prestamosView" source="PrestamosView.fxml"
+                                                        AnchorPane.topAnchor="0.0"
+                                                        AnchorPane.rightAnchor="0.0"
+                                                        AnchorPane.bottomAnchor="0.0"
+                                                        AnchorPane.leftAnchor="0.0"/>
+                                        </AnchorPane>
+                                    </children>
+                                </VBox>
+                            </content>
+                        </Tab>
+                    </tabs>
+                </TabPane>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>
+
+

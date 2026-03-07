@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane fx:id="principal" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+            xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="cl.vc.blotter.controller.DatosdeMercadoControler">
+
+    <children>
+
+        <VBox spacing="10" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+
+            <children>
+
+                <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+                      HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+
+                    <TabPane fx:id="tabPrincipa" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                        <Tab text="Datos del Mercado">
+                            <TabPane fx:id="tpMkData" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                <Tab fx:id="add" closable="false" text="+"/>
+                            </TabPane>
+                        </Tab>
+
+                    </TabPane>
+                </HBox>
+
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

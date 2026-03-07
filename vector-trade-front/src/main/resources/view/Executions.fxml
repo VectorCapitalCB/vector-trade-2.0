@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"  HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+            AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/17.0.2-ea"
+            fx:controller="cl.vc.blotter.controller.ExecutionsController">
+
+    <children>
+        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"  HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+              AnchorPane.topAnchor="0.0">
+            <TableView styleClass="table-execution-style" fx:id="tableExecutionReports" AnchorPane.bottomAnchor="0.0"
+                       AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+                       HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="time" minWidth="80" prefWidth="60" sortType="DESCENDING" text="Fecha Ingreso"/>
+                    <TableColumn fx:id="side" prefWidth="40.0" text="Tipo"/>
+                    <TableColumn fx:id="symbol" prefWidth="100" text="Instrumento"/>
+                    <TableColumn fx:id="settlType" prefWidth="30" text="Condición"/>
+                    <TableColumn fx:id="market" prefWidth="60.0" text="Mercado"/>
+                    <TableColumn fx:id="broker" prefWidth="75" text="Broker" visible="false"/>
+                    <TableColumn fx:id="ordType" prefWidth="75" text="T Orden"/>
+                    <TableColumn fx:id="qty" minWidth="40" prefWidth="100.0" text="Cantidad"/>
+                    <TableColumn fx:id="iceberg" prefWidth="100.0" text="Visible" visible="false"/>
+                    <TableColumn fx:id="px" prefWidth="120.0" text="Precio"/>
+                    <TableColumn fx:id="amount" prefWidth="100.0" text="Monto"/>
+                    <TableColumn fx:id="lastpx" prefWidth="100.0" text="Ult. Precio"/>
+                    <TableColumn fx:id="lastQty" minWidth="40" prefWidth="100.0" text="Ult. Cantidad"/>
+                    <TableColumn fx:id="avgPrice" prefWidth="100.0" text="Precio Promedio"/>
+                    <TableColumn fx:id="execQty" minWidth="40" prefWidth="100.0" text="Cantidad Ejecutada"/>
+                    <TableColumn fx:id="leave" minWidth="40" prefWidth="100.0" text="Cantidad Pendiente"/>
+                    <TableColumn fx:id="tif" prefWidth="50" text="TIF" visible="false"/>
+                    <TableColumn fx:id="handlInst" prefWidth="50" text="HandlInst" visible="false"/>
+                    <TableColumn fx:id="id" prefWidth="50" text="ID" visible="true"/>
+                    <TableColumn fx:id="clOrdID" prefWidth="50" text="ClOrdID" visible="false"/>
+                    <TableColumn fx:id="orderID" prefWidth="50" text="OrderID" visible="false"/>
+                    <TableColumn fx:id="execID" prefWidth="50" text="ExecID" visible="false"/>
+                    <TableColumn fx:id="execType" prefWidth="50" text="Tipo de Ejecución" visible="false"/>
+                    <TableColumn fx:id="status" prefWidth="80" text="Estado"/>
+                    <TableColumn fx:id="text" prefWidth="100" text="Motivo"/>
+                    <TableColumn fx:id="account" prefWidth="85.0" text="Cuenta"/>
+                    <TableColumn fx:id="username" prefWidth="70" text="Usuario" visible="false"/>
+                    <TableColumn fx:id="basket" prefWidth="70" text="Basket" visible="false"/>
+                    <TableColumn fx:id="spread" prefWidth="70" text="Spread" visible="false"/>
+                    <TableColumn fx:id="limit" prefWidth="70" text="Limit" visible="true"/>
+                    <TableColumn fx:id="strategy" prefWidth="70" text="Strategy" visible="false"/>
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+
+
+            <Separator fx:id="separator" managed="false" visible="false" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"/>
+
+            <TableView fx:id="totalGrid" managed="false" minHeight="47" prefHeight="47" visible="false"
+                       AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                       AnchorPane.topAnchor="0.0" VBox.vgrow="ALWAYS">
+                <columns>
+                    <TableColumn fx:id="totTime" minWidth="80" prefWidth="120"/>
+                    <TableColumn fx:id="totSide"/>
+                    <TableColumn fx:id="totSym"/>
+                    <TableColumn fx:id="totMarket"/>
+                    <TableColumn fx:id="totBroker"/>
+                    <TableColumn fx:id="totOrdType"/>
+                    <TableColumn fx:id="totAgreement"/>
+                    <TableColumn fx:id="totVolume" minWidth="40"/>
+                    <TableColumn fx:id="totIceberg"/>
+                    <TableColumn fx:id="totPrice"/>
+                    <TableColumn fx:id="totAmount"/>
+                    <TableColumn fx:id="totPrice2"/>
+                    <TableColumn fx:id="totLastPx"/>
+                    <TableColumn fx:id="totLastQty" minWidth="40"/>
+                    <TableColumn fx:id="totAvgPx"/>
+                    <TableColumn fx:id="totExecQty" minWidth="40"/>
+                    <TableColumn fx:id="totLeavesQty" minWidth="40"/>
+                    <TableColumn fx:id="totNotWorking"/>
+                    <TableColumn fx:id="totSettlType"/>
+                    <TableColumn fx:id="totTIF"/>
+                    <TableColumn fx:id="totExpTime"/>
+                    <TableColumn fx:id="totHandlInst"/>
+                    <TableColumn fx:id="totClOrdID"/>
+                    <TableColumn fx:id="totOrderID"/>
+                    <TableColumn fx:id="totExecID"/>
+                    <TableColumn fx:id="totStatus"/>
+                    <TableColumn fx:id="totText"/>
+                    <TableColumn fx:id="totAccount"/>
+                    <TableColumn fx:id="totOperator"/>
+                    <TableColumn fx:id="totInternal"/>
+                    <TableColumn fx:id="totBasket"/>
+                </columns>
+                <columnResizePolicy>
+                    <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                </columnResizePolicy>
+            </TableView>
+        </VBox>
+    </children>
+</AnchorPane>

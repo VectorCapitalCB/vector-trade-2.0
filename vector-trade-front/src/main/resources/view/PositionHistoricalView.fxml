@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns="http://javafx.com/javafx/17.0.2-ea"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="cl.vc.blotter.controller.PositionHistoricalController"
+            AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+
+    <children>
+        <BorderPane AnchorPane.topAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                    AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0">
+
+            <!-- TOP: filtros -->
+            <top>
+                <HBox spacing="5" minHeight="30" minWidth="500" maxWidth="Infinity" BorderPane.alignment="CENTER_LEFT">
+                    <children>
+                        <ButtonBar maxHeight="30" prefHeight="30">
+                            <buttons>
+                                <Label alignment="BASELINE_RIGHT">Cuenta</Label>
+                                <TextField fx:id="accountFilter" promptText="Filtra cuenta…" minWidth="150" prefWidth="150"/>
+                                <Label alignment="BASELINE_RIGHT">Instrumento</Label>
+                                <TextField fx:id="symbolFilter" minWidth="150" prefWidth="150"/>
+                                <Label alignment="BASELINE_RIGHT" visible="false" managed="false">Destino</Label>
+                                <ComboBox fx:id="securityExchangeFilter" minWidth="150" prefWidth="150" visible="false" managed="false"/>
+                            </buttons>
+                        </ButtonBar>
+                    </children>
+                </HBox>
+            </top>
+
+            <!-- CENTER: la tabla ocupa todo lo restante (se estira) -->
+            <center>
+                <TableView fx:id="tableView">
+                    <columns>
+                        <TableColumn fx:id="accountColumn" text="Cuenta" prefWidth="100"/>
+                        <TableColumn fx:id="instrumentColumn" text="Instrumento" prefWidth="100"/>
+                        <TableColumn fx:id="availableQuantityColumn" text="Cantidad Disponible" prefWidth="150"/>
+                        <TableColumn fx:id="phColumn" text="PH" prefWidth="100" visible="false"  />
+                        <TableColumn fx:id="pmColumn" text="PM" prefWidth="100" visible="false" />
+                        <TableColumn fx:id="averagePurchasePriceColumn" text="Precio Promedio Compra" prefWidth="150" visible="false" />
+                        <TableColumn fx:id="purchaseAmountColumn" text="Monto Compra" prefWidth="150" visible="false" />
+                        <TableColumn fx:id="marketPriceColumn" text="Precio Mercado" prefWidth="120"/>
+                        <TableColumn fx:id="marketValueColumn" text="Valor Mercado" prefWidth="120" visible="false" />
+                        <TableColumn fx:id="priceVariationColumn" text="Var. Precio %" prefWidth="100" visible="false" />
+                        <TableColumn fx:id="qtygarantia" text="Qty Garantia" prefWidth="100"/>
+                        <TableColumn fx:id="qtyplazo" text="Qty Plazo" prefWidth="100"/>
+                        <TableColumn fx:id="simultaneousColumn" text="Simultanea" prefWidth="100"/>
+                        <TableColumn fx:id="guaranteeColumn" text="Garantía" prefWidth="100"/>
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                </TableView>
+            </center>
+
+            <!-- BOTTOM: resumen (oculto y no ocupa espacio) -->
+            <bottom>
+                <TitledPane text="Resumen" collapsible="false" visible="false" managed="false">
+                    <content>
+                        <HBox spacing="10" alignment="CENTER" visible="false" managed="false">
+                            <children>
+                                <Label text="Total Disponible:" visible="false" managed="false"/>
+                                <TextField fx:id="totalAvailableField" editable="false" visible="false" managed="false"/>
+
+                                <Label text="Total PH:" visible="false" managed="false"/>
+                                <TextField fx:id="totalPhField" editable="false" visible="false" managed="false"/>
+
+                                <Label text="Total PM:" visible="false" managed="false"/>
+                                <TextField fx:id="totalPmField" editable="false" visible="false" managed="false"/>
+
+                                <Label text="Total Operaciones:" visible="false" managed="false"/>
+                                <TextField fx:id="totalOperationsField" editable="false" visible="false" managed="false"/>
+
+                                <Label text="Total Simultaneas:" visible="false" managed="false"/>
+                                <TextField fx:id="totalSimultaneousField" editable="false" visible="false" managed="false"/>
+
+                                <Label text="Total Garantías:" visible="false" managed="false"/>
+                                <TextField fx:id="totalGuaranteesField" editable="false" visible="false" managed="false"/>
+                            </children>
+                        </HBox>
+                    </content>
+                </TitledPane>
+            </bottom>
+
+        </BorderPane>
+    </children>
+</AnchorPane>

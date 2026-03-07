@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.chart.*?>
+
+<AnchorPane prefHeight="577.0" prefWidth="1700.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cl.vc.blotter.controller.StadisticsController">
+
+
+    <VBox spacing="20.0" styleClass="main-container" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <Label styleClass="section-title" text="Resumen de Mercado" />
+
+        <FlowPane hgap="20" vgap="20" prefWrapLength="1600" styleClass="kpi-wrap">
+            <!-- Volumen Total -->
+            <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
+                <Label text="Volumen Total" styleClass="data-label"/>
+                <Label fx:id="totalVolume" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Monto Total -->
+            <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
+                <Label text="Monto Total" styleClass="data-label"/>
+                <Label fx:id="montoTotal" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Capitalización Total -->
+            <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
+                <Label text="Capitalización Total" styleClass="data-label"/>
+                <Label fx:id="totalMarketCap" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Tendencia General -->
+            <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
+                <Label text="Tendencia General" styleClass="data-label"/>
+                <Label fx:id="marketTrendLabel" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Volatilidad Promedio -->
+            <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
+                <Label text="Volatilidad Promedio" styleClass="data-label"/>
+                <Label fx:id="avgVolatilityLabel" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Sentimiento Positivo -->
+            <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
+                <Label text="Sentimiento Positivo" styleClass="data-label"/>
+                <Label fx:id="positiveSentimentLabel" styleClass="positive"/>
+            </VBox>
+
+            <!-- Sentimiento Negativo -->
+            <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
+                <Label text="Sentimiento Negativo" styleClass="data-label"/>
+                <Label fx:id="negativeSentimentLabel" styleClass="negative"/>
+            </VBox>
+
+            <!-- Rango Promedio -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Rango Promedio" styleClass="data-label"/>
+                <Label fx:id="lblRangoPromedio" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Índice Promedio -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Índice Promedio" styleClass="data-label"/>
+                <Label fx:id="lblIndicePromedio" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Índice Máximo -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Índice Máximo" styleClass="data-label"/>
+                <Label fx:id="lblIndiceMaximo" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Índice Mínimo -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Índice Mínimo" styleClass="data-label"/>
+                <Label fx:id="lblIndiceMinimo" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Liquidez Media -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Liquidez Media" styleClass="data-label"/>
+                <Label fx:id="lblLiquidezMedia" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Nº Total Trades -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Nº Total Trades" styleClass="data-label"/>
+                <Label fx:id="lblNumeroTotalTrades" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Cap. Promedio -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Cap. Promedio" styleClass="data-label"/>
+                <Label fx:id="lblCapitalizacionPromedio" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Precio Prom. Acum. -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Precio Prom. Acum." styleClass="data-label"/>
+                <Label fx:id="lblPrecioPromedioAcumulado" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Precio Máx. Acum. -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Precio Máx. Acum." styleClass="data-label"/>
+                <Label fx:id="lblPrecioMaximoAcumulado" styleClass="data-value"/>
+            </VBox>
+
+            <!-- Tendencia Promedio -->
+            <VBox alignment="CENTER" spacing="6.0" styleClass="rect-box">
+                <Label text="Tendencia Promedio" styleClass="data-label"/>
+                <Label fx:id="lblTendenciaPromedio" styleClass="data-value"/>
+            </VBox>
+        </FlowPane>
+
+        <HBox spacing="30.0" styleClass="section-header" AnchorPane.topAnchor="20.0">
+            <Label styleClass="section-title" text="Ranking de Mercado" />
+        </HBox>
+
+        <HBox spacing="20.0" styleClass="data-summary" AnchorPane.topAnchor="20.0">
+            <!-- Filtro por "Vista" -->
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="Indicadores" />
+                    <ComboBox fx:id="filterCombo" prefWidth="220" promptText="Selecciona un filtro" />
+                </VBox>
+
+
+            <!-- Filtro por Liquidación -->
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="Liquidación" />
+                    <ComboBox fx:id="cmbSettlType" prefWidth="220" promptText="Selecciona Liquidación" />
+                </VBox>
+
+
+            <!-- Filtro por Mercado -->
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="Mercado" />
+                    <ComboBox fx:id="cmbSecurityExchange" prefWidth="220" promptText="Selecciona Mercado" />
+                </VBox>
+
+        </HBox>
+
+        <HBox spacing="20.0" HBox.hgrow="ALWAYS" VBox.vgrow="NEVER">
+            <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                <Label text="Evolución Mercado" styleClass="section-title"/>
+                <LineChart fx:id="marketOverviewChart" createSymbols="false" animated="false" minHeight="240" prefHeight="240">
+                    <xAxis>
+                        <CategoryAxis label="Métrica"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="Valor"/>
+                    </yAxis>
+                </LineChart>
+            </VBox>
+            <VBox spacing="8.0" HBox.hgrow="ALWAYS">
+                <Label text="Top Volumen" styleClass="section-title"/>
+                <BarChart fx:id="topVolumeChart" animated="false" categoryGap="12" barGap="3" minHeight="240" prefHeight="240">
+                    <xAxis>
+                        <CategoryAxis label="Símbolo"/>
+                    </xAxis>
+                    <yAxis>
+                        <NumberAxis label="Volumen"/>
+                    </yAxis>
+                </BarChart>
+            </VBox>
+        </HBox>
+
+
+        <TableView fx:id="rankinSymbolTable" AnchorPane.bottomAnchor="0.0 " AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="colSymbol" prefWidth="200" styleClass="table-column" text="Instrumento" />
+                <TableColumn fx:id="colPrecioUltimo" prefWidth="160" styleClass="table-column" text="Precio" />
+                <TableColumn fx:id="colVariacionPct" prefWidth="120" styleClass="table-column" text="24h %" />
+                <TableColumn fx:id="colVolumen" prefWidth="160" styleClass="table-column" text="Volumen" />
+                <TableColumn fx:id="colMonto" prefWidth="200" styleClass="table-column" text="Cap. Mercado" />
+                <TableColumn fx:id="colLiquid" prefWidth="200" styleClass="table-column" text="Liquidación" />
+            </columns>
+        </TableView>
+    </VBox>
+</AnchorPane>

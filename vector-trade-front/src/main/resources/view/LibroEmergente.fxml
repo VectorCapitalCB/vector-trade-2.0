@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            xmlns="http://javafx.com/javafx"
+            fx:controller="cl.vc.blotter.controller.LibroEmergenteController"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+            AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+            VBox.vgrow="ALWAYS"
+            HBox.hgrow="ALWAYS"
+            prefHeight="435" prefWidth="330">
+
+    <children>
+
+        <HBox spacing="10" maxHeight="350" maxWidth="700" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+              VBox.vgrow="ALWAYS"
+              HBox.hgrow="ALWAYS">
+
+            <VBox spacing="10" HBox.hgrow="ALWAYS">
+                <padding>
+                    <Insets top="10" right="10" bottom="10" left="10"/>
+                </padding>
+                <TextField fx:id="ticket" prefWidth="200"/>
+                <HBox spacing="10">
+                    <ChoiceBox fx:id="cbMarket" prefWidth="100"/>
+                    <ChoiceBox fx:id="settlType" prefWidth="100"/>
+                    <ChoiceBox fx:id="securityType" prefWidth="100"/>
+                    <Button fx:id="BTNSubscribebook" onAction="#subscribeSymbol" prefHeight="20" prefWidth="110"
+                            text="Suscribir" styleClass="BTNSubscribebook"/>
+                </HBox>
+
+                <VBox>
+
+                    <HBox spacing="3" alignment="CENTER">
+
+                        <VBox alignment="CENTER">
+                            <Label text="Previo" styleClass="text-field-custom-label"/>
+                            <Label fx:id="previusClose" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                        <VBox alignment="CENTER">
+                            <Label text="Último" styleClass="text-field-custom-label"/>
+                            <Label fx:id="closepriceGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                        <VBox alignment="CENTER">
+                            <Label text="V.%" styleClass="text-field-custom-label"/>
+                            <Label fx:id="imbalanceGen" prefWidth="30" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                        <VBox alignment="CENTER">
+                            <Label text="Vol" styleClass="text-field-custom-label"/>
+                            <Label fx:id="volumeGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                        <VBox alignment="CENTER">
+                            <Label text="Mayor" styleClass="text-field-custom-label"/>
+                            <Label fx:id="highpriceGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                        <VBox alignment="CENTER">
+                            <Label text="Medio" styleClass="text-field-custom-label"/>
+                            <Label fx:id="medioGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                        <VBox alignment="CENTER">
+                            <Label text="Menor" styleClass="text-field-custom-label"/>
+                            <Label fx:id="lowpriceGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                        </VBox>
+                    </HBox>
+
+                </VBox>
+
+                <HBox spacing="10" VBox.vgrow="ALWAYS">
+                    <VBox HBox.hgrow="ALWAYS">
+
+                        <TableView fx:id="bidViewTable" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="quantityBid" text="Cantidad" minWidth="50" prefWidth="100"
+                                             maxWidth="200"/>
+                                <TableColumn fx:id="priceBid" text="Precio" minWidth="50" prefWidth="100"
+                                             maxWidth="200"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+                    </VBox>
+                    <VBox HBox.hgrow="ALWAYS">
+                        <TableView fx:id="offerViewTable" VBox.vgrow="ALWAYS">
+                            <columns>
+                                <TableColumn fx:id="priceOffer" text="Precio" minWidth="50" prefWidth="100"
+                                             maxWidth="200"/>
+                                <TableColumn fx:id="quantityOffer" text="Cantidad" minWidth="50" prefWidth="100"
+                                             maxWidth="200"/>
+                            </columns>
+                            <columnResizePolicy>
+                                <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                            </columnResizePolicy>
+                        </TableView>
+                    </VBox>
+                </HBox>
+
+            </VBox>
+
+        </HBox>
+    </children>
+</AnchorPane>

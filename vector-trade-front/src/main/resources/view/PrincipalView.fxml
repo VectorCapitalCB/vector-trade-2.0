@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane fx:id="principal" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+            xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cl.vc.blotter.controller.PrincipalController">
+
+    <children>
+        <VBox spacing="10" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <children>
+                <SplitPane fx:id="splid" dividerPositions="0.40" orientation="VERTICAL" styleClass="wide-divider" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                    <items>
+                        <VBox spacing="10" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                <TabPane fx:id="TabPaneLanzador" prefHeight="183.0" prefWidth="695">
+                                    <tabs>
+                                        <Tab fx:id="tabLanzador" closable="false" text="Lanzador de Ordenes">
+                                            <fx:include fx:id="lanzador" source="Lanzador.fxml" />
+                                        </Tab>
+                                    </tabs>
+                                </TabPane>
+
+                                <TabPane fx:id="tabPaneBook" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" >
+                                    <tabs>
+                                        <Tab fx:id="tabBook" closable="false" text="Libros">
+                                            <graphic>
+                                                <HBox spacing="6" styleClass="launch-wrap hint-host">
+                                                    <Button onAction="#abrirBoook" text="↗" styleClass="launch-btn"/>
+                                                </HBox>
+                                            </graphic>
+                                            <HBox alignment="CENTER" spacing="10" AnchorPane.bottomAnchor="0.0"
+                                                  AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+                                                  HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                                <fx:include fx:id="tableViewBookH" managed="false" source="BookHorizontalView.fxml" visible="false" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
+                                                <fx:include fx:id="tableViewBookV" managed="true" source="BookVerticalView.fxml" visible="true" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" />
+                                                <padding>
+                                                    <Insets right="7.0" />
+                                                </padding>
+                                            </HBox>
+                                        </Tab>
+                                    </tabs>
+                                </TabPane>
+
+                                <TabPane fx:id="TabPaneTrade" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <tabs>
+                                        <Tab fx:id="tabTrade" text="Trade">
+                                            <graphic>
+                                                <HBox spacing="6" styleClass="launch-wrap hint-host">
+                                                    <Button onAction="#abrirTradeMKD" text="↗" styleClass="launch-btn"/>
+                                                </HBox>
+                                            </graphic>
+                                            <fx:include fx:id="trade" source="TradeMkd.fxml" />
+                                        </Tab>
+                                    </tabs>
+                                    <padding>
+                                        <Insets right="5.0" />
+                                    </padding>
+                                </TabPane>
+                                <TabPane fx:id="tabPaneTradeGeneral" tabClosingPolicy="UNAVAILABLE" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                    <tabs>
+                                        <Tab fx:id="tabGenerales" text="Trade General">
+                                            <graphic>
+                                                <HBox spacing="6" styleClass="launch-wrap hint-host">
+                                                    <Button onAction="#abrirTradeGeneral" text="↗" styleClass="launch-btn"/>
+                                                </HBox>
+                                            </graphic>
+                                            <fx:include fx:id="tradeGenerales" source="TradeGenerales.fxml" />
+                                        </Tab>
+                                        <Tab fx:id="tabPreDigitadas" closable="false" text="Pre-Digitados">
+                                            <fx:include fx:id="preselectOrders" source="PreDigitadosView.fxml"/>
+                                        </Tab>
+                                    </tabs>
+                                </TabPane>
+                            </HBox>
+                        </VBox>
+
+                        <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <TabPane fx:id="tabPrincipa" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                <Tab text="Datos del Mercado">
+                                    <graphic>
+                                        <HBox spacing="6" styleClass="launch-wrap hint-host">
+                                            <Button onAction="#datosMercadoFlotante" text="↗" styleClass="launch-btn"/>
+                                        </HBox>
+                                    </graphic>
+                                    <TabPane fx:id="tpMkData" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                        <Tab fx:id="add" closable="false" text="+" />
+                                    </TabPane>
+                                </Tab>
+                                <Tab text="Ruteo">
+                                    <fx:include fx:id="routingView" source="RoutingView.fxml" />
+                                </Tab>
+                                <Tab text="Posiciones" >
+                                    <fx:include fx:id="positionsView" source="PositionsView.fxml" />
+                                </Tab>
+                            </TabPane>
+                        </HBox>
+                    </items>
+                </SplitPane>
+
+                <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <fx:include fx:id="footer" source="Footer.fxml" />
+                </HBox>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

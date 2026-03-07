@@ -1,0 +1,56 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+
+<?import java.lang.*?>
+<?import java.util.*?>
+<?import javafx.scene.*?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.image.ImageView?>
+<?import javafx.scene.image.Image?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+           xmlns="http://javafx.com/javafx/17.0.2-ea" fx:controller="cl.vc.blotter.controller.FooterController">
+
+    <children>
+        <ToolBar AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <items>
+                <Button fx:id="modo" mnemonicParsing="false" onAction="#toggleDayNightMode"/>
+                <Button fx:id="sound" onAction="#handleImageClick" text="Sonido"/>
+                <Button fx:id="notifications" onAction="#handleImageNotification" text="Notificaciones"/>
+
+                <Button fx:id="changePassword" onAction="#changePasswords" text="Configuraciones"/>
+                <Button fx:id="btnNotification" onAction="#actionNotification" text="Consola"/>
+                <Button fx:id="news" nodeOrientation="LEFT_TO_RIGHT" onAction="#readNews" text="Noticias"/>
+                <Button fx:id="btnChat" onAction="#openChatView" text="Chat"/>
+                <Button fx:id="btnCandles" onAction="#openCandleView" text="Velas"/>
+                <Button fx:id="btnConnections" onAction="#readConnections" text="Estado Conexion"/>
+                <Button fx:id="btnMarketStats" onAction="#openMarketStats" visible="false" managed="false" text="Estadisticas"/>
+                <Button fx:id="btnAdminUser" onAction="#btnAdminUser" text="Adm. Usuarios"/>
+                <Label fx:id="lblServiceConn" text="SERVICE: OFF" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
+                <Label fx:id="lblCandleConn" text="CANDLE: OFF" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
+                <Label fx:id="lblChatConn" text="CHAT: OFF" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
+                <Region prefHeight="35.0" prefWidth="6.0"/>
+                <ImageView fitHeight="35" fitWidth="35">
+                    <image>
+                        <Image url="@../blotter/img/user.png"/>
+                    </image>
+                </ImageView>
+                <Label fx:id="lbUser"/>
+                <ImageView fx:id="enviroment"
+                           style="-fx-text-fill: gold; -fx-font-weight: bold; -fx-font-size: 12;">
+                    <fitWidth>35</fitWidth>
+                    <fitHeight>35</fitHeight>
+                </ImageView>
+                <Label fx:id="lbEnviroment" prefHeight="18.0" prefWidth="160.0"
+                       style="-fx-text-fill: gold; -fx-font-weight: bold; -fx-font-size: 12;"/>
+                <Label id="lblBid" fx:id="lblBid" prefHeight="50.0" styleClass="label-bid-green" text="0"/>
+                <Label id="lblAsk" fx:id="lblAsk" prefHeight="50.0" styleClass="label-ask-red" text="0"/>
+                <Label id="lblLast" fx:id="lblLast" prefHeight="50.0" text="0" textFill="WHITE"/>
+                <Button fx:id="reconnect" onAction="#reconnect" text="Reconectar"/>
+            </items>
+        </ToolBar>
+    </children>
+</AnchorPane>

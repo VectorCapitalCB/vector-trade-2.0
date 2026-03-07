@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration debug="false">
+
+    <!-- Consola -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>[%date{ISO8601}] [%level] [%logger:%L] [%thread] - %msg {%mdc}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Archivo diario (1) -->
+    <appender name="TIME_BASED_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${user.home}/vc/VectorTrade/logs/vector-trade.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${user.home}/vc/VectorTrade/logs/vector-trade.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>[%date{ISO8601}] [%level] [%logger:%L] [%thread] - %msg {%mdc}%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Archivo diario (2) opcional -->
+    <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${user.home}/vc/VectorTrade/logs/vector-trade-2.log</file>
+        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+            <fileNamePattern>${user.home}/vc/VectorTrade/logs/vector-trade-2.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <maxHistory>30</maxHistory>
+        </rollingPolicy>
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Reduce el ruido y evita el NPE en toString() de Jetty -->
+    <logger name="org.eclipse.jetty" level="WARN"/>
+    <logger name="org.eclipse.jetty.util.component" level="WARN"/>
+
+    <!-- Otros ajustes -->
+    <logger name="org.hibernate" level="WARN"/>
+    <!-- (Opcional) más detalle para tus paquetes -->
+    <!-- <logger name="cl.vc" level="DEBUG" additivity="false">
+         <appender-ref ref="CONSOLE"/>
+         <appender-ref ref="TIME_BASED_FILE"/>
+       </logger> -->
+
+    <!-- ÚNICO root -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="TIME_BASED_FILE"/>
+        <appender-ref ref="ROLLING"/>
+    </root>
+
+</configuration>

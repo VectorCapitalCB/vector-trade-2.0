@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+            xmlns="http://javafx.com/javafx/17.0.2-ea"
+            fx:controller="cl.vc.blotter.controller.BookVerticalController">
+    <children>
+        <SplitPane fx:id="bookSplit" orientation="VERTICAL" dividerPositions="0.5" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <items>
+
+                <TableView fx:id="offerViewTable" maxWidth="Infinity" maxHeight="Infinity"
+                           AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+                           HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" rotate="180" style="-fx-scale-x: -1;">
+                    <columns>
+                        <TableColumn fx:id="priceOffer"/>
+                        <TableColumn fx:id="quantityOffer"/>
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                </TableView>
+
+                <TableView fx:id="bidViewTable"
+                           AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+                           HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <columns>
+                        <TableColumn fx:id="priceBid"/>
+                        <TableColumn fx:id="quantityBid"/>
+                    </columns>
+                    <columnResizePolicy>
+                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
+                    </columnResizePolicy>
+                </TableView>
+            </items>
+        </SplitPane>
+
+    </children>
+</AnchorPane>

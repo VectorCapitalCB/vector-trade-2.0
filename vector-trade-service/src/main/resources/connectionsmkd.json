@@ -1,0 +1,28 @@
+{
+  "BCS": {
+    "host": "10.0.1.9",
+    "port": 8050,
+    "status": "false"
+  },
+  "FH_IBKR": {
+    "host": "10.0.1.9",
+    "port": 8004,
+    "status": "false"
+  },
+  "ALPACA_MKD": {
+    "host": "10.0.1.9",
+    "port": 8050,
+    "status": "false"
+  },
+  "DATATEC_XBCL": {
+    "host": "10.0.1.9",
+    "port": 8050,
+    "status": "false"
+  },
+  "NUAM_MKD": {
+    "host": "10.0.1.9",
+    "port": 8050,
+    "status": "false"
+  }
+
+}

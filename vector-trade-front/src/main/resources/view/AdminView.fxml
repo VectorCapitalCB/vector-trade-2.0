@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="adminView" prefHeight="450" prefWidth="1200"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+            AnchorPane.topAnchor="0.0" xmlns="http://javafx.com/javafx/21"
+            fx:controller="cl.vc.blotter.controller.AdminController">
+
+    <children>
+        <VBox fx:id="vboxAdmind" prefHeight="450.0" prefWidth="1200.0" spacing="10" AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS">
+            <children>
+                <TabPane fx:id="tabPrincipalAdmin" prefHeight="450.0" prefWidth="1220.0" tabClosingPolicy="UNAVAILABLE"
+                         AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                         AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                    <tabs>
+                        <Tab fx:id="marginTab" text="Users">
+                            <VBox spacing="8.0">
+                                <HBox maxHeight="30" spacing="10" VBox.vgrow="ALWAYS">
+                                    <Label text="Filter"/>
+                                    <TextField fx:id="filter" maxWidth="134.0" prefHeight="25.0" prefWidth="95.0"/>
+                                    <Button onAction="#addUsername" text="ADD User"/>
+
+                                    <opaqueInsets>
+                                        <Insets left="10.0" right="10.0"/>
+                                    </opaqueInsets>
+                                    <VBox.margin>
+                                        <Insets bottom="10.0"/>
+                                    </VBox.margin>
+                                    <padding>
+                                        <Insets bottom="10.0" left="30.0" top="10.0"/>
+                                    </padding>
+                                </HBox>
+                                <TableView fx:id="users" snapToPixel="false" AnchorPane.bottomAnchor="10"
+                                           AnchorPane.leftAnchor="10" AnchorPane.rightAnchor="10"
+                                           AnchorPane.topAnchor="10" VBox.vgrow="ALWAYS">
+                                    <columns>
+                                        <TableColumn fx:id="id" prefWidth="400.0" text="id"/>
+                                        <TableColumn fx:id="username" prefWidth="70.0" text="Username"/>
+                                        <TableColumn fx:id="email" prefWidth="50.0" text="Email"/>
+                                        <TableColumn fx:id="fname" prefWidth="50.0" text="First Name"/>
+                                        <TableColumn fx:id="lname" prefWidth="50.0" text="Last Name"/>
+                                        <TableColumn fx:id="margin" prefWidth="80.0" text="Margin"/>
+                                        <TableColumn fx:id="phone" prefWidth="80.0" text="Phone"/>
+                                    </columns>
+                                    <columnResizePolicy>
+                                        <TableView fx:constant="CONSTRAINED_RESIZE_POLICY"/>
+                                    </columnResizePolicy>
+                                </TableView>
+                            </VBox>
+                        </Tab>
+                    </tabs>
+                </TabPane>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

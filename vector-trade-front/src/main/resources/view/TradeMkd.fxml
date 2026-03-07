@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1"  AnchorPane.bottomAnchor="0.0"
+            AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
+            xmlns="http://javafx.com/javafx/17.0.2-ea" fx:controller="cl.vc.blotter.controller.TradeMKDController">
+    <children>
+        <TableView fx:id="marketDataTradeTable" maxWidth="Infinity"
+                   AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
+                   HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+            <columns>
+                <TableColumn fx:id="time" sortType="DESCENDING" text="Tiempo"/>
+                <TableColumn fx:id="priceTrade" text="Precio"/>
+                <TableColumn fx:id="qtyTrade" text="Cant."/>
+                <TableColumn fx:id="symboltrades" text="Instru."/>
+                <TableColumn fx:id="buyer" text="Compra"/>
+                <TableColumn fx:id="seller" text="Venta"/>
+                <TableColumn fx:id="idgenerado" text="id" minWidth="150" visible="false"/>
+            </columns>
+        </TableView>
+    </children>
+</AnchorPane>

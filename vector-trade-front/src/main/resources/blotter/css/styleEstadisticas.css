@@ -1,0 +1,94 @@
+/* Fondo oscuro y espaciado en general */
+.main-container {
+    -fx-background-color: #181a21;
+    -fx-padding: 20px;
+    -fx-font-family: "Arial", sans-serif;
+}
+
+/* Títulos de las secciones */
+.section-header {
+    -fx-background-color: #181a21;
+    -fx-padding: 10px;
+    -fx-border-radius: 5px;
+    -fx-alignment: center-left;
+}
+
+.section-title {
+    -fx-text-fill: white;
+    -fx-font-size: 18px;
+    -fx-font-weight: bold;
+}
+
+/* Estilos para los Label de títulos */
+.data-title {
+    -fx-text-fill: #e8eaee;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+/* Estilos para los Label de contenido */
+.data-value {
+    -fx-text-fill: #e8eaee;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-alignment: center;
+}
+
+/* Colores específicos */
+.price {
+    -fx-text-fill: #4ad1c1;
+}
+
+.positive {
+    -fx-text-fill: #00d600;
+    -fx-font-weight: bold;
+}
+
+.negative {
+    -fx-text-fill: #ff4d4d;
+    -fx-font-weight: bold;
+}
+
+/* Hacer la tabla visible sin bordes ni separadores */
+.table-view {
+    -fx-background-color: #161a20; /* Fondo oscuro en la tabla */
+    -fx-border-width: 0; /* Sin bordes */
+    -fx-text-fill: white; /* Color de texto en la tabla */
+}
+
+/* Sin líneas de separación entre celdas */
+.table-view .table-cell {
+    -fx-background-color: #161a20; /* Fondo oscuro en las celdas */
+    -fx-border-width: 0; /* Sin bordes entre las celdas */
+    -fx-alignment: center; /* Centrar el texto en las celdas */
+}
+
+/* Mostrar las columnas correctamente */
+.table-view .column-header {
+    -fx-background-color: #181a21; /* Fondo transparente en el header */
+    -fx-text-fill: white; /* Texto blanco en el encabezado */
+    -fx-alignment: center; /* Centrar el texto en el encabezado */
+}
+
+
+/* Estilo para los contornos rectangulares y contenidos redondeados */
+.rect-box {
+    -fx-background-color: #181a22; /* Fondo oscuro */
+    -fx-padding: 15px;
+    -fx-border-radius: 10px; /* Bordes redondeados */
+    -fx-border-color: #252b31; /* Borde del rectángulo */
+    -fx-border-width: 2px;
+    -fx-pref-width: 200px; /* Ancho fijo para el VBox */
+    -fx-pref-height: 70px; /* Alto fijo para el VBox */
+}
+
+/* Para los Label dentro del rectángulo, hacer que tengan bordes más redondeados */
+.rect-box .data-label {
+    -fx-background-radius: 5px;
+    -fx-padding: 5px;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+

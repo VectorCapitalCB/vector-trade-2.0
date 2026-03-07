@@ -1,0 +1,810 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <groupId>cl.vc.oms</groupId>
+    <artifactId>VectorTrade</artifactId>
+    <version>3.1.7</version>
+    <name>VectorTrade</name>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.release>21</maven.compiler.release>
+        <java.version>21</java.version>
+
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <javafx.version>21.0.6</javafx.version>
+        <charm.version>6.2.3</charm.version>
+        <attach.version>4.0.19</attach.version>
+        <connect.version>2.0.1</connect.version>
+        <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
+        <gluonfx.maven.plugin.version>1.0.27</gluonfx.maven.plugin.version>
+        <main.class>cl.vc.blotter.MainAppRicci</main.class>
+        <app.identifier>${main.class}</app.identifier>
+        <app.description>Vector Trade App</app.description>
+        <package.type/>
+        <mac.app.store/>
+        <!--mac.signing.user.name/-->
+        <bundle.version/>
+        <bundle.short.version/>
+        <version.code/>
+        <provided.keystore.path/>
+        <provided.keystore.password/>
+        <provided.key.alias/>
+        <provided.key.alias.password/>
+    </properties>
+
+    <dependencies>
+
+        <dependency>
+            <groupId>eu.hansolo.enzo</groupId>
+            <artifactId>Enzo</artifactId>
+            <version>0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.gluonhq</groupId>
+            <artifactId>charm-glisten</artifactId>
+            <version>${charm.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.gluonhq.attach</groupId>
+            <artifactId>display</artifactId>
+            <version>${attach.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.gluonhq.attach</groupId>
+            <artifactId>util</artifactId>
+            <version>${attach.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.gluonhq.attach</groupId>
+            <artifactId>lifecycle</artifactId>
+            <version>${attach.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.gluonhq.attach</groupId>
+            <artifactId>statusbar</artifactId>
+            <version>${attach.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.gluonhq.attach</groupId>
+            <artifactId>storage</artifactId>
+            <version>${attach.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.java-websocket</groupId>
+            <artifactId>Java-WebSocket</artifactId>
+            <version>1.6.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>1.18.38</version>
+            <scope>provided</scope>
+        </dependency>
+
+
+        <dependency>
+            <groupId>com.github.VectorCapitalCB</groupId>
+            <artifactId>principal-module</artifactId>
+            <version>1.4.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-all</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler</artifactId>
+                </exclusion>
+                <!--exclusion>
+                    <groupId>ch.qos.logback</groupId>
+                    <artifactId>logback-classic</artifactId>
+                </exclusion-->
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-actor_3</artifactId>
+            <version>2.8.2</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-slf4j_3</artifactId>
+            <version>2.8.2</version>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/dev.mccue/guava -->
+        <dependency>
+            <groupId>dev.mccue</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe</groupId>
+            <artifactId>config</artifactId>
+            <version>1.4.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.0.13</version>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>1.4.14</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.jboss.marshalling</groupId>
+            <artifactId>jboss-marshalling-river</artifactId>
+            <version>2.1.4.SP1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.controlsfx</groupId>
+            <artifactId>controlsfx</artifactId>
+            <version>11.1.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>net.jpountz.lz4</groupId>
+            <artifactId>lz4</artifactId>
+            <version>1.3.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml</groupId>
+            <artifactId>aalto-xml</artifactId>
+            <version>1.1.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.update4j</groupId>
+            <artifactId>update4j</artifactId>
+            <version>1.5.9</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-web</artifactId>
+            <version>${javafx.version}</version>
+
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-media</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty.websocket</groupId>
+            <artifactId>websocket-client</artifactId>
+            <version>9.4.55.v20240627</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-controls</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-fxml</artifactId>
+            <version>${javafx.version}</version>
+
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-base</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-graphics</artifactId>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>javazoom</groupId>
+            <artifactId>jlayer</artifactId>
+            <version>1.0.1</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>2.1.0-alpha1</version>
+        </dependency>
+
+
+        <dependency>
+            <groupId>org.jfree</groupId>
+            <artifactId>org.jfree.chart.fx</artifactId>
+            <version>2.0.2</version>
+        </dependency>
+
+        <!-- Indicadores técnicos -->
+        <dependency>
+            <groupId>org.ta4j</groupId>
+            <artifactId>ta4j-core</artifactId>
+            <version>0.18</version>
+        </dependency>
+
+    </dependencies>
+
+    <repositories>
+        <repository>
+            <id>Gluon</id>
+            <url>https://nexus.gluonhq.com/nexus/content/repositories/releases</url>
+        </repository>
+        <repository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </repository>
+        <repository>
+            <id>snapshot</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </repository>
+        <repository>
+            <id>eclipse-releases</id>
+            <url>https://repo.eclipse.org/content/groups/releases/</url>
+        </repository>
+    </repositories>
+
+
+    <pluginRepositories>
+        <pluginRepository>
+            <id>snapshot</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        </pluginRepository>
+        <pluginRepository>
+            <id>central</id>
+            <url>https://repo.maven.apache.org/maven2</url>
+        </pluginRepository>
+    </pluginRepositories>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.14.0</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <verbose>true</verbose>
+                    <compilerVersion>21</compilerVersion>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.38</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.3.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <mainClass>${main.class}</mainClass>
+                        </manifest>
+                    </archive>
+                    <descriptorRefs>
+                        <descriptorRef>jar-with-dependencies</descriptorRef>
+                    </descriptorRefs>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.openjfx</groupId>
+                <artifactId>javafx-maven-plugin</artifactId>
+                <version>${javafx.maven.plugin.version}</version>
+                <configuration>
+                    <mainClass>${main.class}</mainClass>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>com.gluonhq</groupId>
+                <artifactId>gluonfx-maven-plugin</artifactId>
+                <version>${gluonfx.maven.plugin.version}</version>
+
+                <configuration>
+                    <verbose>true</verbose>
+                    <target>${gluonfx.target}</target>
+                    <attachList>
+                        <list>display</list>
+                        <list>lifecycle</list>
+                        <list>statusbar</list>
+                        <list>storage</list>
+                    </attachList>
+
+                    <!--graalvmHome>${env.GRAALVM_HOME}</graalvmHome-->
+
+                    <linkerArgs>
+                        <arg>-lmanagement_ext</arg>
+                        <arg>management_ext.lib</arg>
+                        <arg>psapi.lib</arg>
+                    </linkerArgs>
+
+                    <!--nativeImageArgs>
+                        <arg>-H:-CheckToolchain</arg>
+                        <arg>-H:+UnlockExperimentalVMOptions</arg>
+                    </nativeImageArgs-->
+
+                    <bundlesList>
+                        <bundle>media</bundle>
+                        <bundle>javafx.web</bundle>
+                    </bundlesList>
+
+                    <reflectionList>
+                        <list>com.sun.media.jfxmediaimpl.MediaUtils</list>
+                        <list>com.sun.media.jfxmediaimpl.NativeMediaManager</list>
+                        <list>com.sun.media.jfxmediaimpl.NativeMediaManager$NativeMediaManagerInitializer</list>
+                        <list>org.jboss.resteasy.client.jaxrs.ResteasyClientBuilder</list>
+                        <list>java.lang.Byte</list>
+                        <list>java.lang.Double</list>
+                        <list>java.lang.Float</list>
+                        <list>java.lang.Integer</list>
+                        <list>java.lang.String</list>
+                        <list>java.lang.Boolean</list>
+                        <list>java.lang.Long</list>
+                        <list>java.lang.Short</list>
+                        <list>org.keycloak.representations.idm.CredentialRepresentation</list>
+                        <list>org.keycloak.representations.idm.UserRepresentation</list>
+                        <list>org.keycloak.admin.client.JacksonProvider</list>
+                        <list>cl.vc.blotter.controller.AddUserController</list>
+                        <list>cl.vc.blotter.controller.AdminController</list>
+                        <list>cl.vc.blotter.controller.BalanceController</list>
+                        <list>cl.vc.blotter.controller.BasketController</list>
+                        <list>cl.vc.blotter.controller.BasketTabController</list>
+                        <list>cl.vc.blotter.controller.BookHorizontalController</list>
+                        <list>cl.vc.blotter.controller.BookVerticalController</list>
+                        <list>cl.vc.blotter.controller.DatosdeMercadoControler</list>
+                        <list>cl.vc.blotter.controller.ExecutionsController</list>
+                        <list>cl.vc.blotter.controller.FooterController</list>
+                        <list>cl.vc.blotter.controller.GraficoController</list>
+                        <list>cl.vc.blotter.controller.LanzadorController</list>
+                        <list>cl.vc.blotter.controller.LibroEmergenteController</list>
+                        <list>cl.vc.blotter.controller.LibroEmergentePrincipalController</list>
+                        <list>cl.vc.blotter.controller.LoginController</list>
+                        <list>cl.vc.blotter.controller.MarketDataPortfolioViewController</list>
+                        <list>cl.vc.blotter.controller.MarketDataViewerController</list>
+                        <list>cl.vc.blotter.controller.NewsController</list>
+                        <list>cl.vc.blotter.controller.NotificationController</list>
+                        <list>cl.vc.blotter.controller.OrderLauncherController</list>
+                        <list>cl.vc.blotter.controller.PositionHistoricalController</list>
+                        <list>cl.vc.blotter.controller.PositionsController</list>
+                        <list>cl.vc.blotter.controller.PositionSimultaneasController</list>
+                        <list>cl.vc.blotter.controller.PreDigitadosController</list>
+                        <list>cl.vc.blotter.controller.PrestamosController</list>
+                        <list>cl.vc.blotter.controller.PrincipalController</list>
+                        <list>cl.vc.blotter.controller.RoutingController</list>
+                        <list>cl.vc.blotter.controller.TradeGeneralesController</list>
+                        <list>cl.vc.blotter.controller.TradeMKDController</list>
+                        <list>cl.vc.blotter.controller.ActiveOrdersController</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Simultaneas</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Balance</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Patrimonio</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Patrimonio$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Balance</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$ValuesPatrimonio</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$SnapshotPositionHistory</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$ValuesPatrimonio$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$UserRolesMaps</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$UserRolesMaps$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$UserRolesMaps$Builder</list>
+                        <list>cl.vc.blotter.adaptor.ParseMessageActor</list>
+                        <list>cl.vc.blotter.utils.BasketsHelper</list>
+                        <list>cl.vc.blotter.utils.BlinkingColoredCell</list>
+                        <list>cl.vc.blotter.utils.Notifier</list>
+                        <list>cl.vc.blotter.utils.OrdersHelper</list>
+                        <list>cl.vc.blotter.utils.TitledBorder</list>
+                        <list>cl.vc.blotter.utils.UsernameObject</list>
+                        <list>javafx.scene.control.Spinner</list>
+
+
+
+                        <list>cl.vc.module.protocolbuff.keycloak.KeycloakService</list>
+                        <list>cl.vc.module.protocolbuff.notification.NotificationMessage$NotificationRequest</list>
+                        <list>cl.vc.module.protocolbuff.notification.NotificationMessage$Notification</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$SnapshotPositions$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Position</list>
+                        <list>cl.vc.module.protocolbuff.notification.NotificationMessage$Level</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$User</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$User$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.UserList</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$UserList$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$StatusUser</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Multibook</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Multibook$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$SubMultibook</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$SubMultibook$Builder</list>
+
+                        <list>javafx.scene.web.WebView</list>
+                        <list>javafx.scene.control.TableView</list>
+                        <list>javafx.scene.control.TableColumn</list>
+                        <list>javafx.scene.control.TreeTableView</list>
+                        <list>javafx.scene.control.TreeTableColumn</list>
+                        <list>javafx.scene.control.ScrollPane</list>
+                        <list>java.io.Serializable</list>
+                        <list>java.util.concurrent.CompletionStage</list>
+                        <list>java.io.File</list>
+                        <list>java.text.SimpleDateFormat</list>
+                        <list>ch.qos.logback.core.ConsoleAppender</list>
+                        <list>ch.qos.logback.core.rolling.RollingFileAppender</list>
+                        <list>ch.qos.logback.core.rolling.TimeBasedRollingPolicy</list>
+                        <list>ch.qos.logback.classic.encoder.PatternLayoutEncoder</list>
+                        <list>ch.qos.logback.core.rolling.helper.DateTokenConverter</list>
+                        <list>ch.qos.logback.classic.pattern.LoggerConverter</list>
+                        <list>ch.qos.logback.classic.pattern.MessageConverter</list>
+                        <list>ch.qos.logback.classic.pattern.LineSeparatorConverter</list>
+                        <list>ch.qos.logback.classic.pattern.MDCConverter</list>
+                        <list>ch.qos.logback.classic.pattern.ThreadConverter</list>
+                        <list>ch.qos.logback.classic.pattern.LineOfCallerConverter</list>
+                        <list>ch.qos.logback.classic.pattern.LevelConverter</list>
+                        <list>ch.qos.logback.classic.pattern.DateConverter</list>
+                        <list>ch.qos.logback.classic.Level</list>
+                        <list>ch.qos.logback.classic.Logger</list>
+                        <list>javafx.scene.layout.VBox</list>
+                        <list>ch.qos.logback.core.subst.NodeToStringTransformer$1</list>
+
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SnapshotNews$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$News</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PortfolioRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$StatusPortfolio</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$News$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PortfolioRequest</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PortfolioResponse</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Statistic$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Portfolio$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Statistic</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Asset$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Security$Builder</list>
+                        <list>cl.vc.module.protocolbuff.notification.NotificationMessage$Component</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Security</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Asset</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PortfolioResponse$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Portfolio</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$SnapshotPositionHistory$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Balance$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PositionHistory</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PositionHistory$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Ohlcv</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SnapshotNews</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Subscribe</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Security</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Unsubscribe</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Trade</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Trade$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$TradeGeneral</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$TradeGeneral$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SnapshotTradeGeneral</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SnapshotTradeGeneral$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Incremental</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$IncrementalBook</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Rejected</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$DataBook</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Ohlcv$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SnapshotNews$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Subscribe$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Security$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Unsubscribe$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Incremental$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$IncrementalBook$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Rejected$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$DataBook$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Snapshot</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Snapshot$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$SnapshotPositions</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$SnapshotPositions</list>
+                        <list>cl.vc.module.protocolbuff.session.SessionsMessage$Ping$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SecurityList$Builder</list>
+                        <list>cl.vc.module.protocolbuff.session.SessionsMessage$Connect$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SecurityList$Builder</list>
+                        <list>cl.vc.module.protocolbuff.session.SessionsMessage$Ping</list>
+                        <list>cl.vc.module.protocolbuff.session.SessionsMessage$Connect</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$SecurityList</list>
+                        <list>cl.vc.module.protocolbuff.session.SessionsMessage$Connect</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage</list>
+                        <list>cl.vc.module.protocolbuff.notification.NotificationMessage</list>
+                        <list>cl.vc.module.protocolbuff.session.SessionsMessage</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage</list>
+                        <list>cl.vc.module.protocolbuff.generalstrategy.GeneralStrategy</list>
+                        <list>cl.vc.module.protocolbuff.basket.BasketMessage</list>
+                        <list>cl.vc.module.protocolbuff.notification.NotificationMessage$Notification$Builder</list>
+                        <list>cl.vc.module.protocolbuff.notification.NotificationMessage$TypeState</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$Order$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$ReplaceCancelExecution$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$TradeExecution$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$StrategyParameters$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderCancelReject$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$NewOrderRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderReplaceRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderCancelRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrdersCancelUnsolicited$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderList$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage</list>
+                        <list>javafx.scene.control.SplitPane</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PreselectRequest</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PreselectRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$Order$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$ReplaceCancelExecution$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$TradeExecution$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$basketOrder$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$StrategyParameters$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderCancelReject$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$NewOrderRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderReplaceRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderCancelRequest$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrdersCancelRequestList$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrdersCancelUnsolicited$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderList$Builder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$Order</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$ReplaceCancelExecution</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$TradeExecution</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$basketOrder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$StrategyParameters</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderCancelReject</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$NewOrderRequest</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderReplaceRequest</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderCancelRequest</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrdersCancelRequestList</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrdersCancelUnsolicited</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderList</list>
+                        <list>cl.vc.blotter.utils.BlinkingColoredCell</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$Side</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$Tif</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$SettlType</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$ExecBroker</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrdType</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$ExecutionType</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$SecurityExchangeRouting</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$SecurityType</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$HandlInst</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$Currency</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$ExStrategy</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$StrategyOrder</list>
+                        <list>cl.vc.module.protocolbuff.routing.RoutingMessage$OrderStatus</list>
+                        <list>com.google.protobuf.Timestamp</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$Depth</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$Position$Builder</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$StatusPreselect</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PreselectResponse</list>
+                        <list>cl.vc.module.protocolbuff.blotter.BlotterMessage$PreselectResponse$Builder</list>
+                        <list>cl.vc.blotter.controller.GraficoController</list>
+
+                        <list>cl.vc.blotter.model.StatisticVO</list>
+                        <list>cl.vc.blotter.model.OrderBookEntry</list>
+                        <list>cl.vc.blotter.model.BookVO</list>
+                        <list>akka.event.Logging$DefaultLogger</list>
+                        <list>javafx.scene.Node</list>
+                        <list>java.lang.Boolean</list>
+                        <list>org.jboss.resteasy.client.jaxrs.i18n.LogMessages</list>
+                        <list>javafx.scene.control.ChoiceBox</list>
+                        <list>com.google.protobuf.Timestamp$Builder</list>
+                        <list>cl.vc.module.protocolbuff.mkd.MarketDataMessage$TypeBook</list>
+                        <list>javafx.scene.web.WebEngine</list>
+                        <list>com.sun.webkit.WebPage</list>
+                        <list>com.sun.webkit.FileSystem</list>
+                        <list>javafx.scene.control.Spinner</list>
+
+                    </reflectionList>
+
+                    <!--nativeImageArgs>
+                        <arg>-Dsvm.platform=org.graalvm.nativeimage.Platform$MACOS_AMD64</arg>
+                        <arg>-H:+UnlockExperimentalVMOptions</arg>
+                    </nativeImageArgs-->
+
+                    <runtimeArgs>
+                        <runtimeArg>-H:+UnlockExperimentalVMOptions</runtimeArg>
+                        <runtimeArg>--report-unsupported-elements-at-runtime</runtimeArg>
+                        <runtimeArg>--verbose</runtimeArg>
+                        <runtimeArg>--add-opens=java.base/java.nio=ALL-UNNAMED</runtimeArg>
+                        <runtimeArg>--add-opens=java.base/jdk.internal.misc=ALL-UNNAMED</runtimeArg>
+                        <runtimeArg>--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED</runtimeArg>
+                        <runtimeArg>--add-opens=java.base/jdk.internal.loader=ALL-UNNAMED</runtimeArg>
+                        <runtimeArg>--add-exports=java.desktop/sun.awt.webkit=ALL-UNNAMED</runtimeArg>
+                        <runtimeArg>--add-exports=javafx.graphics/com.sun.javafx.sg.prism=ALL-UNNAMED</runtimeArg>
+                        <runtimeArg>--initialize-at-build-time=ch.qos.logback,javafx</runtimeArg>
+                        <runtimeArg>--initialize-at-run-time=sun.awt,javafx.scene.web.WebEngine,
+                            javafx.scene.web.WebView,com.sun.webkit.WebPage,com.sun.webkit.FileSystem,com.sun.media.jfxmediaimpl.MediaUtils,
+                            com.sun.media.jfxmediaimpl.NativeMediaManager,com.sun.media.jfxmediaimpl.NativeMediaManager$NativeMediaManagerInitializer</runtimeArg>
+                        <runtimeArg>-H:+ReportExceptionStackTraces</runtimeArg>
+                        <runtimeArg>-Xmx1024m</runtimeArg>
+                        <runtimeArg>-Xms512m</runtimeArg>
+                        <runtimeArg>--gc=G1</runtimeArg>
+                        <runtimeArg>-H:G1RegionSize=2m</runtimeArg>
+                        <runtimeArg>-R:MaxGCPauseMillis=100</runtimeArg>
+                        <runtimeArg>-XX:MaximumHeapSizePercent=75</runtimeArg>
+                        <runtimeArg>-H:+UseLowLatencyGC</runtimeArg>
+                        <runtimeArg>-XX:+DisableExplicitGC</runtimeArg>
+                        <runtimeArg>-Djava.awt.headless=false</runtimeArg>
+                    </runtimeArgs>
+
+
+                    <mainClass>${main.class}</mainClass>
+                    <appIdentifier>${app.identifier}</appIdentifier>
+
+                    <releaseConfiguration>
+                        <vendor>Gluon</vendor>
+                        <description>${app.description}</description>
+                        <packageType>${package.type}</packageType>
+                        <macAppStore>${mac.app.store}</macAppStore>
+                        <bundleShortVersion>${bundle.short.version}</bundleShortVersion>
+                        <bundleVersion>${bundle.version}</bundleVersion>
+                        <versionCode>${version.code}</versionCode>
+                        <providedKeyStorePath>${provided.keystore.path}</providedKeyStorePath>
+                        <providedKeyStorePassword>${provided.keystore.password}</providedKeyStorePassword>
+                        <providedKeyAlias>${provided.key.alias}</providedKeyAlias>
+                        <providedKeyAliasPassword>${provided.key.alias.password}</providedKeyAliasPassword>
+                        <skipSigning>true</skipSigning>
+                    </releaseConfiguration>
+
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+    <profiles>
+
+        <profile>
+            <id>windows</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.gluonhq</groupId>
+                        <artifactId>gluonfx-maven-plugin</artifactId>
+                        <configuration>
+                            <linkerArgs combine.self="override">
+                                <arg>management_ext.lib</arg>
+                                <arg>psapi.lib</arg>
+                            </linkerArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <profile>
+            <id>ricci</id>
+            <activation>
+                <os>
+                    <family>Windows</family>
+                </os>
+            </activation>
+
+            <properties>
+                <gluonfx.target>host</gluonfx.target>
+                <main.class>cl.vc.blotter.MainAppRicci</main.class>
+            </properties>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.gluonhq</groupId>
+                        <artifactId>gluonfx-maven-plugin</artifactId>
+                        <configuration>
+                            <linkerArgs combine.self="override">
+                                <arg>management_ext.lib</arg>
+                                <arg>psapi.lib</arg>
+                            </linkerArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+
+        <profile>
+            <id>web</id>
+            <properties>
+                <gluonfx.target>web</gluonfx.target>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>mac</id>
+            <properties>
+                <package.type>pkg</package.type>
+                <mac.app.store>false</mac.app.store>
+                <bundle.version>${env.GITHUB_RUN_NUMBER}</bundle.version>
+                <bundle.short.version>1.0</bundle.short.version>
+                <gluonfx.target>host</gluonfx.target>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.gluonhq</groupId>
+                        <artifactId>gluonfx-maven-plugin</artifactId>
+                        <configuration>
+                            <linkerArgs combine.self="override">
+                                <arg>-lmanagement_ext</arg>
+                            </linkerArgs>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+
+        <profile>
+            <id>macstore</id>
+            <properties>
+                <package.type>pkg</package.type>
+                <mac.app.store>true</mac.app.store>
+                <bundle.version>1.${env.GITHUB_RUN_NUMBER}</bundle.version>
+                <bundle.short.version>1.6</bundle.short.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>ios</id>
+            <properties>
+                <gluonfx.target>ios</gluonfx.target>
+                <bundle.version>${env.GITHUB_RUN_NUMBER}</bundle.version>
+                <bundle.short.version>1.0</bundle.short.version>
+            </properties>
+        </profile>
+        <profile>
+            <id>android</id>
+            <properties>
+                <gluonfx.target>android</gluonfx.target>
+                <app.identifier>cl.MainApp</app.identifier>
+                <version.code>${env.GITHUB_RUN_NUMBER}</version.code>
+                <provided.keystore.path>${env.GLUON_ANDROID_KEYSTOREPATH}</provided.keystore.path>
+                <provided.keystore.password>${env.GLUON_ANDROID_KEYSTORE_PASSWORD}</provided.keystore.password>
+                <provided.key.alias>${env.GLUON_ANDROID_KEYALIAS}</provided.key.alias>
+                <provided.key.alias.password>${env.GLUON_ANDROID_KEYALIAS_PASSWORD}</provided.key.alias.password>
+            </properties>
+        </profile>
+        <profile>
+            <id>pi</id>
+            <properties>
+                <gluonfx.target>linux-aarch64</gluonfx.target>
+            </properties>
+        </profile>
+    </profiles>
+
+</project>
