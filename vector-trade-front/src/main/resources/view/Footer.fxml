@@ -25,13 +25,13 @@
                 <Button fx:id="btnNotification" onAction="#actionNotification" text="Consola"/>
                 <Button fx:id="news" nodeOrientation="LEFT_TO_RIGHT" onAction="#readNews" text="Noticias"/>
                 <Button fx:id="btnChat" onAction="#openChatView" text="Chat"/>
-                <Button fx:id="btnCandles" onAction="#openCandleView" text="Velas"/>
                 <Button fx:id="btnConnections" onAction="#readConnections" text="Estado Conexion"/>
                 <Button fx:id="btnMarketStats" onAction="#openMarketStats" visible="false" managed="false" text="Estadisticas"/>
                 <Button fx:id="btnAdminUser" onAction="#btnAdminUser" text="Adm. Usuarios"/>
                 <Label fx:id="lblServiceConn" text="SERVICE: OFF" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
                 <Label fx:id="lblCandleConn" text="CANDLE: OFF" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
                 <Label fx:id="lblChatConn" text="CHAT: OFF" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
+                <Label fx:id="lblNewsConn" text="NEWS: OFF" style="-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: #ff5f5f;"/>
                 <Region prefHeight="35.0" prefWidth="6.0"/>
                 <ImageView fitHeight="35" fitWidth="35">
                     <image>

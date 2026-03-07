@@ -72,6 +72,8 @@ public class Repository {
     @Getter
     @Setter
     private static MarketDataMessage.BolsaStats stats;
+    @Getter
+    private static final ObservableList<MarketDataMessage.BolsaStats> bolsaStatsHistory = FXCollections.observableArrayList();
 
     @Getter
     private final static Properties properties = new Properties();
@@ -80,9 +82,12 @@ public class Repository {
     private static final ObservableList<MarketDataMessage.News> news = FXCollections.observableArrayList();
     @Getter
     private static final ObservableList<String> chatMessages = FXCollections.observableArrayList();
+    @Getter
+    private static final ObservableList<NewsItem> newsMessages = FXCollections.observableArrayList();
     private static final BooleanProperty serviceConnected = new SimpleBooleanProperty(false);
     private static final BooleanProperty candleConnected = new SimpleBooleanProperty(false);
     private static final BooleanProperty chatConnected = new SimpleBooleanProperty(false);
+    private static final BooleanProperty newsConnected = new SimpleBooleanProperty(false);
 
     @Getter
     private final static String STYLE = "/blotter/css/style.css";
@@ -120,6 +125,8 @@ public class Repository {
 
     @Getter
     private static final ObservableList<MarketDataMessage.TradeGeneral> tradeGenerales = FXCollections.observableArrayList();
+    @Getter
+    private static final ObservableList<MarketDataMessage.TradeGeneral> candleTradeGenerales = FXCollections.observableArrayList();
 
     @Setter
     @Getter
@@ -196,6 +203,9 @@ public class Repository {
     @Setter
     public static String version;
     @Getter
+    @Setter
+    private static String selectedCandleSymbol;
+    @Getter
     public static List<String> groups = new ArrayList<>();
     @Setter
     @Getter
@@ -232,6 +242,9 @@ public class Repository {
     @Getter
     @Setter
     private static InterfaceTcp chatClientService;
+    @Getter
+    @Setter
+    private static InterfaceTcp newsClientService;
     @Getter
     @Setter
     private static LoginController loginController;
@@ -455,6 +468,33 @@ public class Repository {
         return serviceConnected;
     }
 
+    public static void addBolsaStatsHistory(MarketDataMessage.BolsaStats item) {
+        if (item == null) {
+            return;
+        }
+        javafx.application.Platform.runLater(() -> {
+            boolean exists = bolsaStatsHistory.stream().anyMatch(s -> java.util.Objects.equals(s.getId(), item.getId()));
+            if (!exists) {
+                bolsaStatsHistory.add(item);
+                bolsaStatsHistory.sort(java.util.Comparator.comparing(Repository::extractHistorySortKey));
+                if (bolsaStatsHistory.size() > 2000) {
+                    bolsaStatsHistory.remove(0, bolsaStatsHistory.size() - 2000);
+                }
+            }
+        });
+    }
+
+    private static String extractHistorySortKey(MarketDataMessage.BolsaStats s) {
+        String id = s == null ? "" : s.getId();
+        if (id != null && id.startsWith("hist:")) {
+            String[] parts = id.split(":", 3);
+            if (parts.length == 3) {
+                return parts[2];
+            }
+        }
+        return s == null ? "" : s.getHoraFin();
+    }
+
     public static ReadOnlyBooleanProperty candleConnectedProperty() {
         return candleConnected;
     }
@@ -463,15 +503,79 @@ public class Repository {
         return chatConnected;
     }
 
+    public static ReadOnlyBooleanProperty newsConnectedProperty() {
+        return newsConnected;
+    }
+
     public static void setChannelConnected(String channelName, boolean connected) {
         javafx.application.Platform.runLater(() -> {
             String ch = channelName == null ? "service" : channelName.toLowerCase();
             switch (ch) {
                 case "candle" -> candleConnected.set(connected);
                 case "chat" -> chatConnected.set(connected);
+                case "news" -> newsConnected.set(connected);
                 default -> serviceConnected.set(connected);
             }
         });
+    }
+
+    public static void appendNewsMessage(String message) {
+        appendNewsMessage(message, "", System.currentTimeMillis(), "NORMAL");
+    }
+
+    public static void appendNewsMessage(String message, String url) {
+        appendNewsMessage(message, url, System.currentTimeMillis(), "NORMAL");
+    }
+
+    public static void appendNewsMessage(String message, String url, long publishedAt) {
+        appendNewsMessage(message, url, publishedAt, "NORMAL");
+    }
+
+    public static void appendNewsMessage(String message, String url, long publishedAt, String impact) {
+        if (message == null || message.isBlank()) {
+            return;
+        }
+        javafx.application.Platform.runLater(() -> {
+            newsMessages.add(new NewsItem(
+                    message.trim(),
+                    url == null ? "" : url.trim(),
+                    publishedAt,
+                    impact == null || impact.isBlank() ? "NORMAL" : impact.trim().toUpperCase()
+            ));
+            if (newsMessages.size() > 2000) {
+                newsMessages.remove(0, newsMessages.size() - 2000);
+            }
+        });
+    }
+
+    public static class NewsItem {
+        private final String message;
+        private final String url;
+        private final long publishedAt;
+        private final String impact;
+
+        public NewsItem(String message, String url, long publishedAt, String impact) {
+            this.message = message == null ? "" : message;
+            this.url = url == null ? "" : url;
+            this.publishedAt = publishedAt;
+            this.impact = impact == null ? "NORMAL" : impact;
+        }
+
+        public String getMessage() {
+            return message;
+        }
+
+        public String getUrl() {
+            return url;
+        }
+
+        public long getPublishedAt() {
+            return publishedAt;
+        }
+
+        public String getImpact() {
+            return impact;
+        }
     }
 
 }

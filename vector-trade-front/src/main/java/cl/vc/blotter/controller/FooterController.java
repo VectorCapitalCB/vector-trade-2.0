@@ -17,6 +17,7 @@ import javafx.beans.property.SimpleDoubleProperty;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.geometry.Rectangle2D;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -26,6 +27,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
+import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import lombok.Data;
@@ -84,6 +86,8 @@ public class FooterController {
     private Label lblCandleConn;
     @FXML
     private Label lblChatConn;
+    @FXML
+    private Label lblNewsConn;
     private Double lastBid = null;
     private Double lastAsk = null;
     private Double lastClose = null;
@@ -206,6 +210,7 @@ public class FooterController {
         updateConnectionLabel(lblServiceConn, "SERVICE", Repository.serviceConnectedProperty().get());
         updateConnectionLabel(lblCandleConn, "CANDLE", Repository.candleConnectedProperty().get());
         updateConnectionLabel(lblChatConn, "CHAT", Repository.chatConnectedProperty().get());
+        updateConnectionLabel(lblNewsConn, "NEWS", Repository.newsConnectedProperty().get());
     }
 
     private void updateConnectionLabel(Label label, String name, boolean connected) {
@@ -223,6 +228,8 @@ public class FooterController {
                 updateConnectionLabel(lblCandleConn, "CANDLE", Boolean.TRUE.equals(newV)));
         Repository.chatConnectedProperty().addListener((obs, oldV, newV) ->
                 updateConnectionLabel(lblChatConn, "CHAT", Boolean.TRUE.equals(newV)));
+        Repository.newsConnectedProperty().addListener((obs, oldV, newV) ->
+                updateConnectionLabel(lblNewsConn, "NEWS", Boolean.TRUE.equals(newV)));
     }
 
     @FXML
@@ -466,15 +473,11 @@ public class FooterController {
         }
 
         viewconsole = new Stage();
-        Scene scene = new Scene(mainPane);
+        Scene scene = new Scene(mainPane, 1000, 700);
         applyCurrentStyle(scene);
         viewconsole.setScene(scene);
+        viewconsole.setTitle("Vector Trade News");
         viewconsole.show();
-
-        Platform.runLater(() -> {
-            newsController.getNewsList().addAll(Repository.getNews());
-            newsController.getNewsTableView().refresh();
-        });
     }
 
     @FXML
@@ -502,10 +505,17 @@ public class FooterController {
         FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/view/Candle.fxml"));
         AnchorPane mainPane = loader.load();
         candleStage = new Stage();
-        Scene scene = new Scene(mainPane, 1100, 700);
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        double w = Math.min(1100, Math.max(900, bounds.getWidth() - 40));
+        double h = Math.min(700, Math.max(600, bounds.getHeight() - 40));
+        Scene scene = new Scene(mainPane, w, h);
         applyCurrentStyle(scene);
         candleStage.setScene(scene);
         candleStage.setTitle("Grafico de Velas");
+        candleStage.setMaxWidth(bounds.getWidth());
+        candleStage.setMaxHeight(bounds.getHeight());
+        candleStage.setX(bounds.getMinX() + (bounds.getWidth() - w) / 2);
+        candleStage.setY(bounds.getMinY() + (bounds.getHeight() - h) / 2);
         candleStage.show();
     }
 
@@ -572,6 +582,9 @@ public class FooterController {
             if (LoginController.simpleWebSocketListenerChat != null) {
                 LoginController.simpleWebSocketListenerChat.stopServiceForce();
             }
+            if (LoginController.simpleWebSocketListenerNews != null) {
+                LoginController.simpleWebSocketListenerNews.stopServiceForce();
+            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -610,7 +623,10 @@ public class FooterController {
         Repository.setStatsController(statsController);
 
         statsStage = new Stage();
-        Scene scene = new Scene(root);
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        double w = Math.max(1000, bounds.getWidth() - 40);
+        double h = Math.max(700, bounds.getHeight() - 40);
+        Scene scene = new Scene(root, w, h);
         applyCurrentStyle(scene);
         applyCurrentStyle(scene);
 
@@ -623,6 +639,10 @@ public class FooterController {
         statsStage.setTitle("Estadísticas de Mercado");
         statsStage.getIcons().add(new Image(
                 Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/estadisticas.png"))));
+        statsStage.setMaxWidth(bounds.getWidth());
+        statsStage.setMaxHeight(bounds.getHeight());
+        statsStage.setX(bounds.getMinX() + 20);
+        statsStage.setY(bounds.getMinY() + 20);
 
 
         statsStage.setOnCloseRequest(event -> {

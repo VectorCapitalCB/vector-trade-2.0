@@ -85,12 +85,7 @@ public class ClientActor extends AbstractActor {
     }
 
     private void onBolsaStats(MarketDataMessage.BolsaStats stats) {
-
-        Repository.setStats(stats);
-
-        if(Repository.getStatsController() != null){
-            Repository.getStatsController().add(stats);
-        }
+        // Las estadisticas de mercado se toman exclusivamente del canal candle.
     }
 
     private void onSnapshotSimultaneas(BlotterMessage.SnapshotSimultaneas snapshotSimultaneas) {

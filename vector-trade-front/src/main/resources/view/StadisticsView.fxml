@@ -4,13 +4,14 @@
 <?import javafx.scene.layout.*?>
 <?import javafx.scene.chart.*?>
 
-<AnchorPane prefHeight="577.0" prefWidth="1700.0" xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cl.vc.blotter.controller.StadisticsController">
+<AnchorPane xmlns="http://javafx.com/javafx/11.0.14-internal" xmlns:fx="http://javafx.com/fxml/1" fx:controller="cl.vc.blotter.controller.StadisticsController">
 
-
-    <VBox spacing="20.0" styleClass="main-container" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+    <ScrollPane fitToWidth="true" fitToHeight="true" hbarPolicy="NEVER" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <content>
+            <VBox spacing="20.0" styleClass="main-container">
         <Label styleClass="section-title" text="Resumen de Mercado" />
 
-        <FlowPane hgap="20" vgap="20" prefWrapLength="1600" styleClass="kpi-wrap">
+        <FlowPane fx:id="kpiWrap" hgap="20" vgap="20" styleClass="kpi-wrap">
             <!-- Volumen Total -->
             <VBox alignment="CENTER" spacing="10.0" styleClass="rect-box">
                 <Label text="Volumen Total" styleClass="data-label"/>
@@ -142,6 +143,31 @@
                     <ComboBox fx:id="cmbSecurityExchange" prefWidth="220" promptText="Selecciona Mercado" />
                 </VBox>
 
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="Papel (Velas)" />
+                    <ComboBox fx:id="cmbSymbol" prefWidth="220" promptText="Selecciona Papel" />
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="Temporalidad Stats" />
+                    <Label text="1D (Mongo instrument_stats)" styleClass="data-value"/>
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="Rango Hist." />
+                    <ComboBox fx:id="cmbHistoryRange" prefWidth="220" promptText="Selecciona rango" />
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text="TF Hist." />
+                    <ComboBox fx:id="cmbHistoryTf" prefWidth="220" promptText="Selecciona temporalidad" />
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text=" " />
+                    <Button text="Ver Velas" onAction="#openCandlesForSymbol" prefWidth="220"/>
+                </VBox>
+
         </HBox>
 
         <HBox spacing="20.0" HBox.hgrow="ALWAYS" VBox.vgrow="NEVER">
@@ -170,7 +196,7 @@
         </HBox>
 
 
-        <TableView fx:id="rankinSymbolTable" AnchorPane.bottomAnchor="0.0 " AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <TableView fx:id="rankinSymbolTable" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
             <columns>
                 <TableColumn fx:id="colSymbol" prefWidth="200" styleClass="table-column" text="Instrumento" />
                 <TableColumn fx:id="colPrecioUltimo" prefWidth="160" styleClass="table-column" text="Precio" />
@@ -180,5 +206,7 @@
                 <TableColumn fx:id="colLiquid" prefWidth="200" styleClass="table-column" text="Liquidación" />
             </columns>
         </TableView>
-    </VBox>
+            </VBox>
+        </content>
+    </ScrollPane>
 </AnchorPane>

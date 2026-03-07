@@ -5,10 +5,28 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="23b81911-ab74-4291-905d-2cafed251d36" name="Changes" comment="">
+      <change beforePath="$PROJECT_DIR$/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/CandleMain.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/CandleMain.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleSubscriptions.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleSubscriptions.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleWebSocketEndpoint.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleWebSocketEndpoint.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.ipr" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/ChatController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/ChatController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LoginController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/NewsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/NewsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/ws/SimpleWebSocketListener.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/ws/SimpleWebSocketListener.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.localhost.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.localhost.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/Footer.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/Footer.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/News.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/News.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/StadisticsView.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/StadisticsView.fxml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -178,7 +196,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="34" />
+    <option name="cachedIndexableFilesCount" value="35" />
     <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
   </component>
   <component name="ErrorTreeViewConfiguration">
@@ -383,6 +401,7 @@
       <updated>1772847374590</updated>
       <workItem from="1772847375685" duration="1292000" />
       <workItem from="1772848682268" duration="5722000" />
+      <workItem from="1772856809460" duration="609000" />
     </task>
     <servers />
   </component>

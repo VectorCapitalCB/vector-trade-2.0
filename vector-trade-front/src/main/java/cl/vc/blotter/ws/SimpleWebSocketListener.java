@@ -127,6 +127,8 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
             Repository.setCandleClientService(this);
         } else if ("chat".equals(channelName)) {
             Repository.setChatClientService(this);
+        } else if ("news".equals(channelName)) {
+            Repository.setNewsClientService(this);
         } else {
             Repository.setClientService(this);
         }
@@ -158,6 +160,8 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
                 startChatHeartbeat();
                 sendChatConnectEvent();
                 requestChatSnapshot();
+            } else if ("news".equals(channelName)) {
+                requestNewsSnapshot();
             }
         });
     }
@@ -166,6 +170,10 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
     public void onWebSocketText(String message) {
         if ("chat".equals(channelName)) {
             Repository.appendChatMessage("SERVER: " + message);
+            return;
+        }
+        if ("news".equals(channelName)) {
+            handleNewsMessage(message);
             return;
         }
         log.info("Received STRING [{}]: {}", channelName, message);
@@ -260,6 +268,8 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
                     } else if ("chat".equals(channelName)) {
                         sendChatConnectEvent();
                         requestChatSnapshot();
+                    } else if ("news".equals(channelName)) {
+                        requestNewsSnapshot();
                     }
 
                 } else {
@@ -363,6 +373,8 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
                         } else if ("chat".equals(channelName)) {
                             sendChatConnectEvent();
                             requestChatSnapshot();
+                        } else if ("news".equals(channelName)) {
+                            requestNewsSnapshot();
                         }
 
                         /*
@@ -560,5 +572,67 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
             chatHeartbeatScheduler.shutdownNow();
             chatHeartbeatScheduler = null;
         }
+    }
+
+    private void requestNewsSnapshot() {
+        if (!"news".equals(channelName)) {
+            return;
+        }
+        try {
+            if (getSession() != null && getSession().isOpen()) {
+                JSONObject json = new JSONObject();
+                json.put("type", "snapshot_request");
+                json.put("limit", 300);
+                sendMessage(json.toString());
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo solicitar snapshot de news: {}", e.getMessage());
+        }
+    }
+
+    private void handleNewsMessage(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return;
+        }
+        try {
+            JSONObject obj = new JSONObject(raw);
+            String type = obj.optString("type", "").trim().toLowerCase();
+            if ("snapshot".equals(type)) {
+                var arr = obj.optJSONArray("messages");
+                if (arr != null) {
+                    for (int i = 0; i < arr.length(); i++) {
+                        Object entry = arr.opt(i);
+                        if (entry instanceof JSONObject row) {
+                            String m = row.optString("message", "");
+                            String url = row.optString("url", "");
+                            long publishedAt = row.optLong("publishedAt", System.currentTimeMillis());
+                            String impact = row.optString("impact", "NORMAL");
+                            if (m != null && !m.isBlank()) {
+                                Repository.appendNewsMessage(m, url, publishedAt, impact);
+                            }
+                            continue;
+                        }
+                        String m = arr.optString(i, "");
+                        if (m != null && !m.isBlank()) {
+                            Repository.appendNewsMessage(m, "", System.currentTimeMillis(), "NORMAL");
+                        }
+                    }
+                }
+                return;
+            }
+            if ("news".equals(type) || "news_summary".equals(type)) {
+                String message = obj.optString("message", "");
+                String url = obj.optString("url", "");
+                long publishedAt = obj.optLong("publishedAt", System.currentTimeMillis());
+                String impact = obj.optString("impact", "NORMAL");
+                if (!message.isBlank()) {
+                    Repository.appendNewsMessage(message, url, publishedAt, impact);
+                }
+                return;
+            }
+        } catch (Exception ignored) {
+            // Si no llega JSON valido, igual lo dejamos en el historial.
+        }
+        Repository.appendNewsMessage(raw, "", System.currentTimeMillis(), "NORMAL");
     }
 }

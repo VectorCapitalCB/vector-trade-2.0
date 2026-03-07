@@ -285,11 +285,16 @@
 }
 
 .btn-ingresar-style {
-    -fx-background-color: linear-gradient(#2b3178, #0073e6);
+    -fx-background-color: linear-gradient(to bottom, #2e4a6d, #22344d);
+    -fx-text-fill: #eaf1fc;
+    -fx-border-color: #4b6280;
+    -fx-border-width: 1px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
 }
 
 .btn-ingresar-style:hover {
-    -fx-background-color: linear-gradient(#4CAF50, #81C784);
+    -fx-background-color: linear-gradient(to bottom, #35567d, #29415f);
 }
 
 .button:hover {
@@ -507,4 +512,57 @@
     -fx-background-color: derive(-fx-base, 20%);
     -fx-padding: 0.0em;
     -fx-border-color: transparent;
+}
+#enviromentLoginCombo {
+    -fx-background-color: #21262f;
+    -fx-control-inner-background: #21262f;
+    -fx-border-color: #343d4b;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+#enviromentLoginCombo .list-cell {
+    -fx-text-fill: #eef3fb;
+    -fx-font-weight: bold;
+}
+
+#enviromentLoginCombo .text {
+    -fx-fill: #eef3fb;
+}
+
+#enviromentLoginCombo .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.launcher-pane .combo-box .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+.launcher-pane .combo-box .text {
+    -fx-fill: #eef3fb;
+}
+
+.launcher-pane .combo-box .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.launcher-pane .combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+/* Global ComboBox text color */
+.combo-box .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+.combo-box .text {
+    -fx-fill: #eef3fb;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #eef3fb;
 }

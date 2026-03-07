@@ -1,16 +1,39 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<?import javafx.scene.layout.BorderPane?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.ComboBox?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.FlowPane?>
+<?import javafx.scene.layout.VBox?>
 <?import org.jfree.chart.fx.ChartViewer?>
 
-<?import javafx.scene.layout.AnchorPane?>
 <AnchorPane xmlns="http://javafx.com/javafx/8"
             xmlns:fx="http://javafx.com/fxml/1"
             AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
             AnchorPane.topAnchor="0.0"
             fx:controller="cl.vc.blotter.controller.CandleController">
 
-        <ChartViewer fx:id="chartViewer" prefWidth="1000" prefHeight="600" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
-                     AnchorPane.topAnchor="0.0"/>
+    <VBox spacing="8.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+        <FlowPane hgap="10.0" vgap="6.0" prefWrapLength="1200" style="-fx-padding: 10;">
+            <Label text="Símbolo:"/>
+            <ComboBox fx:id="cmbSymbol" prefWidth="200"/>
+            <Label text="Temporalidad:"/>
+            <ComboBox fx:id="cmbTimeframe" prefWidth="120"/>
+            <Label text="SMA20:"/>
+            <Label fx:id="lblSma20" text="-"/>
+            <Label text="EMA20:"/>
+            <Label fx:id="lblEma20" text="-"/>
+            <Label text="RSI14:"/>
+            <Label fx:id="lblRsi14" text="-"/>
+            <Label text="MACD:"/>
+            <Label fx:id="lblMacd" text="-"/>
+            <Label text="Estado:"/>
+            <Label fx:id="lblDataState" text="SIN DATOS"/>
+            <Label text="Último trade:"/>
+            <Label fx:id="lblLastTradeAt" text="-"/>
+            <Label text="Rango:"/>
+            <Label fx:id="lblTradeRange" text="-"/>
+        </FlowPane>
+        <ChartViewer fx:id="chartViewer" prefWidth="1000" prefHeight="600" VBox.vgrow="ALWAYS"/>
+    </VBox>
 
 </AnchorPane>
-

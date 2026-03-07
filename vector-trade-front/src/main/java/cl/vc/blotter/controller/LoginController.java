@@ -1,7 +1,9 @@
 package cl.vc.blotter.controller;
 
 import akka.routing.RoundRobinPool;
+import akka.actor.ActorRef;
 import cl.vc.blotter.Repository;
+import cl.vc.blotter.adaptor.CandleChannelActor;
 import cl.vc.blotter.adaptor.ClientActor;
 import cl.vc.blotter.utils.EncryptionUtil;
 import cl.vc.blotter.ws.SimpleWebSocketListener;
@@ -53,6 +55,7 @@ public class LoginController {
     public static SimpleWebSocketListener simpleWebSocketListenerService;
     public static SimpleWebSocketListener simpleWebSocketListenerCandle;
     public static SimpleWebSocketListener simpleWebSocketListenerChat;
+    public static SimpleWebSocketListener simpleWebSocketListenerNews;
 
     @FXML
     public TextField txtUsername;
@@ -174,6 +177,8 @@ public class LoginController {
 
             Repository.clientActor
                     = Repository.actorSystem.actorOf(new RoundRobinPool(2).props(ClientActor.props()));
+            ActorRef candleActor =
+                    Repository.actorSystem.actorOf(new RoundRobinPool(1).props(CandleChannelActor.props()));
 
             String credentials = AESEncryption.encrypt(txtUsername.getText())
                     + ":" + AESEncryption.encrypt(password.getText());
@@ -189,8 +194,9 @@ public class LoginController {
             String serviceEndpoint = resolveEndpoint(envKey, "service");
             String candleEndpoint = resolveEndpoint(envKey, "candle");
             String chatEndpoint = resolveEndpoint(envKey, "chat");
+            String newsEndpoint = resolveEndpoint(envKey, "news");
 
-            simpleWebSocketListenerService = connectSocket(serviceEndpoint, encodedCredentials, "service");
+            simpleWebSocketListenerService = connectSocket(serviceEndpoint, encodedCredentials, "service", Repository.clientActor);
             simpleWebSocketListener = simpleWebSocketListenerService; // backward compatibility
 
             if (simpleWebSocketListenerService == null || !simpleWebSocketListenerService.isConnected()) {
@@ -203,7 +209,7 @@ public class LoginController {
 
             Repository.setClientService(simpleWebSocketListenerService);
 
-            simpleWebSocketListenerCandle = connectSocket(candleEndpoint, encodedCredentials, "candle");
+            simpleWebSocketListenerCandle = connectSocket(candleEndpoint, encodedCredentials, "candle", candleActor);
             if (simpleWebSocketListenerCandle != null && simpleWebSocketListenerCandle.isConnected()) {
                 Repository.setCandleClientService(simpleWebSocketListenerCandle);
             } else {
@@ -212,13 +218,22 @@ public class LoginController {
                 log.warn("No se pudo conectar canal candle. endpoint={}", candleEndpoint);
             }
 
-            simpleWebSocketListenerChat = connectSocket(chatEndpoint, encodedCredentials, "chat");
+            simpleWebSocketListenerChat = connectSocket(chatEndpoint, encodedCredentials, "chat", Repository.clientActor);
             if (simpleWebSocketListenerChat != null && simpleWebSocketListenerChat.isConnected()) {
                 Repository.setChatClientService(simpleWebSocketListenerChat);
             } else {
                 Repository.setChatClientService(null);
                 Repository.setChannelConnected("chat", false);
                 log.warn("No se pudo conectar canal chat. endpoint={}", chatEndpoint);
+            }
+
+            simpleWebSocketListenerNews = connectSocket(newsEndpoint, encodedCredentials, "news", Repository.clientActor);
+            if (simpleWebSocketListenerNews != null && simpleWebSocketListenerNews.isConnected()) {
+                Repository.setNewsClientService(simpleWebSocketListenerNews);
+            } else {
+                Repository.setNewsClientService(null);
+                Repository.setChannelConnected("news", false);
+                log.warn("No se pudo conectar canal news. endpoint={}", newsEndpoint);
             }
 
             if (chkGuardarContrasena.isSelected()) {
@@ -276,6 +291,11 @@ public class LoginController {
                     Repository.getProperties().getProperty("chat"),
                     base
             );
+            case "news" -> firstNonBlank(
+                    Repository.getProperties().getProperty(envKey + ".news"),
+                    Repository.getProperties().getProperty("news." + envKey),
+                    Repository.getProperties().getProperty("news")
+            );
             default -> base;
         };
     }
@@ -289,7 +309,7 @@ public class LoginController {
         return null;
     }
 
-    private SimpleWebSocketListener connectSocket(String endpoint, String encodedCredentials, String channelName) {
+    private SimpleWebSocketListener connectSocket(String endpoint, String encodedCredentials, String channelName, ActorRef receiverActor) {
         if (endpoint == null || endpoint.isBlank()) {
             return null;
         }
@@ -311,7 +331,7 @@ public class LoginController {
 
             listener = new SimpleWebSocketListener(
                     client,
-                    Repository.clientActor,
+                    receiverActor,
                     Repository.getActorSystem(),
                     NotificationMessage.Component.VECTOR_TRADE_SERVICES,
                     Repository.username,

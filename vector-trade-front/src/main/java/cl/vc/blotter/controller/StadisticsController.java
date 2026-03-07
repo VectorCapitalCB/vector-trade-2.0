@@ -8,12 +8,27 @@ import javafx.scene.chart.BarChart;
 import javafx.scene.chart.LineChart;
 import javafx.scene.chart.XYChart;
 import javafx.fxml.FXML;
+import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.layout.FlowPane;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.stage.Stage;
 
 import java.text.DecimalFormat;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public class StadisticsController {
@@ -22,6 +37,10 @@ public class StadisticsController {
     @FXML private ComboBox<MarketDataMessage.SecurityExchangeMarketData> cmbSecurityExchange;
     @FXML public  ComboBox<RoutingMessage.SettlType> cmbSettlType;
     @FXML private ComboBox<String> filterCombo;
+    @FXML private ComboBox<String> cmbSymbol;
+    @FXML private ComboBox<String> cmbHistoryRange;
+    @FXML private ComboBox<String> cmbHistoryTf;
+    @FXML private FlowPane kpiWrap;
 
 
     @FXML private Label totalVolume;
@@ -67,10 +86,13 @@ public class StadisticsController {
     private final DecimalFormat dfRatio  = new DecimalFormat("#,##0.####");
 
     public void initialize() {
-
-
-
-
+        if (kpiWrap != null) {
+            kpiWrap.sceneProperty().addListener((obs, oldScene, newScene) -> {
+                if (newScene != null) {
+                    kpiWrap.prefWrapLengthProperty().bind(newScene.widthProperty().subtract(80));
+                }
+            });
+        }
 
         if (filterCombo != null) {
             filterCombo.setItems(FXCollections.observableArrayList(
@@ -91,8 +113,20 @@ public class StadisticsController {
                     RoutingMessage.SettlType.CASH,
                     RoutingMessage.SettlType.NEXT_DAY
             ));
-            cmbSettlType.getSelectionModel().select(RoutingMessage.SettlType.T2);
+            cmbSettlType.getSelectionModel().clearSelection();
+            cmbSettlType.setPromptText("Todas");
             cmbSettlType.valueProperty().addListener((obs, oldValue, newValue) -> refreshTable());
+        }
+
+        if (cmbHistoryRange != null) {
+            cmbHistoryRange.setItems(FXCollections.observableArrayList("Hoy", "7D", "30D"));
+            cmbHistoryRange.getSelectionModel().select("7D");
+            cmbHistoryRange.valueProperty().addListener((obs, o, n) -> refreshHistoryChart());
+        }
+        if (cmbHistoryTf != null) {
+            cmbHistoryTf.setItems(FXCollections.observableArrayList("1d", "1h"));
+            cmbHistoryTf.getSelectionModel().select("1d");
+            cmbHistoryTf.valueProperty().addListener((obs, o, n) -> refreshHistoryChart());
         }
 
         // Combo mercado
@@ -106,9 +140,19 @@ public class StadisticsController {
         if (Repository.getStats() != null) {
             lastStats = Repository.getStats();
             updateHeader(lastStats);
+            refreshSymbolCombo(lastStats);
             refreshTable();
             refreshCharts(lastStats);
+        } else {
+            MarketDataMessage.BolsaStats emptyStats = MarketDataMessage.BolsaStats.newBuilder()
+                    .setTendenciaGeneral("neutral")
+                    .build();
+            updateHeader(emptyStats);
+            refreshSymbolCombo(emptyStats);
+            refreshTable();
+            refreshCharts(emptyStats);
         }
+        refreshHistoryChart();
 
         // Columnas
         colSymbol.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(cd.getValue().getSymbol()));
@@ -145,12 +189,20 @@ public class StadisticsController {
         Platform.runLater(() -> {
             try {
                 updateHeader(stats);
+                refreshSymbolCombo(stats);
                 refreshTable();
                 refreshCharts(stats);
             } catch (Exception ex) {
                 ex.printStackTrace();
             }
         });
+    }
+
+    public void addHistorical(MarketDataMessage.BolsaStats stats) {
+        if (stats == null) {
+            return;
+        }
+        Platform.runLater(this::refreshHistoryChart);
     }
 
     private void updateHeader(MarketDataMessage.BolsaStats s) {
@@ -160,7 +212,7 @@ public class StadisticsController {
         totalMarketCap.setText(dfNumber.format(s.getCapitalizacionTotal()));
         positiveSentimentLabel.setText(dfPct.format(s.getSentimientoPositivo()));
         negativeSentimentLabel.setText(dfPct.format(s.getSentimientoNegativo()));
-        marketTrendLabel.setText(s.getTendenciaGeneral());
+        marketTrendLabel.setText(s.getTendenciaGeneral().isBlank() ? "neutral" : s.getTendenciaGeneral());
         avgVolatilityLabel.setText(dfPct.format(s.getVolatilidadPromedio() * 100.0));
         lblRangoPromedio.setText(dfPrice.format(s.getRangoPromedio()));
         lblIndicePromedio.setText(dfPrice.format(s.getIndicePromedio()));
@@ -175,7 +227,11 @@ public class StadisticsController {
     }
 
     public void refreshTable() {
-        if (lastStats == null) return;
+        if (lastStats == null) {
+            tableItems.clear();
+            refreshTopVolumeChart(List.of());
+            return;
+        }
 
         String sel = (filterCombo != null && filterCombo.getValue() != null)
                 ? filterCombo.getValue() : "Más tranzado";
@@ -199,6 +255,7 @@ public class StadisticsController {
             src = filterBySettlType(src, selectedSettlType);
         }
 
+        src = dedupeBySymbol(src);
         tableItems.setAll(src);
         refreshTopVolumeChart(src);
     }
@@ -211,17 +268,101 @@ public class StadisticsController {
                 .collect(Collectors.toList());
     }
 
+    private List<MarketDataMessage.RankinSymbol> dedupeBySymbol(List<MarketDataMessage.RankinSymbol> source) {
+        return source.stream()
+                .collect(Collectors.toMap(
+                        rs -> normalizeSymbol(rs.getSymbol()),
+                        rs -> rs,
+                        (a, b) -> a,
+                        java.util.LinkedHashMap::new
+                ))
+                .values()
+                .stream()
+                .toList();
+    }
+
     private void refreshCharts(MarketDataMessage.BolsaStats stats) {
-        if (marketOverviewChart != null) {
-            XYChart.Series<String, Number> serie = new XYChart.Series<>();
-            serie.setName("Resumen");
-            serie.getData().add(new XYChart.Data<>("Volatilidad", stats.getVolatilidadPromedio() * 100.0));
-            serie.getData().add(new XYChart.Data<>("Sent. +", stats.getSentimientoPositivo()));
-            serie.getData().add(new XYChart.Data<>("Sent. -", stats.getSentimientoNegativo()));
-            serie.getData().add(new XYChart.Data<>("Tendencia", stats.getTendenciaPromedio()));
-            marketOverviewChart.getData().setAll(serie);
-        }
+        refreshHistoryChart();
         refreshTopVolumeChart(lastStats != null ? lastStats.getMasTranzadoList() : List.of());
+    }
+
+    private void refreshHistoryChart() {
+        if (marketOverviewChart == null) {
+            return;
+        }
+        String tf = cmbHistoryTf != null && cmbHistoryTf.getValue() != null ? cmbHistoryTf.getValue() : "1d";
+        Instant from = computeFromInstant();
+
+        List<HistoryPoint> points = new ArrayList<>();
+        for (MarketDataMessage.BolsaStats s : Repository.getBolsaStatsHistory()) {
+            HistoryPoint p = toHistoryPoint(s);
+            if (p == null) {
+                continue;
+            }
+            if (!tf.equalsIgnoreCase(p.tf)) {
+                continue;
+            }
+            if (p.ts.isBefore(from)) {
+                continue;
+            }
+            points.add(p);
+        }
+        points.sort(Comparator.comparing(p -> p.ts));
+
+        XYChart.Series<String, Number> indiceSerie = new XYChart.Series<>();
+        indiceSerie.setName("Indice Promedio");
+        XYChart.Series<String, Number> montoSerie = new XYChart.Series<>();
+        montoSerie.setName("Monto Total");
+
+        for (HistoryPoint p : points) {
+            String label = tf.equals("1h")
+                    ? p.ts.atZone(ZoneId.of("America/Santiago")).truncatedTo(ChronoUnit.HOURS).toString().substring(0, 16)
+                    : p.ts.atZone(ZoneId.of("America/Santiago")).toLocalDate().toString();
+            indiceSerie.getData().add(new XYChart.Data<>(label, p.indicePromedio));
+            montoSerie.getData().add(new XYChart.Data<>(label, p.montoTotal));
+        }
+
+        marketOverviewChart.getData().setAll(indiceSerie, montoSerie);
+    }
+
+    private Instant computeFromInstant() {
+        String range = cmbHistoryRange != null && cmbHistoryRange.getValue() != null ? cmbHistoryRange.getValue() : "7D";
+        ZoneId cl = ZoneId.of("America/Santiago");
+        if ("Hoy".equalsIgnoreCase(range)) {
+            return LocalDate.now(cl).atStartOfDay(cl).toInstant();
+        }
+        if ("30D".equalsIgnoreCase(range)) {
+            return Instant.now().minus(30, ChronoUnit.DAYS);
+        }
+        return Instant.now().minus(7, ChronoUnit.DAYS);
+    }
+
+    private HistoryPoint toHistoryPoint(MarketDataMessage.BolsaStats s) {
+        if (s == null) {
+            return null;
+        }
+        String tf = "1d";
+        Instant ts = parseInstantSafe(s.getHoraFin(), Instant.now());
+        String id = s.getId();
+        if (id != null && id.startsWith("hist:")) {
+            String[] parts = id.split(":", 3);
+            if (parts.length == 3) {
+                tf = parts[1];
+                ts = parseInstantSafe(parts[2], ts);
+            }
+        }
+        return new HistoryPoint(ts, tf, s.getIndicePromedio(), s.getMontoTotal());
+    }
+
+    private Instant parseInstantSafe(String value, Instant fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        try {
+            return Instant.parse(value);
+        } catch (DateTimeParseException e) {
+            return fallback;
+        }
     }
 
     private void refreshTopVolumeChart(List<MarketDataMessage.RankinSymbol> source) {
@@ -235,5 +376,60 @@ public class StadisticsController {
                 .forEach(r -> serie.getData().add(new XYChart.Data<>(r.getSymbol(), r.getVolumen())));
         topVolumeChart.getData().setAll(serie);
     }
+
+    private void refreshSymbolCombo(MarketDataMessage.BolsaStats stats) {
+        if (cmbSymbol == null || stats == null) {
+            return;
+        }
+
+        String selected = cmbSymbol.getValue();
+        LinkedHashSet<String> symbols = new LinkedHashSet<>();
+        stats.getMasTranzadoList().forEach(r -> symbols.add(normalizeSymbol(r.getSymbol())));
+        stats.getMasVolatilList().forEach(r -> symbols.add(normalizeSymbol(r.getSymbol())));
+        stats.getBestRankinList().forEach(r -> symbols.add(normalizeSymbol(r.getSymbol())));
+        stats.getWorseRankinList().forEach(r -> symbols.add(normalizeSymbol(r.getSymbol())));
+        symbols.remove("");
+
+        ObservableList<String> items = FXCollections.observableArrayList(symbols);
+        cmbSymbol.setItems(items);
+        if (selected != null && items.contains(selected)) {
+            cmbSymbol.getSelectionModel().select(selected);
+        } else if (!items.isEmpty()) {
+            cmbSymbol.getSelectionModel().selectFirst();
+        }
+    }
+
+    @FXML
+    private void openCandlesForSymbol() {
+        try {
+            String symbol = cmbSymbol != null ? cmbSymbol.getValue() : null;
+            if (symbol == null || symbol.isBlank()) {
+                return;
+            }
+
+            Repository.setSelectedCandleSymbol(symbol);
+
+            FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/view/Candle.fxml"));
+            Parent mainPane = loader.load();
+            Stage stage = new Stage();
+            Scene scene = new Scene(mainPane, 1100, 700);
+            scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource(Repository.getSTYLE())).toExternalForm());
+            stage.setScene(scene);
+            stage.setTitle("Velas - " + symbol);
+            stage.show();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private String normalizeSymbol(String symbol) {
+        if (symbol == null) {
+            return "";
+        }
+        return symbol.trim().toUpperCase();
+    }
+
+    private record HistoryPoint(Instant ts, String tf, double indicePromedio, double montoTotal) { }
 
 }

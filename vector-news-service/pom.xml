@@ -3,7 +3,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>cl.vc</groupId>
-    <artifactId>vector-candle-service</artifactId>
+    <artifactId>vector-news-service</artifactId>
     <version>1.0.0</version>
 
     <properties>
@@ -13,11 +13,6 @@
     </properties>
 
     <dependencies>
-        <dependency>
-            <groupId>com.github.VectorCapitalCB</groupId>
-            <artifactId>principal-module</artifactId>
-            <version>1.4.4</version>
-        </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
@@ -37,6 +32,11 @@
             <groupId>org.mongodb</groupId>
             <artifactId>mongo-java-driver</artifactId>
             <version>3.12.14</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jsoup</groupId>
+            <artifactId>jsoup</artifactId>
+            <version>1.17.2</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
@@ -64,7 +64,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>cl.vc.candle.CandleMain</mainClass>
+                            <mainClass>cl.vc.news.NewsMain</mainClass>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>libs/</classpathPrefix>
                         </manifest>

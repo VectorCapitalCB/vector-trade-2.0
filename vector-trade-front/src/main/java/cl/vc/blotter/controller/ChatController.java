@@ -130,7 +130,7 @@ public class ChatController {
                 }
                 boolean unread = unreadUsers.contains(item);
                 setText((unread ? "● " : "") + item);
-                setStyle(unread ? "-fx-font-weight: bold;" : "-fx-font-weight: normal;");
+                setStyle(unread ? "-fx-font-weight: bold; -fx-text-fill: #eef3fb;" : "-fx-font-weight: normal; -fx-text-fill: #eef3fb;");
             }
         });
         setupEmojiButtons();
@@ -315,14 +315,18 @@ public class ChatController {
                     imageView.setPreserveRatio(true);
                     flow.getChildren().add(imageView);
                 } else {
-                    flow.getChildren().add(new Text(matched));
+                    Text text = new Text(matched);
+                    text.setStyle("-fx-fill: #eef3fb;");
+                    flow.getChildren().add(text);
                 }
                 i += matched.length();
                 continue;
             }
             int next = findNextEmojiIndex(message, i);
             String chunk = next < 0 ? message.substring(i) : message.substring(i, next);
-            flow.getChildren().add(new Text(chunk));
+            Text text = new Text(chunk);
+            text.setStyle("-fx-fill: #eef3fb;");
+            flow.getChildren().add(text);
             i = next < 0 ? message.length() : next;
         }
         return flow;

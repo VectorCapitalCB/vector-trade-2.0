@@ -1,6 +1,7 @@
 package cl.vc.candle;
 
 import cl.vc.candle.websocket.CandleMongoPublisher;
+import cl.vc.candle.websocket.CandleProtoMarketPublisher;
 import cl.vc.candle.websocket.CandleWebSocketServlet;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -27,6 +28,8 @@ public class CandleMain {
 
         CandleMongoPublisher publisher = new CandleMongoPublisher(properties);
         publisher.start();
+        CandleProtoMarketPublisher protoPublisher = new CandleProtoMarketPublisher(properties);
+        protoPublisher.start();
 
         int port = Integer.parseInt(properties.getProperty("candle.websocket.port", "8098"));
         Server server = new Server(port);

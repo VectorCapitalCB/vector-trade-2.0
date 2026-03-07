@@ -434,3 +434,20 @@
 
 
 
+
+/* Global ComboBox text color */
+.combo-box .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+.combo-box .text {
+    -fx-fill: #eef3fb;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #eef3fb;
+}

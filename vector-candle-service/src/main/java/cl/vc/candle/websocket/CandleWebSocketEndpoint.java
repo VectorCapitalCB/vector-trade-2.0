@@ -2,6 +2,7 @@ package cl.vc.candle.websocket;
 
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
+import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.json.JSONObject;
@@ -11,6 +12,11 @@ import org.slf4j.LoggerFactory;
 @WebSocket
 public class CandleWebSocketEndpoint {
     private static final Logger log = LoggerFactory.getLogger(CandleWebSocketEndpoint.class);
+
+    @OnWebSocketConnect
+    public void onConnect(Session session) {
+        CandleSubscriptions.registerSession(session);
+    }
 
     @OnWebSocketMessage
     public void onMessage(Session session, String raw) throws Exception {

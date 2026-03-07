@@ -4,7 +4,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane fx:id="lanzadorController" HBox.hgrow="ALWAYS" xmlns="http://javafx.com/javafx/11.0.14-internal"
+<AnchorPane fx:id="lanzadorController" HBox.hgrow="ALWAYS" styleClass="launcher-pane" xmlns="http://javafx.com/javafx/11.0.14-internal"
             xmlns:fx="http://javafx.com/fxml/1" fx:controller="cl.vc.blotter.controller.LanzadorController">
 
         <VBox fx:id="myHBox" spacing="10" HBox.hgrow="ALWAYS">

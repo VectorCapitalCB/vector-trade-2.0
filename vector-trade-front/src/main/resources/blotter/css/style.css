@@ -273,11 +273,16 @@
 }
 
 .btn-ingresar-style {
-    -fx-background-color: linear-gradient(#2b3178, #0073e6);
+    -fx-background-color: linear-gradient(to bottom, #2e4a6d, #22344d);
+    -fx-text-fill: #eaf1fc;
+    -fx-border-color: #4b6280;
+    -fx-border-width: 1px;
+    -fx-background-radius: 6px;
+    -fx-border-radius: 6px;
 }
 
 .btn-ingresar-style:hover {
-    -fx-background-color: linear-gradient(#4CAF50, #81C784);
+    -fx-background-color: linear-gradient(to bottom, #35567d, #29415f);
 }
 
 .button:hover {
@@ -689,7 +694,135 @@
     -fx-opacity: 1;            /* aparece al hover */
 }
 
+/* Login palette theme (Vector Trade 2.0) */
+.root {
+    -fx-base: #1a1e24;
+    -fx-background: #191d23;
+    -fx-control-inner-background: #21262f;
+    -fx-accent: #2e4a6d;
+    -fx-focus-color: #4b6280;
+    -fx-faint-focus-color: rgba(75, 98, 128, 0.25);
+    -fx-text-fill: #e5eaf2;
+}
+
+.anchor-pane,
+.border-pane,
+.split-pane,
+.tab-pane {
+    -fx-background-color: linear-gradient(to bottom, #111317, #191d23);
+}
+
+.label {
+    -fx-text-fill: #e5eaf2;
+}
+
+.button {
+    -fx-background-color: linear-gradient(to bottom, #2e4a6d, #22344d);
+    -fx-text-fill: #eaf1fc;
+    -fx-border-color: #4b6280;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+.button:hover {
+    -fx-background-color: linear-gradient(to bottom, #35567d, #29415f);
+}
+
+.combo-box,
+.text-field,
+.password-field,
+.text-area {
+    -fx-background-color: #21262f;
+    -fx-control-inner-background: #21262f;
+    -fx-text-fill: #f4f7fb;
+    -fx-prompt-text-fill: #788395;
+    -fx-border-color: #343d4b;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+.table-view {
+    -fx-background-color: #1a1e24;
+}
+
+.table-view .column-header-background,
+.table-view .column-header {
+    -fx-background-color: #1f242c;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #21262f;
+}
+
+.table-row-cell:even {
+    -fx-background-color: #1d222a;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #2e4a6d;
+}
+
+.tab-pane .tab {
+    -fx-background-color: #1f242c;
+}
+
+.tab-pane .tab:selected {
+    -fx-background-color: #2e4a6d;
+}
 
 
 
 
+#enviromentLoginCombo {
+    -fx-background-color: #21262f;
+    -fx-control-inner-background: #21262f;
+    -fx-border-color: #343d4b;
+    -fx-border-radius: 5;
+    -fx-background-radius: 5;
+}
+
+#enviromentLoginCombo .list-cell {
+    -fx-text-fill: #eef3fb;
+    -fx-font-weight: bold;
+}
+
+#enviromentLoginCombo .text {
+    -fx-fill: #eef3fb;
+}
+
+#enviromentLoginCombo .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.launcher-pane .combo-box .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+.launcher-pane .combo-box .text {
+    -fx-fill: #eef3fb;
+}
+
+.launcher-pane .combo-box .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.launcher-pane .combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+/* Global ComboBox text color */
+.combo-box .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+.combo-box .text {
+    -fx-fill: #eef3fb;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #eef3fb;
+}

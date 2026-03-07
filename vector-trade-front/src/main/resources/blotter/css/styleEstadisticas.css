@@ -91,4 +91,72 @@
     -fx-font-weight: bold;
 }
 
+/* Login palette theme (Vector Trade 2.0) */
+.main-container {
+    -fx-background-color: linear-gradient(to bottom, #111317, #191d23);
+}
 
+.section-header {
+    -fx-background-color: #1a1e24;
+    -fx-border-color: #2e3642;
+}
+
+.section-title,
+.data-title,
+.data-value,
+.data-label {
+    -fx-text-fill: #e5eaf2;
+}
+
+.rect-box {
+    -fx-background-color: rgba(26, 30, 36, 0.97);
+    -fx-border-color: #2e3642;
+}
+
+.table-view {
+    -fx-background-color: #1a1e24;
+}
+
+.table-view .column-header-background,
+.table-view .column-header {
+    -fx-background-color: #1f242c;
+}
+
+.table-row-cell:odd {
+    -fx-background-color: #21262f;
+}
+
+.table-row-cell:even {
+    -fx-background-color: #1d222a;
+}
+
+.table-row-cell:selected {
+    -fx-background-color: #2e4a6d;
+}
+
+.combo-box,
+.button {
+    -fx-background-color: linear-gradient(to bottom, #2e4a6d, #22344d);
+    -fx-text-fill: #eaf1fc;
+    -fx-border-color: #4b6280;
+    -fx-border-radius: 6;
+    -fx-background-radius: 6;
+}
+
+
+/* Global ComboBox text color */
+.combo-box .list-cell {
+    -fx-text-fill: #eef3fb;
+}
+
+.combo-box .text {
+    -fx-fill: #eef3fb;
+}
+
+.combo-box .arrow {
+    -fx-background-color: #eef3fb;
+}
+
+.combo-box-popup .list-view .list-cell {
+    -fx-text-fill: #eef3fb;
+}
