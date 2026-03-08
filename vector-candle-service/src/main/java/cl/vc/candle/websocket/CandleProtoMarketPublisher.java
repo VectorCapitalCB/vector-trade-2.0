@@ -10,6 +10,7 @@ import com.mongodb.client.FindIterable;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.bson.types.ObjectId;
@@ -22,8 +23,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
-import java.time.temporal.ChronoUnit;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -45,8 +46,6 @@ public class CandleProtoMarketPublisher extends Thread {
     private final Set<String> excludedSymbols;
     private volatile ObjectId lastTradeId;
     private volatile LocalDate lastDailyStatsLogDate;
-    private volatile String lastSavedHourlyKey;
-    private volatile String lastSavedDailyKey;
 
     public CandleProtoMarketPublisher(Properties properties) {
         this.properties = properties;
@@ -61,6 +60,8 @@ public class CandleProtoMarketPublisher extends Thread {
         String databaseName = properties.getProperty("mongo.candle.database", "market_data");
         int pollMs = parseInt(properties.getProperty("mongo.market.poll.ms"), 2000);
         int bootstrapTrades = parseInt(properties.getProperty("mongo.market.bootstrap.trades"), 300);
+        int bootstrapDays = parseInt(properties.getProperty("mongo.market.bootstrap.days"), 5);
+        int bootstrapMaxTrades = parseInt(properties.getProperty("mongo.market.bootstrap.max.trades"), 300000);
         int tradeBatch = parseInt(properties.getProperty("mongo.market.trade.batch"), 300);
         int topN = parseInt(properties.getProperty("mongo.market.stats.topn"), 20);
         int historyDays = parseInt(properties.getProperty("mongo.market.history.days"), 30);
@@ -75,7 +76,7 @@ public class CandleProtoMarketPublisher extends Thread {
 
             while (!Thread.currentThread().isInterrupted()) {
                 try {
-                    sendBootstrapTradesIfNeeded(trades, bootstrapTrades);
+                    sendBootstrapTradesIfNeeded(trades, bootstrapTrades, bootstrapDays, bootstrapMaxTrades);
                     sendHistoricalStatsIfNeeded(bolsaHistory, historyDays);
                     publishIncrementalTrades(trades, tradeBatch);
                     publishBolsaStats(trades, instrumentStats, bolsaHistory, topN);
@@ -91,7 +92,10 @@ public class CandleProtoMarketPublisher extends Thread {
         }
     }
 
-    private void sendBootstrapTradesIfNeeded(MongoCollection<Document> trades, int bootstrapTrades) {
+    private void sendBootstrapTradesIfNeeded(MongoCollection<Document> trades,
+                                             int bootstrapTrades,
+                                             int bootstrapDays,
+                                             int bootstrapMaxTrades) {
         Set<Session> sessions = CandleSubscriptions.allSessions();
         if (sessions.isEmpty()) {
             snapshotSent.clear();
@@ -106,17 +110,59 @@ public class CandleProtoMarketPublisher extends Thread {
 
         List<MarketDataMessage.TradeGeneral> rows = new ArrayList<>();
         ObjectId max = null;
-        for (Document doc : trades.find().sort(Sorts.descending("_id")).limit(Math.max(1, bootstrapTrades))) {
+        ZoneId marketZone = ZoneId.of("America/Santiago");
+        LocalDate latestDay = resolveLatestTradeDay(trades, marketZone);
+        int safeDays = Math.max(1, bootstrapDays);
+        int safeMaxTrades = Math.max(1, bootstrapMaxTrades);
+        LocalDate fromDay = latestDay.minusDays(safeDays - 1L);
+
+        for (Document doc : trades.find().sort(Sorts.descending("_id"))) {
+            Instant t = parseInstantOrNull(getString(doc, "eventTime", null), marketZone);
+            if (t != null) {
+                LocalDate d = t.atZone(marketZone).toLocalDate();
+                if (d.isBefore(fromDay)) {
+                    break;
+                }
+            }
             if (isExcludedSymbol(getString(doc, "symbol", ""))) {
                 continue;
             }
             rows.add(toTradeGeneral(doc));
+            if (rows.size() >= safeMaxTrades) {
+                break;
+            }
             ObjectId id = doc.getObjectId("_id");
             if (id != null && (max == null || id.compareTo(max) > 0)) {
                 max = id;
             }
         }
+
+        if (rows.isEmpty()) {
+            for (Document doc : trades.find().sort(Sorts.descending("_id")).limit(Math.max(1, bootstrapTrades))) {
+                if (isExcludedSymbol(getString(doc, "symbol", ""))) {
+                    continue;
+                }
+                rows.add(toTradeGeneral(doc));
+                ObjectId id = doc.getObjectId("_id");
+                if (id != null && (max == null || id.compareTo(max) > 0)) {
+                    max = id;
+                }
+            }
+        }
+
+        log.info("Bootstrap trades enviados dias={} fromDay={} latestDay={} rows={}", safeDays, fromDay, latestDay, rows.size());
         rows.sort(Comparator.comparing(t -> t.hasT() ? t.getT().getSeconds() : 0L));
+        if (!rows.isEmpty()) {
+            MarketDataMessage.TradeGeneral firstRow = rows.get(0);
+            MarketDataMessage.TradeGeneral lastRow = rows.get(rows.size() - 1);
+            Instant firstTs = firstRow.hasT() ? Instant.ofEpochSecond(firstRow.getT().getSeconds(), firstRow.getT().getNanos()) : null;
+            Instant lastTs = lastRow.hasT() ? Instant.ofEpochSecond(lastRow.getT().getSeconds(), lastRow.getT().getNanos()) : null;
+            log.info("Bootstrap sample ts first={} last={} firstSymbol={} lastSymbol={}",
+                    firstTs == null ? "-" : firstTs.atZone(marketZone).toLocalDateTime(),
+                    lastTs == null ? "-" : lastTs.atZone(marketZone).toLocalDateTime(),
+                    firstRow.getSymbol(),
+                    lastRow.getSymbol());
+        }
         if (max != null && (lastTradeId == null || max.compareTo(lastTradeId) > 0)) {
             lastTradeId = max;
         }
@@ -371,19 +417,13 @@ public class CandleProtoMarketPublisher extends Thread {
         String hourKey = zdt.truncatedTo(ChronoUnit.HOURS).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH"));
         String hourlySnapshotKey = "1h:" + hourKey;
         String dailySnapshotKey = "1d:" + dayKey;
-
-        if (!hourlySnapshotKey.equals(lastSavedHourlyKey) && !existsSnapshot(history, hourlySnapshotKey)) {
-            history.insertOne(toHistoryDocument(stats, now, "1h", hourlySnapshotKey));
-            lastSavedHourlyKey = hourlySnapshotKey;
-        }
-        if (!dailySnapshotKey.equals(lastSavedDailyKey) && !existsSnapshot(history, dailySnapshotKey)) {
-            history.insertOne(toHistoryDocument(stats, now, "1d", dailySnapshotKey));
-            lastSavedDailyKey = dailySnapshotKey;
-        }
-    }
-
-    private boolean existsSnapshot(MongoCollection<Document> history, String snapshotKey) {
-        return history.find(Filters.eq("snapshotKey", snapshotKey)).limit(1).first() != null;
+        ReplaceOptions upsert = new ReplaceOptions().upsert(true);
+        history.replaceOne(Filters.eq("snapshotKey", hourlySnapshotKey),
+                toHistoryDocument(stats, now, "1h", hourlySnapshotKey),
+                upsert);
+        history.replaceOne(Filters.eq("snapshotKey", dailySnapshotKey),
+                toHistoryDocument(stats, now, "1d", dailySnapshotKey),
+                upsert);
     }
 
     private Document toHistoryDocument(MarketDataMessage.BolsaStats s, Instant snapshotAt, String timeframe, String snapshotKey) {
@@ -843,16 +883,20 @@ public class CandleProtoMarketPublisher extends Thread {
         if (value == null || value.isBlank()) {
             return null;
         }
+        String normalized = value.trim();
         try {
-            return Instant.parse(value);
+            return Instant.parse(normalized);
         } catch (DateTimeParseException ignored) {
         }
         try {
-            return ZonedDateTime.parse(value).toInstant();
+            return ZonedDateTime.parse(normalized).toInstant();
         } catch (DateTimeParseException ignored) {
         }
+        if (normalized.contains(" ") && !normalized.contains("T")) {
+            normalized = normalized.replace(' ', 'T');
+        }
         try {
-            return java.time.LocalDateTime.parse(value).atZone(fallbackZone).toInstant();
+            return java.time.LocalDateTime.parse(normalized).atZone(fallbackZone).toInstant();
         } catch (DateTimeParseException ignored) {
         }
         return null;

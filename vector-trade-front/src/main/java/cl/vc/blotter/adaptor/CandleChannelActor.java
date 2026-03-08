@@ -12,6 +12,7 @@ import java.util.Set;
 
 @Slf4j
 public class CandleChannelActor extends AbstractActor {
+    private static final int MAX_INCREMENTAL_TRADES = 200_000;
 
     private final Set<String> seenTradeIds = new HashSet<>();
 
@@ -48,7 +49,7 @@ public class CandleChannelActor extends AbstractActor {
         Platform.runLater(() -> {
             Repository.getCandleTradeGenerales().clear();
             seenTradeIds.clear();
-            snapshot.getTradesList().forEach(this::addTradeIfNew);
+            snapshot.getTradesList().forEach(this::addSnapshotTradeIfNew);
         });
     }
 
@@ -60,13 +61,29 @@ public class CandleChannelActor extends AbstractActor {
         String id = trade.getIdGenerico().isEmpty() ? trade.getId() : trade.getIdGenerico();
         if (id == null || id.isBlank()) {
             Repository.getCandleTradeGenerales().add(trade);
+            trimIncrementalWindow();
             return;
         }
         if (seenTradeIds.add(id)) {
             Repository.getCandleTradeGenerales().add(trade);
-            if (Repository.getCandleTradeGenerales().size() > 5000) {
-                Repository.getCandleTradeGenerales().remove(0, Repository.getCandleTradeGenerales().size() - 5000);
-            }
+            trimIncrementalWindow();
+        }
+    }
+
+    private void addSnapshotTradeIfNew(MarketDataMessage.TradeGeneral trade) {
+        String id = trade.getIdGenerico().isEmpty() ? trade.getId() : trade.getIdGenerico();
+        if (id == null || id.isBlank()) {
+            Repository.getCandleTradeGenerales().add(trade);
+            return;
+        }
+        if (seenTradeIds.add(id)) {
+            Repository.getCandleTradeGenerales().add(trade);
+        }
+    }
+
+    private void trimIncrementalWindow() {
+        if (Repository.getCandleTradeGenerales().size() > MAX_INCREMENTAL_TRADES) {
+            Repository.getCandleTradeGenerales().remove(0, Repository.getCandleTradeGenerales().size() - MAX_INCREMENTAL_TRADES);
         }
     }
 }

@@ -8,13 +8,20 @@ import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
 import org.jfree.chart.fx.ChartViewer;
+import org.jfree.chart.plot.Marker;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
+import org.jfree.chart.ui.Layer;
+import org.jfree.chart.ui.RectangleAnchor;
+import org.jfree.chart.ui.TextAnchor;
 import org.jfree.data.xy.DefaultOHLCDataset;
 import org.jfree.data.xy.OHLCDataItem;
 import org.jfree.data.xy.OHLCDataset;
@@ -24,10 +31,15 @@ import org.jfree.data.xy.XYDataset;
 
 import java.awt.Color;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
+import java.time.DayOfWeek;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,10 +49,19 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.ResourceBundle;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class CandleController implements Initializable {
+    private static final Logger log = LoggerFactory.getLogger(CandleController.class);
+    private static final ZoneId MARKET_ZONE = ZoneId.of("America/Santiago");
+    private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(MARKET_ZONE);
+    private static final DateTimeFormatter DAY_MARKER_FMT = DateTimeFormatter.ofPattern("dd/MM");
+    private static final LocalTime MARKET_OPEN = LocalTime.of(9, 30);
+    private static final LocalTime MARKET_CLOSE = LocalTime.of(16, 0);
+    private static final LocalTime MARKET_RANGE_START = LocalTime.of(9, 0);
+    private static final LocalTime MARKET_RANGE_END = LocalTime.of(16, 30);
 
     @FXML
     private ChartViewer chartViewer;
@@ -98,15 +119,20 @@ public class CandleController implements Initializable {
         OHLCDataset dataset = built.dataset;
 
         DateAxis timeAxis = new DateAxis("Tiempo");
+        timeAxis.setTimeZone(TimeZone.getTimeZone(MARKET_ZONE));
+        SimpleDateFormat axisFmt = new SimpleDateFormat(timeframeMinutes >= 1440 ? "dd/MM/yyyy" : "dd/MM HH:mm");
+        axisFmt.setTimeZone(TimeZone.getTimeZone(MARKET_ZONE));
+        timeAxis.setDateFormatOverride(axisFmt);
         timeAxis.setLowerMargin(0.0);
         timeAxis.setUpperMargin(0.0);
         timeAxis.setLabelPaint(Color.WHITE);
         timeAxis.setTickLabelPaint(Color.WHITE);
         if (built.firstBucket != null && built.lastBucket != null) {
-            Instant upper = built.lastBucket.plus(Duration.ofMinutes(Math.max(1, timeframeMinutes)));
+            Instant lower = buildSessionRangeStart(built.firstBucket, timeframeMinutes);
+            Instant upper = buildSessionRangeEnd(built.lastBucket, timeframeMinutes);
             if (upper.isAfter(built.firstBucket)) {
                 timeAxis.setAutoRange(false);
-                timeAxis.setRange(Date.from(built.firstBucket), Date.from(upper));
+                timeAxis.setRange(Date.from(lower), Date.from(upper));
             }
         }
 
@@ -133,6 +159,7 @@ public class CandleController implements Initializable {
         XYLineAndShapeRenderer ema20Renderer = buildLineRenderer(new Color(0x6B, 0xD4, 0xFF));
         plot.setDataset(2, ema20Dataset);
         plot.setRenderer(2, ema20Renderer);
+        addTradingDayMarkers(plot, built.items, timeframeMinutes);
 
         Color bg = new Color(0x1c, 0x1c, 0x1c);
         plot.setBackgroundPaint(bg);
@@ -151,6 +178,7 @@ public class CandleController implements Initializable {
         updateDataState(filtered);
         updateIndicators(built.closes);
         updateTradeRange(built.firstTradeAt, built.lastTradeAt);
+        logRenderDebug(symbol, tf, filtered, built);
     }
 
     private DatasetBuildResult buildDatasetFromTrades(List<MarketDataMessage.TradeGeneral> trades, int timeframeMinutes) {
@@ -173,6 +201,9 @@ public class CandleController implements Initializable {
         Instant lastTradeAt = null;
         for (MarketDataMessage.TradeGeneral trade : ordered) {
             Instant tradeTime = Instant.ofEpochSecond(trade.getT().getSeconds(), trade.getT().getNanos());
+            if (!isWithinMarketSession(tradeTime)) {
+                continue;
+            }
             if (firstTradeAt == null || tradeTime.isBefore(firstTradeAt)) {
                 firstTradeAt = tradeTime;
             }
@@ -190,15 +221,43 @@ public class CandleController implements Initializable {
         Instant first = rawBuckets.keySet().iterator().next();
         Instant last = rawBuckets.keySet().stream().max(Comparator.naturalOrder()).orElse(first);
         Duration step = Duration.ofMinutes(Math.max(1, timeframeMinutes));
+        if (timeframeMinutes < 1440) {
+            first = sessionOpenInstant(first);
+            last = sessionCloseInstant(last);
+        }
+
+        Map<java.time.LocalDate, Double> firstPriceByDay = new TreeMap<>();
+        for (Map.Entry<Instant, Ohlc> e : rawBuckets.entrySet()) {
+            Instant bucket = e.getKey();
+            if (!isTradingBucket(bucket, timeframeMinutes)) {
+                continue;
+            }
+            Ohlc o = e.getValue();
+            if (o == null || !o.initialized) {
+                continue;
+            }
+            java.time.LocalDate day = bucket.atZone(MARKET_ZONE).toLocalDate();
+            firstPriceByDay.putIfAbsent(day, o.open);
+        }
 
         List<OHLCDataItem> items = new ArrayList<>();
         List<Double> closes = new ArrayList<>();
         Instant cursor = first;
         Double prevClose = null;
         while (!cursor.isAfter(last)) {
+            if (!isTradingBucket(cursor, timeframeMinutes)) {
+                cursor = cursor.plus(step);
+                continue;
+            }
             Ohlc o = rawBuckets.get(cursor);
             if (o == null && prevClose != null) {
                 o = Ohlc.synthetic(prevClose);
+            } else if (o == null) {
+                java.time.LocalDate day = cursor.atZone(MARKET_ZONE).toLocalDate();
+                Double daySeed = firstPriceByDay.get(day);
+                if (daySeed != null && daySeed > 0) {
+                    o = Ohlc.synthetic(daySeed);
+                }
             }
             if (o != null && o.initialized) {
                 items.add(new OHLCDataItem(Date.from(cursor), o.open, o.high, o.low, o.close, o.volume));
@@ -273,7 +332,7 @@ public class CandleController implements Initializable {
 
         Instant ts = Instant.ofEpochSecond(last.getT().getSeconds(), last.getT().getNanos());
         long ageMinutes = Duration.between(ts, Instant.now()).toMinutes();
-        lblLastTradeAt.setText(ts.toString());
+        lblLastTradeAt.setText(TS_FMT.format(ts) + " CL");
         if (ageMinutes <= 10) {
             lblDataState.setText("REAL-TIME");
             lblDataState.setStyle("-fx-text-fill: #39c16c; -fx-font-weight: bold;");
@@ -315,7 +374,7 @@ public class CandleController implements Initializable {
             lblTradeRange.setText("-");
             return;
         }
-        lblTradeRange.setText(firstTradeAt + " -> " + lastTradeAt + " (UTC)");
+        lblTradeRange.setText(TS_FMT.format(firstTradeAt) + " -> " + TS_FMT.format(lastTradeAt) + " (CL)");
     }
 
     private String formatVal(Double value) {
@@ -507,7 +566,7 @@ public class CandleController implements Initializable {
     }
 
     private Instant bucketize(Instant instant, int minutes) {
-        ZonedDateTime z = instant.atZone(ZoneOffset.UTC).truncatedTo(ChronoUnit.MINUTES);
+        ZonedDateTime z = instant.atZone(MARKET_ZONE).truncatedTo(ChronoUnit.MINUTES);
         if (minutes <= 1) {
             return z.toInstant();
         }
@@ -520,11 +579,111 @@ public class CandleController implements Initializable {
         return bucket.toInstant();
     }
 
+    private boolean isTradingBucket(Instant instant, int timeframeMinutes) {
+        if (timeframeMinutes >= 1440) {
+            return isWithinMarketSession(instant);
+        }
+        ZonedDateTime z = instant.atZone(MARKET_ZONE);
+        DayOfWeek day = z.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return false;
+        }
+        LocalTime t = z.toLocalTime();
+        return !t.isBefore(MARKET_OPEN) && !t.isAfter(MARKET_CLOSE);
+    }
+
+    private boolean isWithinMarketSession(Instant instant) {
+        ZonedDateTime z = instant.atZone(MARKET_ZONE);
+        DayOfWeek day = z.getDayOfWeek();
+        if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
+            return false;
+        }
+        LocalTime t = z.toLocalTime();
+        return !t.isBefore(MARKET_OPEN) && !t.isAfter(MARKET_CLOSE);
+    }
+
+    private Instant buildSessionRangeStart(Instant firstBucket, int timeframeMinutes) {
+        if (timeframeMinutes >= 1440) {
+            return firstBucket;
+        }
+        ZonedDateTime z = firstBucket.atZone(MARKET_ZONE);
+        ZonedDateTime start = z.toLocalDate().atTime(MARKET_RANGE_START).atZone(MARKET_ZONE);
+        return start.toInstant();
+    }
+
+    private Instant buildSessionRangeEnd(Instant lastBucket, int timeframeMinutes) {
+        if (timeframeMinutes >= 1440) {
+            return lastBucket.plus(Duration.ofDays(1));
+        }
+        ZonedDateTime z = lastBucket.atZone(MARKET_ZONE);
+        ZonedDateTime end = z.toLocalDate().atTime(MARKET_RANGE_END).atZone(MARKET_ZONE);
+        return end.toInstant();
+    }
+
+    private Instant sessionOpenInstant(Instant any) {
+        ZonedDateTime z = any.atZone(MARKET_ZONE);
+        return z.toLocalDate().atTime(MARKET_OPEN).atZone(MARKET_ZONE).toInstant();
+    }
+
+    private Instant sessionCloseInstant(Instant any) {
+        ZonedDateTime z = any.atZone(MARKET_ZONE);
+        return z.toLocalDate().atTime(MARKET_CLOSE).atZone(MARKET_ZONE).toInstant();
+    }
+
+    private void addTradingDayMarkers(XYPlot plot, List<OHLCDataItem> items, int timeframeMinutes) {
+        if (plot == null || items == null || items.isEmpty()) {
+            return;
+        }
+        if (timeframeMinutes >= 1440) {
+            return;
+        }
+        java.time.LocalDate lastDate = null;
+        for (OHLCDataItem item : items) {
+            if (item == null || item.getDate() == null) {
+                continue;
+            }
+            ZonedDateTime z = item.getDate().toInstant().atZone(MARKET_ZONE);
+            java.time.LocalDate currentDate = z.toLocalDate();
+            if (currentDate.equals(lastDate)) {
+                continue;
+            }
+            lastDate = currentDate;
+            Marker marker = new ValueMarker(item.getDate().getTime());
+            marker.setPaint(new Color(255, 255, 255, 75));
+            marker.setStroke(new java.awt.BasicStroke(0.8f));
+            marker.setLabel(DAY_MARKER_FMT.format(z));
+            marker.setLabelPaint(new Color(220, 220, 220));
+            marker.setLabelAnchor(RectangleAnchor.TOP_LEFT);
+            marker.setLabelTextAnchor(TextAnchor.TOP_LEFT);
+            plot.addDomainMarker(marker, Layer.BACKGROUND);
+        }
+    }
+
     private String normalizeSymbol(String symbol) {
         if (symbol == null) {
             return "";
         }
         return symbol.trim().toUpperCase();
+    }
+
+    private void logRenderDebug(String symbol, String tf, List<MarketDataMessage.TradeGeneral> filtered, DatasetBuildResult built) {
+        if (built == null) {
+            return;
+        }
+        String firstTrade = built.firstTradeAt == null ? "-" : TS_FMT.format(built.firstTradeAt);
+        String lastTrade = built.lastTradeAt == null ? "-" : TS_FMT.format(built.lastTradeAt);
+        String firstBucket = built.firstBucket == null ? "-" : TS_FMT.format(built.firstBucket);
+        String lastBucket = built.lastBucket == null ? "-" : TS_FMT.format(built.lastBucket);
+        int rows = filtered == null ? 0 : filtered.size();
+        log.info("[CANDLE][RENDER] symbol={} tf={} trades={} firstTrade={} lastTrade={} firstBucket={} lastBucket={} candles={}",
+                symbol == null ? "TODOS" : symbol,
+                tf,
+                rows,
+                firstTrade,
+                lastTrade,
+                firstBucket,
+                lastBucket,
+                built.items == null ? 0 : built.items.size());
     }
 
     private static class Ohlc {
@@ -551,8 +710,9 @@ public class CandleController implements Initializable {
         static Ohlc synthetic(double closeValue) {
             Ohlc o = new Ohlc();
             o.open = closeValue;
-            o.high = closeValue;
-            o.low = closeValue;
+            double eps = Math.max(Math.abs(closeValue) * 0.00005d, 0.0001d);
+            o.high = closeValue + eps;
+            o.low = Math.max(0.0d, closeValue - eps);
             o.close = closeValue;
             o.volume = 0d;
             o.initialized = true;

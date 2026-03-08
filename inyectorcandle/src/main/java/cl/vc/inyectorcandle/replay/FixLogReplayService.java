@@ -19,8 +19,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -28,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.time.temporal.ChronoField;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -47,6 +50,8 @@ public class FixLogReplayService {
     private static final int TAG_MDENTRYTYPE = 269;
     private static final int TAG_MDENTRYPX = 270;
     private static final int TAG_MDENTRYSIZE = 271;
+    private static final int TAG_MDENTRYDATE = 272;
+    private static final int TAG_MDENTRYTIME = 273;
     private static final int TAG_MDENTRYID = 278;
     private static final int TAG_MDUPDATEACTION = 279;
     private static final int TAG_SYMBOL = 55;
@@ -69,6 +74,17 @@ public class FixLogReplayService {
     private final double timingSpeed;
     private final long timingMaxSleepMs;
     private final boolean purgeDayBeforeInject;
+    private static final DateTimeFormatter FIX_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE;
+    private static final DateTimeFormatter FIX_TIME_FORMAT = new DateTimeFormatterBuilder()
+            .appendPattern("HH:mm")
+            .optionalStart()
+            .appendLiteral(':')
+            .appendValue(ChronoField.SECOND_OF_MINUTE, 2)
+            .optionalStart()
+            .appendFraction(ChronoField.NANO_OF_SECOND, 1, 9, true)
+            .optionalEnd()
+            .optionalEnd()
+            .toFormatter();
 
     private final Map<String, InstrumentKey> mdReqToKey = new ConcurrentHashMap<>();
     private final Set<LocalDate> purgedDays = ConcurrentHashMap.newKeySet();
@@ -327,9 +343,10 @@ public class FixLogReplayService {
                 continue;
             }
 
+            Instant eventTimestamp = resolveTradeEventTimestamp(entry, messageLevel, lineTimestamp);
             TradeEvent trade = new TradeEvent(
                     key,
-                    lineTimestamp,
+                    eventTimestamp,
                     price,
                     quantity,
                     amount,
@@ -345,6 +362,23 @@ public class FixLogReplayService {
                 LOG.info("Replay primer trade parseado en linea {} key={} price={} qty={} amount={}",
                         processedLines, key.id(), price, quantity, amount);
             }
+        }
+    }
+
+    private Instant resolveTradeEventTimestamp(Map<Integer, String> entry, Map<Integer, String> messageLevel, Instant fallback) {
+        String rawDate = fallback(entry.get(TAG_MDENTRYDATE), messageLevel.get(TAG_MDENTRYDATE));
+        String rawTime = fallback(entry.get(TAG_MDENTRYTIME), messageLevel.get(TAG_MDENTRYTIME));
+        if (isBlank(rawDate) || isBlank(rawTime)) {
+            return fallback;
+        }
+        try {
+            LocalDate date = LocalDate.parse(rawDate.trim(), FIX_DATE_FORMAT);
+            LocalTime time = LocalTime.parse(rawTime.trim(), FIX_TIME_FORMAT);
+            // Tags 272/273 son UTC segun estandar FIX 4.4.
+            // No usar logZone aqui: los timestamps de tags son UTC, no hora local del log.
+            return date.atTime(time).toInstant(java.time.ZoneOffset.UTC);
+        } catch (Exception ignored) {
+            return fallback;
         }
     }
 

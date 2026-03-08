@@ -334,14 +334,29 @@ public class StadisticsController {
         indiceSerie.setName("Indice Promedio");
         XYChart.Series<String, Number> montoSerie = new XYChart.Series<>();
         montoSerie.setName("Monto Total");
+        ZoneId cl = ZoneId.of("America/Santiago");
+        Map<String, HistoryPoint> byBucket = points.stream()
+                .collect(Collectors.toMap(
+                        p -> tf.equals("1h")
+                                ? p.ts.atZone(cl).truncatedTo(ChronoUnit.HOURS).toString().substring(0, 16)
+                                : p.ts.atZone(cl).toLocalDate().toString(),
+                        p -> p,
+                        (a, b) -> {
+                            if (b.montoTotal > a.montoTotal) return b;
+                            if (Double.compare(b.montoTotal, a.montoTotal) == 0 && b.ts.isAfter(a.ts)) return b;
+                            return a;
+                        },
+                        java.util.LinkedHashMap::new
+                ));
 
-        for (HistoryPoint p : points) {
-            String label = tf.equals("1h")
-                    ? p.ts.atZone(ZoneId.of("America/Santiago")).truncatedTo(ChronoUnit.HOURS).toString().substring(0, 16)
-                    : p.ts.atZone(ZoneId.of("America/Santiago")).toLocalDate().toString();
-            indiceSerie.getData().add(new XYChart.Data<>(label, p.indicePromedio));
-            montoSerie.getData().add(new XYChart.Data<>(label, p.montoTotal));
-        }
+        byBucket.entrySet().stream()
+                .sorted(Map.Entry.comparingByValue(Comparator.comparing(h -> h.ts)))
+                .forEach(e -> {
+                    HistoryPoint p = e.getValue();
+                    String label = e.getKey();
+                    indiceSerie.getData().add(new XYChart.Data<>(label, p.indicePromedio));
+                    montoSerie.getData().add(new XYChart.Data<>(label, p.montoTotal));
+                });
 
         marketOverviewChart.getData().setAll(indiceSerie, montoSerie);
     }
