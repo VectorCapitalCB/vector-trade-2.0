@@ -64,6 +64,7 @@ public class BcsFixApplication extends MessageCracker implements Application {
     @Override
     public void toAdmin(quickfix.Message message, SessionID sessionId) {
         try {
+
             if (message.getHeader().isSetField(MsgType.FIELD)
                     && MsgType.LOGON.equals(message.getHeader().getString(MsgType.FIELD))) {
                 if (config.rawData() != null) {
@@ -77,6 +78,7 @@ public class BcsFixApplication extends MessageCracker implements Application {
                     message.setField(new Password(config.password()));
                 }
             }
+
         } catch (Exception e) {
             LOG.error("Error adding admin fields", e);
         }
@@ -132,6 +134,7 @@ public class BcsFixApplication extends MessageCracker implements Application {
 
     public void onMessage(MarketDataSnapshotFullRefresh message, SessionID sessionId) {
         try {
+
             String mdReqId = message.isSetField(MDReqID.FIELD) ? message.getString(MDReqID.FIELD) : null;
             InstrumentKey key = mdReqId == null ? null : mdReqToKey.get(mdReqId);
             if (key == null) {
@@ -147,6 +150,7 @@ public class BcsFixApplication extends MessageCracker implements Application {
             var parsed = MarketDataParser.parseSnapshot(message, key);
             parsed.events().forEach(actorSystem::onMarketData);
             parsed.trades().forEach(actorSystem::onTrade);
+
         } catch (Exception e) {
             LOG.error("Error processing MarketDataSnapshotFullRefresh", e);
         }
