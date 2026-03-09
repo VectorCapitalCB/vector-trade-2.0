@@ -115,6 +115,9 @@ public class BcsFixApplication extends MessageCracker implements Application {
 
             Map<SubscriptionSeed, SecurityDefinition> seeds = new LinkedHashMap<>();
             for (SecurityDefinition sec : securities) {
+                if (!matchesDestinationFilter(sec)) {
+                    continue;
+                }
                 SubscriptionSeed seed = new SubscriptionSeed(
                         sec.key().symbol(),
                         sec.key().destination(),
@@ -153,6 +156,14 @@ public class BcsFixApplication extends MessageCracker implements Application {
         } catch (Exception e) {
             LOG.error("Error processing SecurityList", e);
         }
+    }
+
+    private boolean matchesDestinationFilter(SecurityDefinition sec) {
+        String filter = config.securitySubscriptionDestinationFilter();
+        if (filter == null || filter.isBlank()) {
+            return true;
+        }
+        return filter.equalsIgnoreCase(sec.key().destination());
     }
 
     public void onMessage(MarketDataSnapshotFullRefresh message, SessionID sessionId) {

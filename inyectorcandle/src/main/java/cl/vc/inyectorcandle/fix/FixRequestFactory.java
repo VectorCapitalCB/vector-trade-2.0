@@ -44,9 +44,6 @@ public final class FixRequestFactory {
         if (destination != null) {
             group.setField(new SecurityExchange(destination));
         }
-        if (currency != null) {
-            group.setField(new Currency(currency));
-        }
         request.addGroup(group);
 
         addEntryType(request, MDEntryType.BID);
@@ -78,7 +75,9 @@ public final class FixRequestFactory {
         if (bookingRefId != null) {
             group.setField(new BookingRefID(bookingRefId));
         }
-
+        if (destination != null) {
+            group.setField(new SecurityExchange(destination));
+        }
         request.addGroup(group);
 
         addEntryType(request, MDEntryType.TRADE);

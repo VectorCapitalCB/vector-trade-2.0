@@ -5,24 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="23b81911-ab74-4291-905d-2cafed251d36" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLog.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLogFactory.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLogFactoryHelper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLogHelper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/utils/Helper.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/main/resources/fix/FIX44BCS.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inyectorcandle.iml" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/inyectorcandle.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.ipr" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/app/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/app/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.body" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.body" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.header" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.header" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.senderseqnums" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.senderseqnums" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.session" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.session" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.targetseqnums" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.targetseqnums" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/AppConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/AppConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/ConfigLoader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/ConfigLoader.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/BcsFixApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/BcsFixApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixInitiatorRunner.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixInitiatorRunner.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixRequestFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixRequestFactory.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/fix/bcs-initiator.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/fix/bcs-initiator.cfg" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -192,7 +187,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="33" />
+    <option name="cachedIndexableFilesCount" value="47" />
   </component>
   <component name="ErrorTreeViewConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -267,32 +262,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.Main.executor": "Debug",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "E:/VC-GITHUB/vector-trade-2.0/inyectorcandle/src/main/java/cl/vc/inyectorcandle/fix",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "show.migrate.to.gradle.popup": "false",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.Main.executor&quot;: &quot;Debug&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/VC-GITHUB/vector-trade-2.0/inyectorcandle/src/main/java/cl/vc/inyectorcandle/fix&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="E:\VC-GITHUB\vector-trade-2.0\inyectorcandle\src\main\java\cl\vc\inyectorcandle\fix" />
@@ -398,7 +393,8 @@
       <workItem from="1772847375685" duration="1292000" />
       <workItem from="1772848682268" duration="5722000" />
       <workItem from="1772856809460" duration="12152000" />
-      <workItem from="1773060309016" duration="2453000" />
+      <workItem from="1773060309016" duration="5302000" />
+      <workItem from="1773062509986" duration="1601000" />
     </task>
     <servers />
   </component>
