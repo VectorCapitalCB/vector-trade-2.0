@@ -7,6 +7,9 @@ import quickfix.fix44.SecurityListRequest;
 import java.util.UUID;
 
 public final class FixRequestFactory {
+    private static final String SETTLEMENT_T2 = "T2";
+    private static final String SETTLEMENT_CASH = "CASH";
+    private static final String SETTLEMENT_NEXT_DAY = "NEXT_DAY";
 
     private FixRequestFactory() {
     }
@@ -59,6 +62,55 @@ public final class FixRequestFactory {
         addEntryType(request, MDEntryType.SETTLEMENT_PRICE);
 
         return request;
+    }
+
+    public static MarketDataRequest subscribeTrades(String symbol, String settlement, String destination, String currency) {
+        MarketDataRequest request = new MarketDataRequest();
+        request.set(new MDReqID("MD-" + UUID.randomUUID()));
+        request.set(new SubscriptionRequestType(SubscriptionRequestType.SNAPSHOT_UPDATES));
+        request.set(new MarketDepth(0));
+        request.set(new AggregatedBook(false));
+
+        MarketDataRequest.NoRelatedSym group = new MarketDataRequest.NoRelatedSym();
+        group.set(new Symbol(symbol));
+
+        String bookingRefId = convertBookingRefId(settlement);
+        if (bookingRefId != null) {
+            group.setField(new BookingRefID(bookingRefId));
+        }
+
+        request.addGroup(group);
+
+        addEntryType(request, MDEntryType.TRADE);
+        return request;
+    }
+
+    public static String convertBookingRefId(String settlement) {
+        if (settlement == null || settlement.isBlank()) {
+            return null;
+        }
+        return switch (settlement.trim().toUpperCase()) {
+            case SETTLEMENT_T2, "REGULAR", "3", "|||" -> "|||";
+            case SETTLEMENT_CASH, "1", "PH|||" -> "PH|||";
+            case SETTLEMENT_NEXT_DAY, "2", "PM|||" -> "PM|||";
+            case "T3", "4", "T+3|||" -> "T+3|||";
+            case "T5", "9", "T+5|||" -> "T+5|||";
+            default -> settlement.trim().toUpperCase();
+        };
+    }
+
+    public static String convertFixSettlType(String settlement) {
+        if (settlement == null || settlement.isBlank()) {
+            return null;
+        }
+        return switch (settlement.trim().toUpperCase()) {
+            case SETTLEMENT_T2, "REGULAR", "3", "|||" -> "3";
+            case SETTLEMENT_CASH, "1", "PH|||" -> "1";
+            case SETTLEMENT_NEXT_DAY, "2", "PM|||" -> "2";
+            case "T3", "4", "T+3|||" -> "4";
+            case "T5", "9", "T+5|||" -> "9";
+            default -> settlement.trim().toUpperCase();
+        };
     }
 
     private static void addEntryType(MarketDataRequest request, char type) {

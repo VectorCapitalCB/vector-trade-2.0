@@ -19,12 +19,14 @@ import quickfix.fix44.News;
 import quickfix.fix44.SecurityList;
 import quickfix.fix44.SecurityListRequest;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class BcsFixApplication extends MessageCracker implements Application {
     private static final Logger LOG = LoggerFactory.getLogger(BcsFixApplication.class);
+    private static final List<String> SUBSCRIPTION_SETTLEMENTS = List.of("T2", "CASH", "NEXT_DAY");
 
     private final AppConfig config;
     private final MarketActorSystem actorSystem;
@@ -64,7 +66,6 @@ public class BcsFixApplication extends MessageCracker implements Application {
     @Override
     public void toAdmin(quickfix.Message message, SessionID sessionId) {
         try {
-
             if (message.getHeader().isSetField(MsgType.FIELD)
                     && MsgType.LOGON.equals(message.getHeader().getString(MsgType.FIELD))) {
                 if (config.rawData() != null) {
@@ -110,20 +111,42 @@ public class BcsFixApplication extends MessageCracker implements Application {
 
             for (SecurityDefinition sec : securities) {
                 actorSystem.onSecurity(sec);
-                MarketDataRequest request = FixRequestFactory.subscribeAllDepth(
+            }
+
+            Map<SubscriptionSeed, SecurityDefinition> seeds = new LinkedHashMap<>();
+            for (SecurityDefinition sec : securities) {
+                SubscriptionSeed seed = new SubscriptionSeed(
                         sec.key().symbol(),
-                        sec.bookingRefId(),
-                        sec.key().settlement(),
                         sec.key().destination(),
-                        sec.key().currency()
+                        sec.key().currency(),
+                        sec.key().securityType()
                 );
+                seeds.putIfAbsent(seed, sec);
+            }
 
-                String mdReqId = request.getString(MDReqID.FIELD);
-                mdReqToKey.put(mdReqId, sec.key());
-                send(request);
+            for (SecurityDefinition sec : seeds.values()) {
+                for (String settlement : SUBSCRIPTION_SETTLEMENTS) {
+                    MarketDataRequest request = FixRequestFactory.subscribeTrades(
+                            sec.key().symbol(),
+                            settlement,
+                            sec.key().destination(),
+                            sec.key().currency()
+                    );
 
-                if (config.securitySubscriptionPauseMs() > 0) {
-                    Thread.sleep(config.securitySubscriptionPauseMs());
+                    InstrumentKey subscriptionKey = InstrumentKey.fromValues(
+                            sec.key().symbol(),
+                            settlement,
+                            sec.key().destination(),
+                            sec.key().currency(),
+                            sec.key().securityType()
+                    );
+                    String mdReqId = request.getString(MDReqID.FIELD);
+                    mdReqToKey.put(mdReqId, subscriptionKey);
+                    send(request);
+
+                    if (config.securitySubscriptionPauseMs() > 0) {
+                        Thread.sleep(config.securitySubscriptionPauseMs());
+                    }
                 }
             }
 
@@ -134,6 +157,10 @@ public class BcsFixApplication extends MessageCracker implements Application {
 
     public void onMessage(MarketDataSnapshotFullRefresh message, SessionID sessionId) {
         try {
+            if (!config.processSnapshots()) {
+                LOG.debug("Ignoring MarketDataSnapshotFullRefresh because fix.process.snapshots=false");
+                return;
+            }
 
             String mdReqId = message.isSetField(MDReqID.FIELD) ? message.getString(MDReqID.FIELD) : null;
             InstrumentKey key = mdReqId == null ? null : mdReqToKey.get(mdReqId);
@@ -149,7 +176,9 @@ public class BcsFixApplication extends MessageCracker implements Application {
 
             var parsed = MarketDataParser.parseSnapshot(message, key);
             parsed.events().forEach(actorSystem::onMarketData);
-            parsed.trades().forEach(actorSystem::onTrade);
+            if (config.processSnapshotTrades()) {
+                parsed.trades().forEach(actorSystem::onTrade);
+            }
 
         } catch (Exception e) {
             LOG.error("Error processing MarketDataSnapshotFullRefresh", e);
@@ -199,5 +228,8 @@ public class BcsFixApplication extends MessageCracker implements Application {
         } catch (Exception e) {
             LOG.error("Cannot send message {}", message, e);
         }
+    }
+
+    private record SubscriptionSeed(String symbol, String destination, String currency, String securityType) {
     }
 }

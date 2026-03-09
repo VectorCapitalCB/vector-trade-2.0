@@ -9,7 +9,7 @@ public class FixInitiatorRunner implements AutoCloseable {
     public FixInitiatorRunner(BcsFixApplication app, String sessionSettingsPath) throws ConfigError {
         SessionSettings settings = new SessionSettings(sessionSettingsPath);
         MessageStoreFactory storeFactory = new FileStoreFactory(settings);
-        LogFactory logFactory = new FileLogFactory(settings);
+        FileLogFactory logFactory = new FileLogFactory(settings);
         MessageFactory messageFactory = new DefaultMessageFactory();
 
         this.initiator = new SocketInitiator(app, storeFactory, settings, logFactory, messageFactory);

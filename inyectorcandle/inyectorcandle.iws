@@ -5,15 +5,24 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="23b81911-ab74-4291-905d-2cafed251d36" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLog.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLogFactory.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLogFactoryHelper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FileLogHelper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/utils/Helper.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/fix/FIX44BCS.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inyectorcandle.iml" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/inyectorcandle.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.ipr" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/replay/FixLogReplayService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/replay/FixLogReplayService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/app/Main.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/app/Main.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/AppConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/AppConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/ConfigLoader.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/ConfigLoader.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/BcsFixApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/BcsFixApplication.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixInitiatorRunner.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixInitiatorRunner.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixRequestFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixRequestFactory.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" afterPath="$PROJECT_DIR$/../principal-module" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/CandleChannelActor.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/CandleChannelActor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/fix/bcs-initiator.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/fix/bcs-initiator.cfg" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -183,8 +192,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="35" />
-    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+    <option name="cachedIndexableFilesCount" value="33" />
   </component>
   <component name="ErrorTreeViewConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -274,6 +282,7 @@
     "ignore.virus.scanning.warn.message": "true",
     "junie.onboarding.icon.badge.shown": "true",
     "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "E:/VC-GITHUB/vector-trade-2.0/inyectorcandle/src/main/java/cl/vc/inyectorcandle/fix",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
@@ -284,6 +293,16 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\VC-GITHUB\vector-trade-2.0\inyectorcandle\src\main\java\cl\vc\inyectorcandle\fix" />
+      <recent name="E:\VC-GITHUB\vector-trade-2.0\inyectorcandle\src\main\resources\fix" />
+    </key>
+    <key name="CopyClassDialog.RECENTS_KEY">
+      <recent name="cl.vc.inyectorcandle.utils" />
+      <recent name="cl.vc.inyectorcandle.fix" />
+    </key>
+  </component>
   <component name="RunManager">
     <configuration selected="false" default="true" type="Applet" factoryName="Applet">
       <module name="" />
@@ -325,17 +344,6 @@
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
-    </configuration>
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="untrusted" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="untrusted" />
-      <option name="filePath" />
-      <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
@@ -390,6 +398,7 @@
       <workItem from="1772847375685" duration="1292000" />
       <workItem from="1772848682268" duration="5722000" />
       <workItem from="1772856809460" duration="12152000" />
+      <workItem from="1773060309016" duration="2453000" />
     </task>
     <servers />
   </component>

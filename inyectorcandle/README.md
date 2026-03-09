@@ -31,6 +31,10 @@ Servicio Java para BCS FIX 4.4 que:
 - `fix.logon.rawData` (si tu gateway lo requiere)
 - `fix.logon.username`/`fix.logon.password` (opcional)
 
+Tambien puedes pasar un `application.properties` externo por argumento al jar:
+- `java -jar target/inyectorcandle-1.0.0-fat.jar /ruta/application.properties`
+- Si no envias argumento, usa `application.properties` del classpath como fallback.
+
 Tambien puedes sobreescribir por entorno:
 - `FIX_CONFIG_FILE`
 - `MONGO_URI`
@@ -38,6 +42,8 @@ Tambien puedes sobreescribir por entorno:
 - `FIX_LOGON_RAWDATA`
 - `FIX_LOGON_USERNAME`
 - `FIX_LOGON_PASSWORD`
+- `FIX_PROCESS_SNAPSHOTS`
+- `FIX_PROCESS_SNAPSHOT_TRADES`
 - `REPLAY_ENABLED`
 - `REPLAY_INPUT_PATH`
 - `REPLAY_LOG_ZONE`
@@ -77,6 +83,7 @@ Notas:
 ```bash
 mvn clean test
 mvn exec:java
+java -jar target/inyectorcandle-1.0.0-fat.jar /ruta/application.properties
 ```
 
 ## Colecciones Mongo
@@ -93,3 +100,5 @@ mvn exec:java
 - Para separar correctamente cada papel por liquidacion/destino/moneda, la clave interna es siempre `symbol|settlement|destination|currency`.
 - Si el feed incremental no trae `MDReqID`, el parser intenta reconstruir clave desde campos del propio mensaje.
 - `fix.subscription.pause.ms` permite evitar burst extremo al suscribirse a toda la lista.
+- `fix.process.snapshots=false` ignora completamente `35=W`.
+- `fix.process.snapshot.trades=false` procesa `35=W` pero no inserta sus trades, evitando duplicar historicos al reiniciar.

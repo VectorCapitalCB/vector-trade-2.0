@@ -18,7 +18,8 @@ public class Main {
     private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
     public static void main(String[] args) throws Exception {
-        AppConfig config = ConfigLoader.load();
+        String configPath = args != null && args.length > 0 ? args[0] : null;
+        AppConfig config = ConfigLoader.load(configPath);
 
         MongoMarketRepository repository = new MongoMarketRepository(config.mongoUri(), config.mongoDatabase());
         MarketActorSystem actorSystem = new MarketActorSystem(repository, config.candleTimeframes());

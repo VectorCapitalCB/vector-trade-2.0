@@ -2,6 +2,9 @@ package cl.vc.inyectorcandle.config;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Properties;
 
 public final class ConfigLoader {
@@ -9,15 +12,31 @@ public final class ConfigLoader {
     }
 
     public static AppConfig load() {
+        return load(null);
+    }
+
+    public static AppConfig load(String configPath) {
         Properties properties = new Properties();
 
-        try (InputStream in = ConfigLoader.class.getClassLoader().getResourceAsStream("application.properties")) {
-            if (in == null) {
-                throw new IllegalStateException("application.properties not found in classpath");
+        if (configPath != null && !configPath.isBlank()) {
+            Path path = Paths.get(configPath.trim());
+            if (!Files.exists(path) || !Files.isRegularFile(path)) {
+                throw new IllegalArgumentException("application.properties no existe o no es archivo: " + path);
             }
-            properties.load(in);
-        } catch (IOException e) {
-            throw new RuntimeException("Cannot load application.properties", e);
+            try (InputStream in = Files.newInputStream(path)) {
+                properties.load(in);
+            } catch (IOException e) {
+                throw new RuntimeException("Cannot load application.properties from path: " + path, e);
+            }
+        } else {
+            try (InputStream in = ConfigLoader.class.getClassLoader().getResourceAsStream("application.properties")) {
+                if (in == null) {
+                    throw new IllegalStateException("application.properties not found in classpath");
+                }
+                properties.load(in);
+            } catch (IOException e) {
+                throw new RuntimeException("Cannot load application.properties", e);
+            }
         }
 
         overrideFromEnv(properties, "FIX_CONFIG_FILE", "fix.config.file");
@@ -26,6 +45,8 @@ public final class ConfigLoader {
         overrideFromEnv(properties, "FIX_LOGON_RAWDATA", "fix.logon.rawData");
         overrideFromEnv(properties, "FIX_LOGON_USERNAME", "fix.logon.username");
         overrideFromEnv(properties, "FIX_LOGON_PASSWORD", "fix.logon.password");
+        overrideFromEnv(properties, "FIX_PROCESS_SNAPSHOTS", "fix.process.snapshots");
+        overrideFromEnv(properties, "FIX_PROCESS_SNAPSHOT_TRADES", "fix.process.snapshot.trades");
         overrideFromEnv(properties, "REPLAY_ENABLED", "replay.enabled");
         overrideFromEnv(properties, "REPLAY_INPUT_PATH", "replay.input.path");
         overrideFromEnv(properties, "REPLAY_LOG_ZONE", "replay.log.zone");
