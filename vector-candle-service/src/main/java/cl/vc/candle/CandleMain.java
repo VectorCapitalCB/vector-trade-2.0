@@ -17,10 +17,16 @@ public class CandleMain {
     private static final Logger log = LoggerFactory.getLogger(CandleMain.class);
 
     public static void main(String[] args) throws Exception {
+        if (args == null || args.length != 1) {
+            throw new IllegalArgumentException("Uso: java -jar vector-candle-service.jar <ruta-config.properties>");
+        }
+
+        String configPath = args[0];
+        if (!configPath.endsWith(".properties")) {
+            throw new IllegalArgumentException("El argumento debe ser la ruta a un archivo .properties");
+        }
+
         Properties properties = new Properties();
-        String configPath = args != null && args.length > 0
-                ? args[0]
-                : "src/main/resources/application.properties";
         log.info("Cargando configuracion desde {}", configPath);
         try (InputStream in = new FileInputStream(configPath)) {
             properties.load(in);
