@@ -670,20 +670,8 @@ public class CandleController implements Initializable {
         if (built == null) {
             return;
         }
-        String firstTrade = built.firstTradeAt == null ? "-" : TS_FMT.format(built.firstTradeAt);
-        String lastTrade = built.lastTradeAt == null ? "-" : TS_FMT.format(built.lastTradeAt);
-        String firstBucket = built.firstBucket == null ? "-" : TS_FMT.format(built.firstBucket);
-        String lastBucket = built.lastBucket == null ? "-" : TS_FMT.format(built.lastBucket);
-        int rows = filtered == null ? 0 : filtered.size();
-        log.info("[CANDLE][RENDER] symbol={} tf={} trades={} firstTrade={} lastTrade={} firstBucket={} lastBucket={} candles={}",
-                symbol == null ? "TODOS" : symbol,
-                tf,
-                rows,
-                firstTrade,
-                lastTrade,
-                firstBucket,
-                lastBucket,
-                built.items == null ? 0 : built.items.size());
+
+
     }
 
     private static class Ohlc {

@@ -38,9 +38,12 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Base64;
+import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Properties;
 import java.util.Set;
@@ -84,6 +87,9 @@ public class LoginController {
     private void initialize() {
         try {
 
+
+            enviroment.getItems().add("PRODUCCTION");
+
             Repository.getStaticSecurityType().put("CFINASDAQ", RoutingMessage.SecurityType.CS);
             Repository.getStaticSecurityType().put("CFISP500", RoutingMessage.SecurityType.CS);
             Repository.getStaticSecurityType().put("CFIETFIPSA", RoutingMessage.SecurityType.CS);
@@ -105,12 +111,7 @@ public class LoginController {
                     .map(v -> v.name().toLowerCase())
                     .forEach(validEnvs::add);
 
-            for (String key : props.stringPropertyNames()) {
-                String val = props.getProperty(key);
-                if (validEnvs.contains(key) && (val.startsWith("ws://") || val.startsWith("wss://"))) {
-                    envKeys.add(key);
-                }
-            }
+            envKeys.addAll(discoverAvailableEnvironments(validEnvs));
 
             if (envKeys.size() > 1) {
                 String segundo = envKeys.remove(1);
@@ -119,7 +120,10 @@ public class LoginController {
 
             enviroment.setItems(envKeys);
             enviroment.getSelectionModel().selectFirst();
-            Repository.setEnviroment(SessionsMessage.Enviroment.valueOf(enviroment.getValue().toUpperCase()));
+            String selectedEnv = enviroment.getSelectionModel().getSelectedItem();
+            if (selectedEnv != null && !selectedEnv.isBlank()) {
+                Repository.setEnviroment(SessionsMessage.Enviroment.valueOf(selectedEnv.toUpperCase()));
+            }
             enviroment.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> Repository.setEnviroment(SessionsMessage.Enviroment.valueOf(newV.toUpperCase())));
 
             Repository.setLoginController(this);
@@ -307,6 +311,48 @@ public class LoginController {
             }
         }
         return null;
+    }
+
+    private java.util.List<String> discoverAvailableEnvironments(Set<String> validEnvs) {
+        Set<String> discovered = new LinkedHashSet<>();
+
+        for (String key : props.stringPropertyNames()) {
+            String normalized = key == null ? "" : key.trim().toLowerCase();
+            String value = props.getProperty(key);
+            if (value == null || value.isBlank()) {
+                continue;
+            }
+
+            if (validEnvs.contains(normalized) && isWsUrl(value)) {
+                discovered.add(normalized);
+                continue;
+            }
+
+            int firstDot = normalized.indexOf('.');
+            if (firstDot > 0) {
+                String prefix = normalized.substring(0, firstDot);
+                if (validEnvs.contains(prefix) && isWsUrl(value)) {
+                    discovered.add(prefix);
+                    continue;
+                }
+            }
+
+            int lastDot = normalized.lastIndexOf('.');
+            if (lastDot > 0) {
+                String suffix = normalized.substring(lastDot + 1);
+                if (validEnvs.contains(suffix) && isWsUrl(value)) {
+                    discovered.add(suffix);
+                }
+            }
+        }
+
+        ArrayList<String> ordered = new ArrayList<>(discovered);
+        ordered.sort(Comparator.naturalOrder());
+        return ordered;
+    }
+
+    private boolean isWsUrl(String value) {
+        return value.startsWith("ws://") || value.startsWith("wss://");
     }
 
     private SimpleWebSocketListener connectSocket(String endpoint, String encodedCredentials, String channelName, ActorRef receiverActor) {

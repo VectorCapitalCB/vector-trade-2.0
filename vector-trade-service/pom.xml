@@ -110,6 +110,39 @@
                             </archive>
                         </configuration>
                     </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-shade-plugin</artifactId>
+                        <version>3.5.1</version>
+                        <executions>
+                            <execution>
+                                <phase>package</phase>
+                                <goals>
+                                    <goal>shade</goal>
+                                </goals>
+                                <configuration>
+                                    <finalName>${project.artifactId}-fat</finalName>
+                                    <createDependencyReducedPom>false</createDependencyReducedPom>
+                                    <filters>
+                                        <filter>
+                                            <artifact>*:*</artifact>
+                                            <excludes>
+                                                <exclude>META-INF/*.SF</exclude>
+                                                <exclude>META-INF/*.DSA</exclude>
+                                                <exclude>META-INF/*.RSA</exclude>
+                                            </excludes>
+                                        </filter>
+                                    </filters>
+                                    <transformers>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                            <mainClass>cl.vc.service.MainApp</mainClass>
+                                        </transformer>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                    </transformers>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
 
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
@@ -141,11 +174,11 @@
                                         <mkdir dir="target/${project.artifactId}/logs/"/>
 
                                         <echo>Copiando
-                                            target/${project.artifactId}-${project.version}.jar a
+                                            target/${project.artifactId}-fat.jar a
                                             target/${project.artifactId}
                                         </echo>
-                                        <copy file="target/${project.artifactId}-${project.version}.jar"
-                                              toFile="target/${project.artifactId}/${project.artifactId}.jar"
+                                        <copy file="target/${project.artifactId}-fat.jar"
+                                              toFile="target/${project.artifactId}/${project.artifactId}-fat.jar"
                                               failonerror="false" overwrite="true"/>
 
                                         <echo>Creando ZIP con Distribution</echo>
@@ -188,54 +221,6 @@
             <id>test</id>
             <build>
                 <plugins>
-
-                    <!-- ========= SHADE PLUGIN (Uber Jar) ========= -->
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-shade-plugin</artifactId>
-                        <version>3.5.1</version>
-
-                        <executions>
-                            <execution>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>shade</goal>
-                                </goals>
-
-                                <configuration>
-                                    <!-- Nombre del JAR generado -->
-                                    <finalName>${project.artifactId}-fat</finalName>
-
-                                    <!-- Quita firmas META-INF que rompen el jar -->
-                                    <filters>
-                                        <filter>
-                                            <artifact>*:*</artifact>
-                                            <excludes>
-                                                <exclude>META-INF/*.SF</exclude>
-                                                <exclude>META-INF/*.DSA</exclude>
-                                                <exclude>META-INF/*.RSA</exclude>
-                                            </excludes>
-                                        </filter>
-                                    </filters>
-
-                                    <!-- Mezcla correctamente el MANIFEST y Services -->
-                                    <transformers>
-
-                                        <!-- Copia MANIFEST.MF -->
-                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                            <mainClass>tu.paquete.MainApp</mainClass>
-                                        </transformer>
-
-                                        <!-- Necesario para bibliotecas que usan META-INF/services -->
-                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-
-                                    </transformers>
-                                </configuration>
-                            </execution>
-                        </executions>
-
-                    </plugin>
-
                 </plugins>
             </build>
         </profile>

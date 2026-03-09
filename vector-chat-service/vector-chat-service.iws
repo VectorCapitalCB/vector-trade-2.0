@@ -6,27 +6,18 @@
   <component name="ChangeListManager">
     <list default="true" id="09a88a53-4236-4a78-b61c-63392569a0d0" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/CandleMain.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/CandleMain.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleSubscriptions.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleSubscriptions.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleWebSocketEndpoint.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleWebSocketEndpoint.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.ipr" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vector-chat-service.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/vector-chat-service.ipr" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vector-chat-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/vector-chat-service.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LoginController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/NewsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/NewsController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/ws/SimpleWebSocketListener.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/ws/SimpleWebSocketListener.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.localhost.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.localhost.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/Footer.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/Footer.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/News.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/News.fxml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/StadisticsView.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/StadisticsView.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -196,8 +187,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="15" />
-    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+    <option name="cachedIndexableFilesCount" value="1329" />
   </component>
   <component name="ErrorTreeViewConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -292,6 +282,9 @@
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
     &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
     &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
     &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
     &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
     &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
@@ -332,17 +325,6 @@
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
-    </configuration>
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="untrusted" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="untrusted" />
-      <option name="filePath" />
-      <method v="2" />
     </configuration>
   </component>
   <component name="SharedIndexes">
@@ -392,6 +374,9 @@
       <workItem from="1772845806360" duration="127000" />
       <workItem from="1772845937690" duration="6326000" />
       <workItem from="1772856837560" duration="772000" />
+      <workItem from="1773067116204" duration="85000" />
+      <workItem from="1773067214528" duration="3851000" />
+      <workItem from="1773078082309" duration="6000" />
     </task>
     <servers />
   </component>

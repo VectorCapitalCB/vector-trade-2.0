@@ -5,19 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="23b81911-ab74-4291-905d-2cafed251d36" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/inyectorcandle.iml" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.body" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.body" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.header" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.header" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.senderseqnums" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.senderseqnums" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.session" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.session" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.targetseqnums" beforeDir="false" afterPath="$PROJECT_DIR$/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.targetseqnums" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/AppConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/config/AppConfig.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/BcsFixApplication.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/BcsFixApplication.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixRequestFactory.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/FixRequestFactory.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-candle-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -187,7 +179,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="47" />
+    <option name="cachedIndexableFilesCount" value="48" />
   </component>
   <component name="ErrorTreeViewConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -394,7 +386,8 @@
       <workItem from="1772848682268" duration="5722000" />
       <workItem from="1772856809460" duration="12152000" />
       <workItem from="1773060309016" duration="5302000" />
-      <workItem from="1773062509986" duration="1601000" />
+      <workItem from="1773062509986" duration="2058000" />
+      <workItem from="1773064633125" duration="613000" />
     </task>
     <servers />
   </component>

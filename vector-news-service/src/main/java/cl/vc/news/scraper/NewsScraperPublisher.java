@@ -427,6 +427,26 @@ public class NewsScraperPublisher extends Thread {
             String href = linkEl.attr("href");
             url = !isBlank(href) ? href : linkEl.text();
         }
+        if (isBlank(url)) {
+            // Fallback: <guid isPermaLink="true"> (RSS) — por defecto isPermaLink es true
+            Element guidEl = item.selectFirst("guid");
+            if (guidEl != null && !"false".equalsIgnoreCase(guidEl.attr("isPermaLink"))) {
+                String guidText = guidEl.text().trim();
+                if (guidText.startsWith("http")) {
+                    url = guidText;
+                }
+            }
+        }
+        if (isBlank(url)) {
+            // Fallback: <id> (Atom feeds)
+            Element idEl = item.selectFirst("id");
+            if (idEl != null) {
+                String idText = idEl.text().trim();
+                if (idText.startsWith("http")) {
+                    url = idText;
+                }
+            }
+        }
         long publishedAt = parseDateMillis(firstNonBlank(
                 item.selectFirst("pubDate") != null ? item.selectFirst("pubDate").text() : null,
                 item.selectFirst("published") != null ? item.selectFirst("published").text() : null,

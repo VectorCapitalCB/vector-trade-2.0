@@ -6,15 +6,16 @@
   <component name="ChangeListManager">
     <list default="true" id="fc0792c9-c01e-442f-af37-37bcfd8af94d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../inyectorcandle/src/main/java/cl/vc/inyectorcandle/replay/FixLogReplayService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/src/main/java/cl/vc/inyectorcandle/replay/FixLogReplayService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../inyectorcandle/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" afterPath="$PROJECT_DIR$/../principal-module" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/vector-candle-service.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/CandleChannelActor.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/CandleChannelActor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/CandleController.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.ipr" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -378,7 +379,7 @@
       <updated>1772845692628</updated>
       <workItem from="1772845693778" duration="2073000" />
       <workItem from="1772856825861" duration="13589000" />
-      <workItem from="1773062147659" duration="958000" />
+      <workItem from="1773062147659" duration="3751000" />
     </task>
     <servers />
   </component>

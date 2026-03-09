@@ -14,7 +14,10 @@ import cl.vc.module.protocolbuff.generator.IDGenerator;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
+import javafx.animation.KeyFrame;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
+import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
@@ -28,6 +31,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
 import javafx.stage.Stage;
+import javafx.util.Duration;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -248,6 +252,7 @@ public class MarketDataPortfolioViewController {
             marketDataStatisticsTable.setItems(data);
             this.marketDataStatisticsTable.setEditable(true);
             this.marketDataStatisticsTable.getSortOrder().add(this.symbol);
+            this.marketDataStatisticsTable.setRowFactory(tv -> new RatioAwareTableRow());
 
             this.market.setCellValueFactory(new PropertyValueFactory<>("securityExchange"));
             this.symbol.setCellValueFactory(new PropertyValueFactory<>("symbol"));
@@ -751,6 +756,135 @@ public class MarketDataPortfolioViewController {
     private void runFx(Runnable r) {
         if (Platform.isFxApplicationThread()) r.run();
         else Platform.runLater(r);
+    }
+
+    private static double parseRatioValue(StatisticVO item) {
+        if (item == null || item.getRatio() == null) {
+            return 0d;
+        }
+        String raw = item.getRatio().trim();
+        if (raw.isBlank()) {
+            return 0d;
+        }
+
+        String normalized = raw
+                .replace("%", "")
+                .replace("−", "-")
+                .replaceAll("[^0-9,.-]", "");
+
+        if (normalized.indexOf(',') >= 0 && normalized.indexOf('.') >= 0) {
+            normalized = normalized.replace(".", "").replace(",", ".");
+        } else if (normalized.indexOf(',') >= 0) {
+            normalized = normalized.replace(",", ".");
+        }
+
+        try {
+            return Double.parseDouble(normalized);
+        } catch (Exception e) {
+            return 0d;
+        }
+    }
+
+    private static final class RatioAwareTableRow extends TableRow<StatisticVO> {
+        private static final String BASE_STYLE = "-fx-background-insets: 0; -fx-background-radius: 0;";
+        private static final String POSITIVE_STYLE = BASE_STYLE + " -fx-background-color: rgba(22, 163, 74, 0.12);";
+        private static final String NEGATIVE_STYLE = BASE_STYLE + " -fx-background-color: rgba(220, 38, 38, 0.12);";
+        private static final String NEUTRAL_STYLE = BASE_STYLE;
+        private static final String POSITIVE_BLINK_STYLE = BASE_STYLE + " -fx-background-color: linear-gradient(to right, rgba(34,197,94,0.55), rgba(34,197,94,0.18));";
+        private static final String NEGATIVE_BLINK_STYLE = BASE_STYLE + " -fx-background-color: linear-gradient(to right, rgba(239,68,68,0.55), rgba(239,68,68,0.18));";
+
+        private final Timeline blinkTimeline;
+        private final ChangeListener<String> ratioListener = (obs, oldValue, newValue) -> {
+            StatisticVO current = getItem();
+            if (current == null) {
+                return;
+            }
+            applyTrendStyle(current, false);
+            if (oldValue == null || oldValue.equals(newValue)) {
+                return;
+            }
+            triggerBlink(current);
+        };
+
+        private StatisticVO observedItem;
+
+        private RatioAwareTableRow() {
+            blinkTimeline = new Timeline(
+                    new KeyFrame(Duration.ZERO, evt -> applyBlinkFrame()),
+                    new KeyFrame(Duration.millis(180), evt -> applyTrendStyle(getItem(), false)),
+                    new KeyFrame(Duration.millis(360), evt -> applyBlinkFrame()),
+                    new KeyFrame(Duration.millis(540), evt -> applyTrendStyle(getItem(), false))
+            );
+            blinkTimeline.setCycleCount(2);
+        }
+
+        @Override
+        protected void updateItem(StatisticVO item, boolean empty) {
+            if (observedItem != null) {
+                observedItem.ratioProperty().removeListener(ratioListener);
+                observedItem = null;
+            }
+
+            super.updateItem(item, empty);
+
+            if (empty || item == null) {
+                blinkTimeline.stop();
+                setStyle("");
+                return;
+            }
+
+            observedItem = item;
+            observedItem.ratioProperty().addListener(ratioListener);
+            applyTrendStyle(item, false);
+        }
+
+        private void triggerBlink(StatisticVO item) {
+            if (item == null) {
+                return;
+            }
+            double ratio = parseRatioValue(item);
+            if (Double.compare(ratio, 0d) == 0) {
+                return;
+            }
+            blinkTimeline.stop();
+            blinkTimeline.playFromStart();
+        }
+
+        private void applyBlinkFrame() {
+            StatisticVO item = getItem();
+            if (item == null) {
+                setStyle("");
+                return;
+            }
+            double ratio = parseRatioValue(item);
+            if (ratio > 0d) {
+                setStyle(POSITIVE_BLINK_STYLE);
+            } else if (ratio < 0d) {
+                setStyle(NEGATIVE_BLINK_STYLE);
+            } else {
+                setStyle(NEUTRAL_STYLE);
+            }
+        }
+
+        private void applyTrendStyle(StatisticVO item, boolean selected) {
+            if (item == null) {
+                setStyle("");
+                return;
+            }
+            if (isSelected() || selected) {
+                setStyle("");
+                return;
+            }
+
+            double ratio = parseRatioValue(item);
+            if (ratio > 0d) {
+                setStyle(POSITIVE_STYLE);
+            } else if (ratio < 0d) {
+                setStyle(NEGATIVE_STYLE);
+            } else {
+                setStyle(NEUTRAL_STYLE);
+            }
+        }
     }
 
     public void requestPortfolio() {

@@ -40,6 +40,7 @@ public class ActorGroupPerAccount extends AbstractActor {
 
     private final Object lock = new Object();
     private final Map<String, RoutingMessage.Order> exceIdProcess = new HashMap<>();
+    private final Map<String, String> lastProcessedOrderEventByOrderId = new HashMap<>();
     private final HashMap<String, ActorRef> actorSession = new HashMap<>();
     private final HashMap<String, ActorRef> strategyActors = new HashMap<>();
     private final String account;
@@ -560,6 +561,9 @@ public class ActorGroupPerAccount extends AbstractActor {
     private void onOrders(RoutingMessage.Order order) {
 
         try {
+            if (isDuplicatedOrderEvent(order)) {
+                return;
+            }
 
             if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_REPLACE)) {
                 return;
@@ -657,6 +661,31 @@ public class ActorGroupPerAccount extends AbstractActor {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private boolean isDuplicatedOrderEvent(RoutingMessage.Order order) {
+        String orderId = order.getId();
+        if (orderId == null || orderId.isEmpty()) {
+            return false;
+        }
+
+        String eventKey = buildOrderEventKey(order);
+        String previousEventKey = lastProcessedOrderEventByOrderId.put(orderId, eventKey);
+        return eventKey.equals(previousEventKey);
+    }
+
+    private String buildOrderEventKey(RoutingMessage.Order order) {
+        return String.join("|",
+                order.getId(),
+                order.getExecId(),
+                order.getExecType().name(),
+                order.getOrdStatus().name(),
+                String.valueOf(order.getCumQty()),
+                String.valueOf(order.getLeaves()),
+                String.valueOf(order.getLastQty()),
+                String.valueOf(order.getAvgPrice()),
+                String.valueOf(order.getLastPx())
+        );
     }
 
     private void createLogicalPosition() {

@@ -5,7 +5,19 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3ef8dd10-037c-4e1d-a2b9-f879e62d3f83" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" afterPath="$PROJECT_DIR$/../principal-module" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.ipr" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.ipr" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-chat-service/vector-chat-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/vector-news-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/vector-news-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/pom.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -175,8 +187,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="14" />
-    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+    <option name="cachedIndexableFilesCount" value="13" />
   </component>
   <component name="ErrorTreeViewConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -251,30 +262,31 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.NewsMain.executor": "Debug",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "show.migrate.to.gradle.popup": "false",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.NewsMain.executor&quot;: &quot;Debug&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager">
     <configuration selected="false" default="true" type="Applet" factoryName="Applet">
       <module name="" />
@@ -316,17 +328,6 @@
       <method v="2">
         <option name="Make" enabled="true" />
       </method>
-    </configuration>
-    <configuration default="true" type="JetRunConfigurationType">
-      <module name="untrusted" />
-      <method v="2">
-        <option name="Make" enabled="true" />
-      </method>
-    </configuration>
-    <configuration default="true" type="KotlinStandaloneScriptRunConfigurationType">
-      <module name="untrusted" />
-      <option name="filePath" />
-      <method v="2" />
     </configuration>
     <recent_temporary>
       <list>
@@ -380,6 +381,8 @@
       <updated>1772858278817</updated>
       <workItem from="1772858282831" duration="18000" />
       <workItem from="1772858309866" duration="3565000" />
+      <workItem from="1773065730368" duration="236000" />
+      <workItem from="1773065998245" duration="2330000" />
     </task>
     <servers />
   </component>

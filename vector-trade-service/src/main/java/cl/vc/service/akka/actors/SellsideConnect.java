@@ -56,8 +56,12 @@ public class SellsideConnect extends AbstractActor {
 
                 MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order));
 
+
             } else if (conn.getMessage() instanceof RoutingMessage.Order order) {
                 MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order));
+                if (!order.getAccount().isEmpty()) {
+                    MainApp.getMessageEventBus().publish(new Envelope(order.getAccount(), order));
+                }
 
             } else if (conn.getMessage() instanceof MarketDataMessage.Snapshot snapshot) {
                 getSelf().tell(snapshot, ActorRef.noSender());
