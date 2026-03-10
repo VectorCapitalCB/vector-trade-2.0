@@ -6,10 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="23b81911-ab74-4291-905d-2cafed251d36" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../principal-module" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-news-service/README.md" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-news-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-news-service/vector-news-service.iws" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainAppLocalhost.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainAppLocalhost.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.localhost.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.production.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -388,6 +386,7 @@
       <workItem from="1773060309016" duration="5302000" />
       <workItem from="1773062509986" duration="2058000" />
       <workItem from="1773064633125" duration="613000" />
+      <workItem from="1773148699022" duration="1324000" />
     </task>
     <servers />
   </component>

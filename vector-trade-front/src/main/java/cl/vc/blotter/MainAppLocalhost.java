@@ -15,7 +15,6 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.BorderPane;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
@@ -44,7 +43,7 @@ public class MainAppLocalhost extends Application {
     public void start(Stage principal) {
         try {
 
-            Repository.getProperties().load(LoginController.class.getResourceAsStream("/blotter/enviroment/application.localhost.properties"));
+            Repository.getProperties().load(LoginController.class.getResourceAsStream("/blotter/enviroment/application.production.properties"));
             NativeLibraryLoader.loadNativeLibraries();
 
             try {
