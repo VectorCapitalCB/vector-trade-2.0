@@ -50,7 +50,7 @@ public class MainApp extends Application {
 
                 try {
 
-                    Repository.getProperties().load(LoginController.class.getResourceAsStream("/blotter/enviroment/application.prod.properties"));
+                    Repository.getProperties().load(LoginController.class.getResourceAsStream("/blotter/enviroment/application.production.properties"));
 
                     String appVer  = Repository.getProperties().getProperty("version", "dev");
                     Repository.setAppVersion(appVer);

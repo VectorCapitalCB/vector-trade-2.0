@@ -1,0 +1,301 @@
+syntax = "proto3";
+
+package messages;
+import "google/protobuf/timestamp.proto";
+import "routing.proto";
+option java_package = "cl.vc.module.protocolbuff.mkd";
+option java_outer_classname = "MarketDataMessage";
+
+
+enum TypeBook {
+	ASK = 0;
+	BID = 1;
+}
+
+enum ActionIncremental {
+	UNKNOWN_ACT = 0;
+	ADD_DATA_POSITIONS = 1;
+	UPDATE_DATA_POSITIONS = 2;
+	DELETE_DATA_POSITIONS = 3;
+}
+
+
+enum SecurityExchangeMarketData {
+	BCS = 0;
+	BVC = 1;
+	BVL = 2;
+	NYSE = 3;
+	AMEX = 4;
+	NASDAQ = 5;
+	DATATEC_XBCL = 6;
+	FH_IBKR = 9;
+	BINANCE_MKD = 10;
+	MEXC_MKD = 11;
+	ALPACA_MKD = 12;
+	CRYPTO_MARKET_MKD = 13;
+	BUDA_MKD = 14;
+	ORIONX_MKD = 15;
+	NONE_MKD = 16;
+	NUAM_MKD = 17;
+
+}
+
+enum Depth {
+	FULL_BOOK = 0;
+	TOP_OF_THE_BOOK = 1;
+}
+
+message News {
+	string texto = 1;
+	string lineoftext = 2;
+	SecurityExchangeMarketData securityExchange = 3;
+	google.protobuf.Timestamp t = 4;
+}
+
+message SnapshotNews {
+	repeated News news = 1;
+}
+
+message Subscribe {
+	string symbol = 1;
+	string id = 2;
+	SettlType settlType = 3;
+	SecurityType securityType = 4;
+	bool trade = 5;
+	bool statistic = 6;
+	bool book = 9;
+	Depth depth = 7;
+	SecurityExchangeMarketData securityExchange = 8;
+	int32 tradeQty = 10;
+	int32 bookQty = 11;
+
+}
+
+message Security {
+	string symbol = 1;
+	string securityType = 2;
+	SecurityExchangeMarketData securityExchange = 3;
+	string currency = 4;
+	string text = 5;
+	string securityID = 6;
+}
+
+message SecurityList {
+	string id = 1;
+	repeated Security listSecurities = 2;
+	SecurityExchangeMarketData securityExchange = 3;
+}
+
+message SecurityListRequest {
+	string id = 1;
+}
+
+message Unsubscribe {
+	string id = 1;  // id
+}
+
+message Snapshot {
+	repeated DataBook asks = 1;
+	repeated DataBook bids = 2;
+	repeated Trade trades = 3;
+	Statistic statistic = 4;
+	string id = 6;
+	SecurityExchangeMarketData securityExchange = 7;
+	string symbol = 8;
+	SettlType settlType = 9;
+	SecurityType securityType = 11;
+}
+
+message Trade {
+	google.protobuf.Timestamp t = 1;
+	double price = 2;
+	double qty = 3;
+	double amount = 4;
+	string buyer = 5;
+	string seller = 6;
+	string id = 7;
+	string symbol = 8;
+	SettlType settlType = 9;
+	SecurityExchangeMarketData securityExchange = 10;
+	SecurityType securityType = 11;
+	string idGenerico = 12;
+}
+
+message TradeGeneral {
+	google.protobuf.Timestamp t = 1;
+	double price = 2;
+	double qty = 3;
+	double amount = 4;
+	string buyer = 5;
+	string seller = 6;
+	string id = 7;
+	string symbol = 8;
+	SettlType settlType = 9;
+	SecurityExchangeMarketData securityExchange = 10;
+	SecurityType securityType = 11;
+	string idGenerico = 12;
+}
+
+
+message IncrementalBook {
+	string id = 4;
+	string symbol = 7;
+	SettlType settlType = 8;
+	SecurityExchangeMarketData securityExchange = 6;
+	SecurityType securityType = 10;
+	repeated DataBook asks = 1;
+	repeated DataBook bids = 2;
+}
+
+message Rejected {
+	string reason = 1;
+	string text = 2;
+	string id = 3;
+}
+
+message DataBook {
+	double price = 1;
+	double size = 2;
+	TypeBook typeBook = 3;
+	string symbol = 4;
+	SecurityExchangeMarketData securityExchange = 5;
+	string operator = 6;
+	string account = 7;
+}
+
+message Ohlcv {
+	double close = 1;
+	double open = 2;
+	double low = 3;
+	double high = 4;
+	double volume = 5;
+	string id = 6;
+	string symbol = 7;
+	SettlType settlType = 8;
+	SecurityExchangeMarketData securityExchange = 9;
+	SecurityType securityType = 10;
+	google.protobuf.Timestamp t = 11;
+}
+
+message Statistic {
+	double amount = 1;
+	double vwap = 2;
+	string ratio = 4;
+	string id = 5;
+
+	double delta = 7;
+	double previusClose = 8;
+	double referencialPrice = 9;
+	double indicativeOpening = 10;
+	double last = 11;
+	double tickDirecion = 12;
+	SecurityExchangeMarketData securityExchange = 13;
+	string symbol = 14;
+	Ohlcv ohlcv = 15;   //deprecado
+	double bidPx = 20;
+	double bidQty = 17;
+	double askPx = 18;
+	double askQty = 19;
+
+	double amountTheoric = 25;
+	double priceTheoric = 26;
+	double desbalTheoric = 27;
+	double ownDemand = 28;
+	double totalDeamnd = 29;
+
+
+	double totalDemand = 31;
+	SettlType settlType = 32;
+	SecurityType securityType = 44;
+
+	double medio = 45;
+
+	double thresholdLimits = 46;
+
+	double settlementPrice = 48; 						//269=6
+	double imbalance = 3;             			//269=A
+	double tradeVolume = 6;   							//269 = B
+	double tradeTurnover = 55; 							//269 = B 101
+	double tradeQuantity = 56; 							//269 = B 102
+	double turnoverQuantityExtension = 57; //269=y
+	double tradeTurnoverQuantity = 58; 		//269=z
+	double auctionClearingPrice = 50; 		//269=Q
+
+	double priceLimitType = 51;
+	double lowLimitPrice = 52; //1148
+	double highLimitPrice = 53; // 1149
+	double lastActionPrice = 54;
+	double tradingReferencePrice  = 59; //1150
+	double secSizesGrp  = 60; //1177g
+
+
+	double close = 61;
+	double open = 62;
+	double low = 63;
+	double high = 64;
+	double volume = 65;
+
+}
+
+message BolsaStats {
+
+	string id = 1;
+	double total_volumen = 2;
+	double monto_total = 3;
+	string hora_inicio = 4;
+	string hora_fin = 5;
+	repeated RankinSymbol mas_volatil = 6;
+	repeated RankinSymbol mas_cayo = 7;
+	repeated RankinSymbol menos_cayo = 8;
+	repeated RankinSymbol mas_tranzado = 9;
+	repeated RankinSymbol best_rankin = 10;
+	repeated RankinSymbol worse_rankin = 11;
+	double volatilidad_promedio = 12; // Promedio de la volatilidad
+	double rango_promedio = 13; // Promedio del rango de los activos
+	double indice_promedio = 14; // Promedio ponderado de índices de mercado
+	double indice_maximo = 15; // Valor máximo alcanzado por el índice
+	double indice_minimo = 16; // Valor mínimo alcanzado por el índice
+	double liquidez_media = 17; // Liquidez media en el mercado
+	int64 numero_total_trades = 18; // Número total de operaciones realizadas
+	double sentimiento_positivo = 19; // Porcentaje de activos con variación positiva
+	double sentimiento_negativo = 20; // Porcentaje de activos con variación negativa
+	double capitalizacion_total = 21; // Capitalización total del mercado
+	double capitalizacion_promedio = 22; // Capitalización promedio de los activos
+	double precio_promedio_acumulado = 23; // Precio promedio acumulado
+	double precio_maximo_acumulado = 24; // Precio máximo acumulado
+	string tendencia_general = 25; // Tendencia general del mercado (alcista, bajista, etc.)
+	double tendencia_promedio = 26;
+	SecurityExchangeMarketData securityExchange = 27;
+}
+
+message RankinSymbol{
+
+	string id = 1;
+	SecurityExchangeMarketData securityExchange = 2;
+	string symbol = 3;
+	SettlType settlType = 4;
+	SecurityType securityType = 5;
+	double variacion_pct = 6;
+	double precio_ultimo = 7;
+	double precio_maximo = 8;
+	double precio_minimo = 9;
+	double precio_promedio = 10;
+	double vwap = 11;
+	double twap = 12;
+	double volumen = 13;
+	double monto = 14;
+	double rsi = 16;
+	double ma = 17;
+	double macd = 18;
+	double liquidRatio = 19; // compatibilidad retroactiva
+	double implied_volatility = 20;
+	double liquid_ratio_v2 = 21; // variante estandarizada sin conflicto de acceso Java
+
+}
+
+
+
+
+message SnapshotTradeGeneral{
+	repeated TradeGeneral trades = 1;
+}

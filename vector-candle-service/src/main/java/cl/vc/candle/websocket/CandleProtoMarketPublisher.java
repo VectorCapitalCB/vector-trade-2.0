@@ -717,8 +717,16 @@ public class CandleProtoMarketPublisher extends Thread {
         b.setMacd(getDouble(doc, "macdLine"));
         b.setVwap(getDouble(doc, "vwapIntraday"));
         b.setTwap(getDouble(doc, "ema20"));
-        // Keep liquid ratio tied to daily traded values for strict injector/candle alignment.
-        b.setImpliedVolatility(Math.abs(tradeRank.getVariacionPct()));
+        // Usar dailyVariationPct del inyector (vs cierre anterior) si está disponible.
+        // El TradeAgg calcula variacionPct como (ultimo - primero del dia) / primero,
+        // que no representa la variacion real de 24h vs el cierre del dia anterior.
+        double dailyVar = getDoubleMany(doc, "dailyVariationPct", "variationPct");
+        if (Math.abs(dailyVar) > 0.000001d) {
+            b.setVariacionPct(dailyVar);
+            b.setImpliedVolatility(Math.abs(dailyVar));
+        } else {
+            b.setImpliedVolatility(Math.abs(tradeRank.getVariacionPct()));
+        }
         return b.build();
     }
 

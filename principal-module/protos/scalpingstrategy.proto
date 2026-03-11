@@ -1,0 +1,78 @@
+syntax = "proto3";
+
+package messages;
+import "google/protobuf/timestamp.proto";
+import "routing.proto";
+
+import "notification.proto";
+import "marketdata.proto";
+import "generalstrategy.proto";
+
+option java_package = "cl.vc.algos.scalping.proto";
+option java_outer_classname = "ScalpingStrategyProtos";
+
+message ScalpingStrategy {
+
+  string strategyId = 1;
+  string strategyName = 2;
+
+  string symbol = 3;
+  SecurityExchangeMarketData exchangeSource = 4;
+  SecurityExchangeRouting exchangeDestination = 5;
+
+  string account = 6;
+  string ordersPrefix = 7;
+
+  double qty = 10;
+
+  double spreadStoploss = 8;
+  double spreadTakeprofit = 9;
+
+  ScalpingStrategyStatus scalpingStrategyStatus = 11;
+  SettlType settlType = 12;
+  Currency currency = 13;
+  SecurityType securityType = 14;
+
+  double takeProfit = 15;
+  double stopLoss = 16;
+  double bid = 17;
+  double ask = 18;
+  double close = 19;
+
+
+  Trend trend = 21;
+  StatusStrategy statusStrategy = 22;
+
+  string near = 29;
+  int32 decimalPx = 30;
+
+  double roundStopLostInflow = 34;
+  double roundStopLossFlowback = 35;
+  double roundTakeProfitFlowback = 36;
+  double roundTakeProfitInflow = 37;
+  double pnlInflow = 38;
+  double pnlFlowback = 39;
+
+  double round = 40;
+
+  HandlInst handlInst = 41;
+
+  double segReload = 42;
+  double minStopLoss = 43;
+
+}
+
+message ScalpingStrategyStatus {
+  string strategyId = 1;
+  bool subscribed = 2;
+  bool startBuy = 3;
+  bool startSell = 4;
+}
+
+enum Trend {
+  ALCISTA = 0;
+  BAJISTA = 1;
+  NEUTRAL = 2;
+}
+
+

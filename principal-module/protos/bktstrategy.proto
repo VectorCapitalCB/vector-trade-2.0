@@ -1,0 +1,172 @@
+syntax = "proto3";
+
+package messages;
+import "routing.proto";
+
+import "notification.proto";
+import "marketdata.proto";
+import "generalstrategy.proto";
+
+option java_package = "cl.vc.algos.bkt.proto";
+option java_outer_classname = "BktStrategyProtos";
+
+enum StatusStrategyBasket {
+  STOPPED_BKT = 0;
+  WAITING_FOR_INITIAL_ORDER_BKT = 1;
+  ADD_STRATEGY_BKT = 2;
+  FOREIGN_SIDE_BKT = 3;
+  WAITING_FOR_FOREIGN_CONFIRMATION_BKT = 4;
+  WAITING_FOR_LOCAL_CONFIRMATION_BKT = 5;
+  LOCAL_SIDE_BKT = 6;
+  UPDATE_STRATEGY_BKT = 7;
+  REMOVE_STRATEGY_BKT = 8;
+}
+
+
+enum ConfigType {
+  PREMIUM = 0;
+  DISCOUNT = 1;
+}
+
+enum IndicatorType {
+  NONE_INDICATOR = 0;
+  NAV = 2;
+  EXEC_TARGET = 3;
+  TOTAL_EXEC_TARGET = 4;
+}
+
+message BktSymbolList {
+    repeated BktSymbol bktSymbol = 1;
+}
+
+message BktSymbol {
+
+  string id = 1;
+  string symbol = 2;
+  Currency currency = 3;
+  double qty = 4;
+  double spread = 5;
+  double limit = 6;
+  double lastPx = 7;
+  double cash = 8;
+  double variation = 9;
+  bool enabled = 10;
+  StrategyOrder strategy = 11;
+  ExecBroker localExecBroker = 12;
+  string localAccount = 13;
+  string description = 14;
+  StatusStrategyBasket statusStrategy = 15;
+  SecurityExchangeMarketData securityExchangeMarketData = 16;
+  SecurityExchangeRouting routingExchange = 17;
+  double bidPx = 18;
+  double askPx = 19;
+  bool enable = 20;
+  SettlType settlType = 21;
+
+}
+
+message EtfConfig {
+
+  double minUnit = 1;
+  double cash = 2;
+  double qtyPremium = 3;
+  double costPremium = 4;
+  double limitPremium = 5;
+  double spreadPremium = 6;
+  double execTargetPremium = 7;
+  StrategyOrder strategyPremium = 8;
+  double qtyDiscount = 9;
+  double costDiscount = 10;
+  double limitDiscount = 11;
+  double spreadDiscount = 12;
+  double execTargetDiscount = 13;
+  StrategyOrder strategyDiscount = 14;
+  double etfVar = 15;
+
+  double amount = 17;
+  double qty = 18;
+
+  string etfSymbol = 19;
+
+  Currency currency = 20;
+
+  SecurityExchangeMarketData etfSecurityExchangeMarketData = 21;
+  SecurityExchangeRouting etfRoutingExchange = 22;
+
+  double navBid = 23;
+  double navAsk = 24;
+  double navLast = 25;
+
+  double etfBid = 26;
+  double etfAsk = 27;
+  double etfLast = 28;
+
+  SecurityExchangeMarketData fxExchangeMarketData = 29;
+
+  double fxBid = 31;
+  double fxAsk = 32;
+  double fxLast = 33;
+
+  double fxVar = 34;
+  double fxAmount = 35;
+
+  bool subscribe = 36;
+
+  bool startPremium = 37;
+  bool startDiscount = 38;
+
+  string peq = 39;
+  double iceberg = 40;
+  SettlType settlType = 41;
+
+  string pxORder = 42;
+
+  string account = 43;
+  string operator = 44;
+
+}
+
+
+message CancelBasket {
+  string id = 1;
+}
+
+
+message SnapshotBasketRequest {
+  string id = 1;
+}
+
+message DeleteBasketOrder {
+  Order order = 1;
+}
+
+message DeleteBasket {
+  string id = 1;
+}
+
+
+message Basket {
+  repeated Order orders = 1;
+  string basketID = 2;
+  double nBuy = 3;
+  double nSell = 4;
+  double totalAmount = 5;
+  double totalAmountDone = 6;
+  double totalAmountLeft = 12;
+  double amountPercDone = 7;
+  double amountPercLeft = 8;
+  double totalQty = 9;
+  double totalQtyDone = 10;
+  double totalQtyLeft = 11;
+  string account = 13;
+  string username = 14;
+}
+
+
+message SnapshotBasket {
+  Basket basket = 2;
+}
+
+
+
+

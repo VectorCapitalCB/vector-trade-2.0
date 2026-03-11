@@ -336,7 +336,7 @@ public class ClientActor extends AbstractActor {
                         Repository.getBasketController().getTabBasket().getTabs().add(tab);
 
                         tabBasketsController.getData().add(snapshot.getBasket());
-                        tabBasketsController.getExecutionsOrderController().getData().addAll(snapshot.getBasket().getOrdersList());
+                        replaceBasketOrders(tabBasketsController, snapshot.getBasket().getOrdersList());
 
                     } else {
 
@@ -344,27 +344,7 @@ public class ClientActor extends AbstractActor {
                         Repository.getBasketTabController().get(snapshot.getBasket().getBasketID()).getData().add(snapshot.getBasket());
                         BasketTabController tabBasketsController = Repository.getBasketTabController().get(snapshot.getBasket().getBasketID());
 
-                        snapshot.getBasket().getOrdersList().forEach(s -> {
-
-                            boolean encontrado = tabBasketsController.getExecutionsOrderController().getData().stream().anyMatch(objeto -> objeto.getId().equals(s.getId()));
-
-                            if (encontrado) {
-
-                                OptionalInt indexOptional = IntStream.range(0, tabBasketsController.getExecutionsOrderController().getData().size())
-                                        .filter(i -> tabBasketsController.getExecutionsOrderController().getData().get(i).getId().equals(s.getId()))
-                                        .findFirst();
-
-                                if (indexOptional.isPresent()) {
-                                    int index = indexOptional.getAsInt();
-                                    tabBasketsController.getExecutionsOrderController().getData().set(index, s);
-                                    tabBasketsController.getExecutionsOrderController().getTableExecutionReports().refresh();
-                                }
-
-                            } else {
-                                tabBasketsController.getExecutionsOrderController().getData().add(s);
-                                tabBasketsController.getExecutionsOrderController().getTableExecutionReports().refresh();
-                            }
-                        });
+                        replaceBasketOrders(tabBasketsController, snapshot.getBasket().getOrdersList());
 
                         Repository.getBasketTabController().get(snapshot.getBasket().getBasketID()).getBasketMainTable().refresh();
                         tabBasketsController.getExecutionsOrderController().getTableExecutionReports().refresh();
@@ -655,6 +635,43 @@ public class ClientActor extends AbstractActor {
 
     }
 
+    private void replaceBasketOrders(BasketTabController tabBasketsController, List<RoutingMessage.Order> orders) {
+        if (tabBasketsController == null) {
+            return;
+        }
+
+        LinkedHashMap<String, RoutingMessage.Order> uniqueOrders = new LinkedHashMap<>();
+        for (RoutingMessage.Order order : orders) {
+            uniqueOrders.put(order.getId(), order);
+        }
+
+        ObservableList<RoutingMessage.Order> data = tabBasketsController.getExecutionsOrderController().getData();
+        data.setAll(uniqueOrders.values());
+        tabBasketsController.getExecutionsOrderController().getTableExecutionReports().refresh();
+        updateTabText();
+    }
+
+    private void upsertBasketOrder(RoutingMessage.Order order) {
+        BasketTabController basketTabController = Repository.getBasketTabController().get(order.getBasketID());
+        if (basketTabController == null) {
+            return;
+        }
+
+        ObservableList<RoutingMessage.Order> data = basketTabController.getExecutionsOrderController().getData();
+        OptionalInt indexOptional = IntStream.range(0, data.size())
+                .filter(i -> data.get(i).getId().equals(order.getId()))
+                .findFirst();
+
+        if (indexOptional.isPresent()) {
+            data.set(indexOptional.getAsInt(), order);
+        } else {
+            data.add(order);
+        }
+
+        basketTabController.getExecutionsOrderController().getTableExecutionReports().refresh();
+        updateTabText();
+    }
+
     private void onOrder(RoutingMessage.Order order) {
         try {
 
@@ -683,22 +700,7 @@ public class ClientActor extends AbstractActor {
                     } else {
 
                         if (!Repository.getIsLight()) {
-
-                            RoutingMessage.Order objetoEncontrado = Repository.getBasketTabController()
-                                    .get(order.getBasketID()).getExecutionsOrderController().data.stream()
-                                    .filter(objeto -> objeto.getId().equals(order.getId()))
-                                    .findFirst()
-                                    .orElse(null);
-
-                            if (objetoEncontrado != null) {
-                                int index = Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().data.indexOf(objetoEncontrado);
-                                Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().data.set(index, order);
-                                Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().getTableExecutionReports().refresh();
-                                updateTabText();
-                            } else {
-                                Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().data.add(order);
-                                Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().getTableExecutionReports().refresh();
-                            }
+                            upsertBasketOrder(order);
                         }
 
                     }
@@ -720,20 +722,7 @@ public class ClientActor extends AbstractActor {
                     } else {
 
                         if (!Repository.getIsLight()) {
-
-                            RoutingMessage.Order objetoEncontrado = Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().data.stream()
-                                    .filter(objeto -> objeto.getId().equals(order.getId()))
-                                    .findFirst()
-                                    .orElse(null);
-
-                            if (objetoEncontrado != null) {
-                                int index = Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().data.indexOf(objetoEncontrado);
-                                Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().data.set(index, order);
-                                Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().getTableExecutionReports().refresh();
-                                updateTabText();
-                            } else {
-                                Repository.getBasketTabController().get(order.getBasketID()).getExecutionsOrderController().data.add(order);
-                            }
+                            upsertBasketOrder(order);
                         }
                     }
 

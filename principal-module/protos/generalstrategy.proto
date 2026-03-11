@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package messages;
+import "google/protobuf/timestamp.proto";
+import "routing.proto";
+option java_package = "cl.vc.module.protocolbuff.generalstrategy";
+option java_outer_classname = "GeneralStrategy";
+
+
+enum StatusStrategy {
+  UPDATE_STRATEGY = 0;
+  ADD_STRATEGY = 1;
+  REMOVE_STRATEGY = 2;
+  OPENING_SIDE = 3;
+  CLOSING_SIDE = 4;
+  STOPPED_PAIRS = 5;
+  WAITING_FOR_CLOSING_CONFIRMATION = 6;
+  WAITING_FOR_INITIAL_ORDER = 7;
+  WAITING_FOR_OPENING_CONFIRMATION = 8;
+  REFRESH_STRATEGY = 9;
+  START_STRATEGIES = 10;
+}
+
+
+message PairsStrategyStatus {
+  string strategyId = 1;
+  bool subscribed = 2;
+  bool inflow = 3;
+  bool flowback = 4;
+}
+
+message DollarRiskOfPairs {
+  double deltabpsfx = 1;
+  double bidFx = 2;
+  double askFx = 3;
+  double usdVar = 4;
+}
+
+message FXUPDATE {
+  double bidFx = 1;
+  double askFx = 2;
+  double lastFx = 3;
+  string symbol = 4;
+}
+
+
+enum OperationsControlEnum {
+  START_INFLOW = 0;
+  STOP_INFLOW = 1;
+  START_FLOWBACK = 2;
+  STOP_FLOWBACK = 3;
+  SUBSCRIBE = 4;
+  UNSUBSCRIBE = 5;
+  START_PREMIUM = 6;
+  START_DISCOUNT = 7;
+  STOP_PREMIUM = 8;
+  STOP_DISCOUNT = 9;
+  CANCEL_ALL = 10;
+  START_STRATEGY = 11;
+  STOP_STRATEGY = 12;
+
+}
+
+
+message OperationsControl {
+  string strategyId = 1;
+  OperationsControlEnum operationControl = 2;
+  string username = 3;
+  int64 timestamp = 4;
+}

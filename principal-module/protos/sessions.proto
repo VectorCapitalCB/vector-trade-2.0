@@ -1,0 +1,52 @@
+syntax = "proto3";
+import "notification.proto";
+
+package messages;
+option java_package = "cl.vc.module.protocolbuff.session";
+option java_outer_classname = "SessionsMessage";
+
+message Pong {
+	string id = 1;
+}
+
+message Ping {
+	string id = 1;
+}
+
+message Disconnect {
+	string id = 1;
+	string destination = 2;
+	string text = 3;
+	Component component = 4;
+	string username = 5;
+	string tokenKeycloak = 6;
+}
+
+message Connect {
+	string id = 1;
+	string destination = 2;
+	string text = 3;
+	Component component = 4;
+	string username = 5;
+	string password = 6;
+}
+
+message PreConnect {
+	string id = 1;
+	string destination = 2;
+	string text = 3;
+	Component component = 4;
+	string username = 5;
+	string token = 6;
+
+}
+
+
+enum Enviroment {
+	PRODUCTION = 0;
+	TEST = 1;
+	LOCALHOST = 2;
+	PRODUCTION_VPN = 3;
+	QA = 4;
+
+}

@@ -178,7 +178,7 @@ public class SellsideConnect extends AbstractActor {
                     .setMessage("Connected session: " + connect.getDestination()).build();
 
 
-            MainApp.getNotificationConectionMap().put(notification.getSecurityExchange(), notification);
+            MainApp.putConnectionNotification(notification);
             MainApp.getNotificationMap().add(notification);
             BuySideConnect.getClientSesionId().forEach((key1, value1) -> value1.channel().writeAndFlush(notification));
 
@@ -242,7 +242,7 @@ public class SellsideConnect extends AbstractActor {
                     .setMessage("The session disconnected: " + disconnect.getDestination()).build();
 
             BuySideConnect.getClientSesionId().forEach((key, value) -> value.channel().writeAndFlush(notification));
-            MainApp.getNotificationConectionMap().put(notification.getSecurityExchange(), notification);
+            MainApp.putConnectionNotification(notification);
             MainApp.getNotificationMap().add(notification);
 
             MainApp.getAccountGroupUser().forEach((key, value) -> value.tell(disconnect, ActorRef.noSender()));

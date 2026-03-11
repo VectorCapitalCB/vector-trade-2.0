@@ -1,0 +1,436 @@
+syntax = "proto3";
+import "routing.proto";
+import "notification.proto";
+import "marketdata.proto";
+import "google/protobuf/timestamp.proto";
+
+package messages;
+option java_package = "cl.vc.module.protocolbuff.blotter";
+option java_outer_classname = "BlotterMessage";
+
+enum TickAction {
+  UNKNOWN_TICK_ACTION = 0;
+  UP = 1;
+  DOWN = 2;
+}
+
+enum StatusPortfolio {
+  NEW_PORTFOLIO = 0;
+  UPDATE_PORTFOLIO = 1;
+  DELETE_PORTFOLIO = 2;
+  SNAPSHOT_PORTFOLIO = 3;
+  ADD_ASSET = 4;
+  REMOVE_ASSET = 5;
+  UPDATE_ASSET = 6;
+  ALL_PORTFOLIO = 7;
+}
+
+enum StatusPreselect {
+  SNAPSHOT_PRESELECT = 0;
+  ADD_PRESELECT = 1;
+  REMOVE_PRESELECT = 2;
+}
+
+message PreselectRequest {
+  Order orders = 1;
+  string username = 2;
+  StatusPreselect statusPreselect = 3;
+
+}
+
+message PreselectResponse {
+  repeated Order orders = 1;
+  string username = 2;
+  StatusPreselect statusPreselect = 3;
+}
+
+message PortfolioRequest {
+  StatusPortfolio statusPortfolio = 1;
+  string marketdataControllerId = 2;
+  string namePortfolio = 4;
+  string username = 5;
+  Asset asset = 6;
+}
+
+message PortfolioResponse {
+  repeated Portfolio postfolio = 1;
+  StatusPortfolio statusPortfolio = 2;
+  Asset asset = 3;
+  string username = 4;
+  string namePortfolio = 5;
+  string marketdataControllerId = 6;
+}
+
+
+message Portfolio {
+  string id = 1;
+  string idSec = 2;
+  string namePortfolio = 3;
+  string username = 4;
+  repeated Asset asset = 5;
+}
+
+message Asset {
+  string id = 1;
+  string symbol = 2;
+  Statistic statistic = 3;
+  SecurityExchangeMarketData securityexchange = 4;
+}
+
+message TypeOrd {
+  double sent = 1;
+  double working = 2;
+  double trade = 3;
+  double short = 4;
+  double px = 5;
+  double cashBought = 6;
+}
+
+message SubscribeTradeMonitor {
+  string username = 1;
+  OrderStatus orderStatus = 2;
+  SecurityExchangeRouting securityExchange = 3;
+  string symbol = 4;
+  Side side = 5;
+  string prefix = 6;
+  repeated string account = 7;
+}
+
+
+message Position {
+  string id = 1;
+  string account = 2;
+  string symbol = 3;
+  SecurityExchangeRouting securityexchange = 4;
+  double auxBuy = 5;
+  double sentBuy = 6;
+  double workingBuy = 7;
+  double tradeBuy = 8;
+  double pxBuy = 9;
+  double cashBoughtBuy = 10;
+  double auxBSell = 11;
+  double sentSell = 12;
+  double workingSell = 13;
+  double tradeSell = 15;
+  double tradeSellShort = 16;
+  double pxSell = 17;
+  double cashSell = 18;
+  double qtyNet = 19;
+  double pxNet = 20;
+  double amountNet = 21;
+  string settlType = 22;
+  google.protobuf.Timestamp date_procesor = 23;
+
+}
+
+message PositionHistory {
+  string instrument = 1;
+  double availableQuantity = 2;
+  double ph = 3;
+  double pm = 4;
+  double averagePurchasePrice = 5;
+  double purchaseAmount = 6;
+  double marketPrice = 7;
+  double marketValue = 8;
+  double priceVariation = 9;
+  bool simultaneous = 10;
+  double guarantee = 11;
+  string account = 12;
+  double garantia = 13;
+  double compraPlazo = 14;
+  google.protobuf.Timestamp date_procesor = 15;
+}
+
+message Prestamos {
+  string nemotecnico = 1;
+  double cantidad_vigente = 2;
+  double precio_ayer = 3;
+  double monto = 4;
+  string fecha_ingreso = 5;
+  string fecha_vto = 6;
+  string plazo_pimo = 7;
+}
+
+message Balance {
+  string cuenta = 1;
+  double cartera = 2;
+  double cupo = 3;
+  double saldoDisponible = 4;
+  double garantiasConstituidas = 5;
+  double garantiasExigidas = 6;
+  double garantiasReservadas = 7;
+  double limiteFinanciero = 8;
+  double garantiasDisponible = 9;
+  double ordenesActivasCompras = 10;
+  double ordenesActivasVentas = 11;
+  double ordenesCalzadasCompras = 12;
+  double ordenesCalzadasVentas = 13;
+  double ordenesCestaCompras = 14;
+  double ordenesCestaVentas = 15;
+  double rendimiento = 16;
+  double total = 17;
+  google.protobuf.Timestamp date_procesor = 18;
+}
+
+message SnapshotPositionHistory {
+  string id = 1;
+  repeated PositionHistory positionsHistory = 2;
+}
+
+
+message PositionsTotals {
+  string total = 1;
+  double buy = 2;
+  double sell = 3;
+  double net = 4;
+}
+
+message TradesTotals {
+  double tlTotal = 1;
+  double tlTotalBuy = 2;
+  double tcTotalBuy = 3;
+  double tlTotalSell = 4;
+  double tcTotalSell = 5;
+  double tlTotalAmount = 6;
+  double tcTotalAmount = 7;
+}
+
+
+message SnapshotOrders {
+  string id = 1;
+  repeated Order orders = 2;
+}
+
+message SnapshotTrades {
+  string id = 2;
+  repeated Order trades = 1;
+}
+
+message SnapshotPositions {
+  string id = 2;
+  repeated Position positions = 3;
+}
+
+
+message SnapshotRequest {
+  string producer = 1;
+  string operator = 2;
+}
+
+
+message OrderTickRequest {
+  Order order = 1;
+  TickAction action = 2;
+  uint32 ticks = 3;
+}
+
+message StrategyColor {
+	string id = 1;
+	string name = 2;
+	string prefix = 3;
+	string buyColor = 4;
+	string sellColor = 5;
+	string updateBy = 6;
+	string lastUpdate = 7;
+}
+
+message Strategy {
+	string id = 1;
+	string name = 2;
+	string prefix = 3;
+	string buyColor = 4;
+	string sellColor = 5;
+	string updateBy = 6;
+	string lastUpdate = 7;
+}
+
+
+message UpdateStrategy {
+Strategy strategy = 1;
+}
+
+message DeleteStrategy {
+	Strategy strategy = 1;
+}
+
+message AddStrategyLVOMS {
+  Strategy strategy = 1;
+}
+
+
+message CierreCarteraResumida {
+  string id_asesor = 1;
+  google.protobuf.Timestamp fecha_cierre = 2;
+  double precio_tasa_mercado = 3;
+  double precio_tasa_compra = 4;
+  string num_cuenta = 5;
+  string nombre_cliente = 6;
+  double libre = 7;
+  double garantia = 8;
+  double compras_plazo = 9;
+  double ventas_plazo = 10;
+  double prestamos_acc = 11;
+  string identificador = 12;
+  string nemotec_nico = 13;
+  string nombre_asesor = 14;
+  double libre_clp = 15;
+  double garantia_clp = 16;
+  double sim_compra_clp = 17;
+  double sim_venta_clp = 18;
+  double valor_mercado_clp = 19;
+  string cod_sub_clase_instrumento = 20;
+  string codigoMoneda = 21;
+  google.protobuf.Timestamp date_procesor = 22;
+
+}
+
+message SaldoCaja {
+  string identificador = 1;
+  string id_cuenta = 2;
+  string num_cuenta = 3;
+  string descripcion_cuenta = 4;
+  google.protobuf.Timestamp fecha_cierre = 5;
+  string estado_saldo_caja = 6;
+  string tipo_caja = 7;
+  string monto_moneda_caja = 8;
+  string monto_en_pesos = 9;
+  string monto_por_cobrar_moneda_cuenta = 10;
+  string monto_por_pagar_moneda_cuenta = 11;
+  string monto_transito = 12;
+  string garantia_efectivo = 13;
+  string prestamo = 14;
+  google.protobuf.Timestamp date_procesor = 15;
+}
+
+message ValuesPatrimonio {
+  double values = 1;
+  double porcentage = 2;
+  string description = 3;
+}
+
+message Simultaneas {
+  string tipo_Simul = 1;
+  string Detalle_Simultanea = 2;
+  string ident_Cliente = 3;
+  string num_Cuenta = 4;
+  string fecha_Operacion = 5;
+  string fecha_Vcto = 6;
+  string nombre_Cliente = 7;
+  string plazo = 8;
+  string plazo_Rem = 9;
+  string nemotecnico = 10;
+  string cantidad = 11;
+  string tasa = 12;
+  string precio_PH = 13;
+  string precio_Plazo = 14;
+  string precio_Mercado = 15;
+  string monto_Contado = 16;
+  string costo_Diario2 = 17;
+  string monto_Presente = 18;
+  string monto_Plazo = 19;
+  string cod_Inst = 20;
+  string cantidad_Orig = 21;
+  string corredor_Venta = 22;
+  string corredor_Compra = 23;
+  string folio_Fact_PH = 24;
+  string folio_Fact_TP = 25;
+  string id = 26;
+  google.protobuf.Timestamp date_procesor = 27;
+}
+
+message SnapshotSimultaneas {
+  string id = 1;
+  string account = 2;
+  repeated Simultaneas simultaneas = 3;
+}
+
+message SnapshotPrestamos {
+  string id = 1;
+  string account = 2;
+  repeated Prestamos prestamos = 3;
+}
+
+
+
+message Patrimonio {
+  ValuesPatrimonio activos = 1;
+  ValuesPatrimonio liquidez = 2;
+  ValuesPatrimonio caja = 3;
+  ValuesPatrimonio cuenta_transitorias_por_cobrar_pagar = 4;
+  ValuesPatrimonio garantia_efectivo = 5;
+  ValuesPatrimonio acciones_nacionales = 6;
+  ValuesPatrimonio simultaneas = 7;
+  ValuesPatrimonio prestamos = 8;
+  ValuesPatrimonio accionesextranjeras = 9;
+  ValuesPatrimonio fondos_mutos = 10;
+  ValuesPatrimonio rv_nacional = 11;
+  ValuesPatrimonio rv_extranjeros = 12;
+  ValuesPatrimonio fondo_inversion_renta_variable = 13;
+  ValuesPatrimonio activos_inmobiliarios = 14;
+  ValuesPatrimonio efts_renta_variable = 15;
+  ValuesPatrimonio inversiones_alternativas = 16;
+  ValuesPatrimonio derivados = 17;
+  ValuesPatrimonio renta_variable = 18;
+  ValuesPatrimonio renta_fija = 19;
+
+  string cuenta = 20;
+  Currency currency = 21;
+  double aux_accionesNacionales = 22;
+  double aux_simultanea = 23;
+  double aux_prestamo = 24;
+  double aux_valor_de_mercado = 25;
+  google.protobuf.Timestamp date_procesor = 29;
+}
+
+message SubMultibook {
+  int32 positions = 2;
+  Subscribe subscribeBook = 3;
+
+}
+
+message Multibook {
+  string username = 1;
+  repeated SubMultibook submultibook = 2;
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string fname = 4;
+  string lname = 5;
+  repeated string marginaccount = 6;
+  string phone = 7;
+  repeated string account = 8;
+  bool active = 10;
+  StatusUser statusUser = 11;
+  string token = 12;
+  string password =13;
+  UserRolesMaps roles = 14;
+  bool isAdmin = 15;
+}
+
+message UserRolesMaps {
+  repeated string codeOperator = 1;
+  repeated SecurityExchangeRouting destinoRouting = 2;
+  repeated SecurityExchangeMarketData destinoMKD = 3;
+  repeated ExecBroker broker = 4;
+  repeated StrategyOrder strategy = 5;
+  repeated string defaultRouting = 6;
+  string perfil = 7;
+  repeated string access = 8;
+  string palanca = 9;
+}
+
+
+enum StatusUser {
+  UPDATE_USER = 0;
+  ADD_USER = 1;
+  REMOVE_USER = 2;
+  SNAPSHOT_USER = 3;
+}
+
+message UserList {
+  repeated User users = 1;
+  StatusUser statusUser = 2;
+}

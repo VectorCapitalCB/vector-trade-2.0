@@ -6,8 +6,21 @@
   <component name="ChangeListManager">
     <list default="true" id="23b81911-ab74-4291-905d-2cafed251d36" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainAppLocalhost.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainAppLocalhost.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.localhost.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.production.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/mongo/MongoMarketRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/mongo/MongoMarketRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainApp.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainApp.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainAppLocalhost.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/MainAppRicci.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/NewsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/NewsController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/PrincipalController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/PrincipalController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/MainApp.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/MainApp.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/ActorPerSession.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/ActorPerSession.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/SellsideConnect.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/SellsideConnect.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/mkd/ActorPerSubscriptionMkd.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/mkd/ActorPerSubscriptionMkd.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/connectionsmkd.json" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/connectionsmkd.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -177,7 +190,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="48" />
+    <option name="cachedIndexableFilesCount" value="49" />
   </component>
   <component name="ErrorTreeViewConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -267,7 +280,7 @@
     &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;E:/VC-GITHUB/vector-trade-2.0/inyectorcandle/src/main/java/cl/vc/inyectorcandle/fix&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/VC-GITHUB/vector-trade-2.0/inyectorcandle/logs/fix-logs&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
     &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
     &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
@@ -280,6 +293,7 @@
 }</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="E:\VC-GITHUB\vector-trade-2.0\inyectorcandle\logs\fix-logs" />
       <recent name="E:\VC-GITHUB\vector-trade-2.0\inyectorcandle\src\main\java\cl\vc\inyectorcandle\fix" />
       <recent name="E:\VC-GITHUB\vector-trade-2.0\inyectorcandle\src\main\resources\fix" />
     </key>
@@ -386,7 +400,8 @@
       <workItem from="1773060309016" duration="5302000" />
       <workItem from="1773062509986" duration="2058000" />
       <workItem from="1773064633125" duration="613000" />
-      <workItem from="1773148699022" duration="1324000" />
+      <workItem from="1773148699022" duration="1346000" />
+      <workItem from="1773151811334" duration="13999000" />
     </task>
     <servers />
   </component>

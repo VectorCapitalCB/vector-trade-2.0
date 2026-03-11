@@ -1,7 +1,7 @@
 {
   "BCS": {
-    "host": "localhost",
-    "port": 8050,
+    "host": "68.211.112.146",
+    "port": 8060,
     "status": "true"
   },
   "FH_IBKR": {

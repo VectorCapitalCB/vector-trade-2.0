@@ -1,0 +1,130 @@
+syntax = "proto3";
+
+package messages;
+import "google/protobuf/timestamp.proto";
+import "marketdata.proto";
+import "routing.proto";
+import "generalstrategy.proto";
+import "notification.proto";
+
+
+option java_package = "cl.vc.algos.adr.proto";
+option java_outer_classname = "PairsStrategyProtos";
+
+
+message PairsSnapshot {
+  string id = 1;
+}
+
+
+message PairsStrategy {
+  string strategyId = 1;
+  string strategyName = 2;
+  double ratio = 3;
+  double minQty = 4;
+  double percentageQty = 5;
+  double percentageFX = 6;
+  double mismatchAlert = 7;
+  double percentageFill = 8;
+  string symbolClose = 9;
+  string symbolOpen = 10;
+  bool openingMDDisabled = 12;
+  SecurityExchangeMarketData exchangeSourceClose = 13;
+  SecurityExchangeMarketData exchangeSourceOpen = 14;
+  SecurityExchangeRouting exchangeDestinationClose = 15;
+  SecurityExchangeRouting exchangeDestinationOpen = 16;
+  string accountClose = 19;
+  string accountOpen = 20;
+  string ordersPrefix = 21;
+  double percentageVariationClose = 22;
+  double percentageVariationOpen = 23;
+  double spreadInflow = 24;
+  double spreadFlowback = 25;
+  double percentageSpreadInflow = 26;
+  double percentageSpreadFlowback = 27;
+  double defaultQtyInflow = 28;
+  double defaultQtyFlowback = 29;
+  ExStrategy localStrategyInflow = 32;
+  ExStrategy localStrategyFlowback = 33;
+  ExStrategy foreignStrategyInflow = 34;
+  ExStrategy foreignStrategyFlowback = 35;
+  double deltabps = 36;
+  ADRType type = 37;
+  StatusStrategy statusStrategy = 38;
+
+  PairsStrategyStatus pairStrategyStatus = 39;
+
+  SettlType setteTypeOpen = 40;
+  SettlType setteTypeClose = 41;
+  Currency currencyOpen = 42;
+  Currency currencyclose = 43;
+
+  SecurityType securityTypeOpen = 44;
+  SecurityType securityTypeClose = 45;
+
+  double percentageIcebergOpen = 46;
+  double percentageIcebergClose = 47;
+
+  double ntickInflow = 48;
+  double ntickFlowback = 49;
+
+  string bidAskLocal = 50;
+  string bidAskClose = 51;
+
+  double peqInflow = 52;
+  double peqFlowback= 53;
+
+  double maxQty = 54;
+  double prePxInflow = 55;
+  double prePxFlowback = 56;
+  bool isDelete = 57;
+
+  double pxTheoric = 58;
+  double dTheoric = 59;
+  double aTheoric = 60;
+}
+
+message LogMessageRequest {
+  string id = 2;
+}
+
+message LogMessageResponse {
+  repeated LogMessage message = 1;
+  string id = 2;
+  AlgorithmType algoType = 3;
+
+}
+
+message LogMessage {
+  google.protobuf.Timestamp time = 1;
+  Level level = 2;
+  string message = 3;
+}
+
+
+
+enum AlgorithmType {
+  INFLOW = 0;
+  FLOWBACK = 1;
+}
+
+enum ADRType {
+  ADR_NORMAL = 0;
+  SPREAD = 1;
+  ADR_INVERSO = 2;
+  SNIPER = 3;
+}
+
+
+enum ADRSide {
+  OPENING = 0;
+  CLOSING = 1;
+  FOREX = 2;
+}
+
+message FxDolar {
+  double bid_fx = 1;
+  double ask_fx = 2;
+  double close_fx = 3;
+
+}

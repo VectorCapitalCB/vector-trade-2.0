@@ -93,7 +93,7 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
                     .setTitle("Not connected")
                     .setTypeState(NotificationMessage.TypeState.DISCONNECTION)
                     .build();
-            MainApp.getNotificationConectionMap().put(notification.getSecurityExchange(), notification);
+            MainApp.putConnectionNotification(notification);
             MainApp.getNotificationMap().add(notification);
             this.actorRef.tell(notification, ActorRef.noSender());
 

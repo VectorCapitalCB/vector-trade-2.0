@@ -1,0 +1,93 @@
+syntax = "proto3";
+
+package messages;
+
+import "google/protobuf/any.proto";
+option java_package = "cl.vc.module.protocolbuff.notification";
+option java_outer_classname = "NotificationMessage";
+import "google/protobuf/timestamp.proto";
+
+enum ConnectionSource {
+  BUYSIDE= 0;
+  SELLSIDE = 1;
+  OTHER = 2;
+}
+
+
+enum Level {
+  UNKNOWN_STATE= 0;
+  SUCCESS = 1;
+  FATAL = 2;
+  WARN = 3;
+  ERROR = 4;
+  INFO = 5;
+}
+
+enum TypeState {
+  DISCONNECTION= 0;
+  CONNECTION = 1;
+  TEST_REQUEST = 2;
+  REJECT = 3;
+}
+
+enum Component {
+
+  VECTOR_TRADE_SERVICES = 0;
+  VECTOR_TRADE_FRONT = 7;
+
+  ORB = 1;
+  XRO = 6;
+
+  VECTOR_SCREEN_SERVICE = 9;
+  VECTOR_SCREEN_FRONT = 10;
+
+  ALGO_ADR_ARBITRAGE_NORMAL_CL = 3;
+  ALGO_ADR_ARBITRAGE_INVERSO_CL = 4;
+  ALGO_SPREAD_CL = 5;
+
+  SIMULATOR = 11;
+  ETF_ECH = 12;
+  ETF_IPSA = 13;
+
+  ALGO_SPREAD_MM = 17;
+  ALGO_MONITOR_PRICE = 18;
+  ETF_IPSA2 = 19;
+  ETF_IPSA3 = 20;
+
+  ORB_NUAM = 21;
+  ORB_BCS = 22;
+  ORB_ALPACA = 23;
+  ORB_IB = 24;
+
+  XRO_NUAM = 25;
+
+
+  ALGO_AVN = 26;
+
+}
+
+enum NotificationRequestType {
+  CONNECTION_REQUEST = 0;
+  MESSAGES_REQUEST = 1;
+}
+
+message NotificationRequest {
+  string id = 1;
+  NotificationRequestType notificationRequestType = 2;
+}
+
+message NotificationResponse {
+  string id = 1;
+  repeated Notification notificationlist = 2;
+}
+
+message Notification {
+  string title = 1;
+  string message = 2;
+  string comments = 3;
+  string securityExchange = 4;
+  TypeState  typeState = 5;
+  Component component = 6;
+  Level level = 7;
+  google.protobuf.Timestamp time = 60;
+}

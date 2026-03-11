@@ -742,7 +742,13 @@ public class PrincipalController {
 
                     if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.SNAPSHOT_PORTFOLIO)) {
 
-                        Repository.getPortfolioResponse().getPostfolioList().forEach(s -> {
+                        List<BlotterMessage.Portfolio> orderedPortfolios =
+                                new ArrayList<>(Repository.getPortfolioResponse().getPostfolioList());
+                        orderedPortfolios.sort(Comparator
+                                .comparingInt(this::portfolioOrderPriority)
+                                .thenComparing(BlotterMessage.Portfolio::getNamePortfolio, String.CASE_INSENSITIVE_ORDER));
+
+                        orderedPortfolios.forEach(s -> {
 
                             try {
 
@@ -940,6 +946,21 @@ public class PrincipalController {
             if (text.equals(t.getText())) return t;
         }
         return null;
+    }
+
+    private int portfolioOrderPriority(BlotterMessage.Portfolio portfolio) {
+        if (portfolio == null || portfolio.getNamePortfolio() == null) {
+            return 99;
+        }
+
+        String name = portfolio.getNamePortfolio().trim();
+        if ("IPSA".equalsIgnoreCase(name)) {
+            return 0;
+        }
+        if ("Principal".equalsIgnoreCase(name)) {
+            return 1;
+        }
+        return 2;
     }
 
     private void selectPrincipalOrFirst() {

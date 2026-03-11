@@ -76,7 +76,7 @@ public class MainApp {
     @Getter
     private static ActorRef sellSideManager;
     @Getter
-    private static Map<String, NotificationMessage.Notification> notificationConectionMap = new HashMap<>();
+    private static Map<String, NotificationMessage.Notification> notificationConectionMap = new LinkedHashMap<>();
     @Getter
     private static List<NotificationMessage.Notification> notificationMap = new ArrayList<>();
     @Getter
@@ -277,6 +277,18 @@ public class MainApp {
 
 
     }
+
+    public static void putConnectionNotification(NotificationMessage.Notification notification) {
+        if (notification == null) {
+            return;
+        }
+        notificationConectionMap.put(buildConnectionNotificationKey(notification), notification);
+    }
+
+    private static String buildConnectionNotificationKey(NotificationMessage.Notification notification) {
+        return notification.getComponent().name() + "|" + notification.getSecurityExchange();
+    }
+
     private static List<String> extractAccountsTokens(UserRepresentation user) {
         if (user == null || user.getAttributes() == null) return Collections.emptyList();
         Map<String, List<String>> attrs = user.getAttributes();

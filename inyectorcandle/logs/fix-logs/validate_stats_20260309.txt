@@ -1,0 +1,140 @@
+====================================================================================================
+  VALIDACION ESTADISTICAS  |  2026-03-09
+  Fuentes: FRONTEND (usuario) | MONGO/instrument_stats | MONGO/trades | FIX log 35=X
+====================================================================================================
+
+  METRICA                                FRONTEND         INST_STATS          TRADES_DB            FIX_35X
+                                                        diff     ok       diff     ok       diff     ok
+  ----------------------------------------------------------------------------------------------------
+  Volumen Total                     2,308,188,584      3,332,736,714
+                                                   +44.3875%   DIFF   +0.0000%     OK  -11.3080%   DIFF
+                                                                          2,308,188,584      2,047,179,349
+
+  Monto Total                  190,186,704,564.43 270,014,373,637.54
+                                                   +41.9733%   DIFF   +0.0000%     OK   -5.9538%   DIFF
+                                                                     190,186,704,564.43 178,863,458,653.00
+
+  Capitalizacion Total         191,906,449,206.09 268,937,008,869.87
+                                                   +40.1396%   DIFF   +0.0000%     OK   -6.1248%   DIFF
+                                                                     191,906,449,206.09 180,152,498,038.86
+
+  N Total Trades                          102,441            117,099
+                                                   +14.3087%   DIFF   +0.0000%     OK   -5.1386%   DIFF
+                                                                                102,441             97,177
+
+  Volatilidad Promedio %                   0.6200             0.4699
+                                                   -24.2162%   DIFF   -0.2226%     OK  +12.1981%     OK
+                                                                                 0.6186             0.6956
+
+  Sentimiento Positivo %                  24.5200            19.5956
+                                                   -20.0830%   DIFF   -0.0158%     OK  +29.3920%   DIFF
+                                                                                24.5161            31.7269
+
+  Sentimiento Negativo %                  24.5200             9.9533
+                                                   -59.4072%   DIFF   -0.0158%     OK   +1.5481%     OK
+                                                                                24.5161            24.8996
+
+  Rango Promedio                       157.258739           0.000000
+                                                  -100.0000%   DIFF   -0.0000%     OK   -2.1986%     OK
+                                                                             157.258739         153.801233
+
+  Indice Promedio                       83.141581          80.695546
+                                                    -2.9420%   DIFF   +0.0000%     OK   +5.8440%   DIFF
+                                                                              83.141581          88.000349
+
+  Indice Maximo                         83.990924           0.000000
+                                                  -100.0000%   DIFF   -0.0000%     OK   +5.8762%   DIFF
+                                                                              83.990924          88.926420
+
+  Indice Minimo                         80.030176           0.000000
+                                                  -100.0000%   DIFF   -0.0000%     OK   +6.5272%   DIFF
+                                                                              80.030176          85.253912
+
+  Tendencia Promedio %                   0.090000           0.096429
+                                                    +7.1436%     OK   +4.2200%     OK +240.1614%   DIFF
+                                                                               0.093798           0.306145
+
+  Liquidez Media                         0.012100           0.012343
+                                                    +2.0067%     OK   +0.3011%     OK   -5.4092%     OK
+                                                                               0.012136           0.011445
+
+  Cap Promedio                     619,053,061.96     418,253,513.02
+                                                   -32.4366%   DIFF   -0.8961%     OK  +16.0364%   DIFF
+                                                                         613,505,498.59     718,327,143.18
+
+  Precio Prom Acum                      32,323.60          36,402.68
+                                                   +12.6195%   DIFF   +0.0000%     OK   -3.3676%     OK
+                                                                              32,323.60          31,235.07
+
+  Precio Max Acum                   10,036,885.70      23,406,920.98
+                                                  +133.2090%   DIFF   +0.0000%     OK  -22.3554%   DIFF
+                                                                          10,036,885.70       7,793,104.50
+
+====================================================================================================
+  METRICAS CORREGIDAS USANDO CANDLES P1D (high/low reales del dia)
+====================================================================================================
+  N instrumentos candles                      240.000000
+  Rango Promedio (candle)                     140.602362   frontend=        157.258739  diff=-10.5917%  DIFF
+  Indice Promedio (candle)                     85.970880   frontend=         83.141581  diff=+3.4030%  DIFF
+  Indice Maximo (candle)                       86.621297   frontend=         83.990924  diff=+3.1317%  DIFF
+  Indice Minimo (candle)                       83.561379   frontend=         80.030176  diff=+4.4123%  DIFF
+  Precio Max Acum (candle)              7,506,410.730000   frontend= 10,036,885.700000  diff=-25.2118%  DIFF
+
+====================================================================================================
+  DIAGNOSTICO DETALLADO
+====================================================================================================
+
+  [TRADES]
+    Frontend     :      102,441
+    instrument_stats :      117,099   diff=+14,658  +14.3087%
+    trades (db)  :      102,441   diff=+0  +0.0000%
+    FIX 35=X     :       97,177   diff=-5,264  -5.1386%
+    => Mongo tiene 5,264 trades extra vs FIX 35=X
+       Causa: inyeccion previa sin purge O snapshot trades (35=W) procesados
+
+  [VOLUMEN]
+    Frontend         :        2,308,188,584
+    instrument_stats :        3,332,736,714   diff=+44.3875%
+    trades (db)      :        2,308,188,584   diff=+0.0000%
+    FIX 35=X         :        2,047,179,349   diff=-11.3080%
+
+  [MONTO vs CAPITALIZACION]
+    Monto Total (frontend)         :       190,186,704,564.43  <- suma de price*qty de cada trade
+    Capitalizacion (frontend)      :       191,906,449,206.09  <- diferencia de +1,719,744,641.66
+    Capitalizacion calc inst_stats :       268,937,008,869.87  <- SUM(lastPrice*totalVolume)
+    Diff cap frontend vs inst_stats: +77,030,559,663.78  (+40.1396%)
+
+  [SENTIMIENTO / VOLATILIDAD]
+    Sentimiento Positivo frontend  : 24.5200%
+    Sentimiento Positivo inst_stats: 19.5956%  (643 instrumentos)
+    Sentimiento Positivo trades_db : 24.5161%  (310 instrumentos)
+    Sentimiento Positivo FIX       : 31.7269%  (249 instrumentos)
+
+    Volatilidad Promedio frontend  : 0.6200%
+    Volatilidad Promedio inst_stats: 0.4699%
+    Volatilidad Promedio trades_db : 0.6186%
+    Volatilidad Promedio FIX       : 0.6956%
+
+  [PRECIO MAX ACUM]
+    Frontend         :   10,036,885.70  <- SUM(precioMaximo por instrumento) segun CandleProtoMarketPublisher.java:322
+    instrument_stats :   23,406,920.98  <- SUM(lastPrice) de inst_stats (no tiene dayHigh)
+    candle P1D       :    7,506,410.73  <- SUM(high) de candles P1D del dia
+    FIX              :    7,793,104.50  <- SUM(high intradía) del log
+
+  [PROBLEMAS IDENTIFICADOS]
+    ! Volumen Total: inst_stats diff +44.3875%
+    ! Monto Total: inst_stats diff +41.9733%
+    ! Capitalizacion Total: inst_stats diff +40.1396%
+    ! N Total Trades: inst_stats diff +14.3087%
+    ! Volatilidad Promedio %: inst_stats diff -24.2162%
+    ! Sentimiento Positivo %: inst_stats diff -20.0830%
+    ! Sentimiento Negativo %: inst_stats diff -59.4072%
+    ! Rango Promedio: inst_stats diff -100.0000%
+    ! Indice Promedio: inst_stats diff -2.9420%
+    ! Indice Maximo: inst_stats diff -100.0000%
+    ! Indice Minimo: inst_stats diff -100.0000%
+    ! Cap Promedio: inst_stats diff -32.4366%
+    ! Precio Prom Acum: inst_stats diff +12.6195%
+    ! Precio Max Acum: inst_stats diff +133.2090%
+
+====================================================================================================

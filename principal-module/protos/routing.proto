@@ -1,0 +1,296 @@
+syntax = "proto3";
+
+package messages;
+option java_package = "cl.vc.module.protocolbuff.routing";
+option java_outer_classname = "RoutingMessage";
+import "google/protobuf/timestamp.proto";
+
+
+enum OrderStatus {
+	NEW = 0;
+	PARTIALLY_FILLED = 1;
+	FILLED = 2;
+	DONE_FOR_DAY = 3;
+	CANCELED = 4;
+	REPLACED = 5;
+	PENDING_CANCEL = 6;
+	STOPPED = 7;
+	REJECTED = 8;
+	SUSPENDED = 9;
+	PENDING_NEW = 93;
+	CALCULATED = 92;
+	EXPIRED = 91;
+	PENDING_REPLACE = 90;
+
+	ABORTED = 94;
+	TRADE = 95;
+	LIVE_TRADE = 96;
+	LIVE = 97;
+	PENDING_LIVE = 98;
+	PENDING_ONLY = 99;
+	ALL_STATUS = 100;
+
+}
+
+enum ExecutionType {
+	EXEC_NEW = 0;
+	EXEC_DONE_FOR_DAY = 3;
+	EXEC_CANCELED = 4;
+	EXEC_REPLACED = 5;
+	EXEC_PENDING_CANCEL = 6;
+	EXEC_PENDING_REPLACE = 7;
+	EXEC_REJECTED = 8;
+	EXEC_TRADE = 10;
+	EXEC_RESTATED = 11;
+	EXEC_CORRECT = 12;
+	EXEC_PENDING_NE = 13;
+}
+
+enum Side {
+	NONE_SIDE = 0;
+	BUY = 1;
+	SELL = 2;
+	SELL_SHORT = 5;
+	ALL_SIDE = 100;
+}
+
+enum Tif {
+	DAY = 0;
+	GOOD_TIL_CANCEL = 1;
+	AT_THE_OPENING = 2;
+	IMMEDIATE_OR_CANCEL = 3;
+	FILL_OR_KILL = 4;
+}
+
+
+enum SecurityType {
+	CS = 0;
+	CFI = 1;
+	MON = 2;
+	FUT = 3;
+	OPT = 4;
+	PAXOS = 5;
+}
+
+enum HandlInst {
+	NONE_HANDLINST = 0;
+	PRIVATE_ORDER = 1;
+	EXECUTION_ORDER = 2;
+	MANUAL = 3;
+	ISOLATED_MARGIN = 4;
+	CROSS_MARGIN = 5;
+
+}
+
+enum SettlType {
+	REGULAR = 0;
+	CASH = 1;
+	NEXT_DAY = 2;
+	T2 = 3;
+	T3 = 4;
+	T5 = 9;
+}
+
+
+enum ExecBroker {
+	NO_EXEC = 0;
+	VC = 1;
+	IBKR = 2;
+	DTEC = 3;
+	XPUS = 4;
+	BTCL = 5;
+	BTGY = 6;
+}
+
+enum SecurityExchangeRouting {
+	XSGO = 0;
+	XSGO_OFS = 1;
+	XBOG = 2;
+	XLIM = 3;
+	XBCL = 4;
+	IB_SMART = 5;
+	BASKETS = 7;
+	MEXC = 9;
+	ALPACA = 10;
+	BBG = 11;
+	CRYPTO_MARKET = 12;
+	BINANCE = 13;
+	ALL_SECURITY_EXCHANGE = 100;
+	NONE_ROUTING = 101;
+	RT_XP = 17;
+	NUAM = 18;
+	XSGO_1 = 19;
+	XSGO_2 = 20;
+	XSGO_3 = 21;
+	XSGO_4 = 22;
+
+}
+
+enum ExStrategy {
+	NO_STRATEGY = 0;
+	AGGRESSIVE = 1;
+	PASSIVE = 2;
+	LAST = 3;
+	PX = 4;
+	MID = 5;
+	FIXED = 6;
+	MOC = 7;
+
+}
+
+
+enum StrategyOrder {
+	NONE_STRATEGY = 0;
+	OCO = 1;
+	TRAILING = 2;
+	BASKET = 3;
+	BEST = 4;
+	HOLGURA = 5;
+	SCALPING = 6;
+	BASKET_AGGRESSIVE = 7;
+	BASKET_PASSIVE = 8;
+	BASKET_LAST = 9;
+	VWAP = 10;
+}
+
+enum OrdType {
+	NONE = 0;
+	MARKET = 1;
+	LIMIT = 2;
+	MARKET_CLOSE = 3;
+	STOP_LOSS = 5;
+}
+
+enum Currency {
+	NO_CURRENCY = 0;
+	CLP = 1;
+	USD = 2;
+	CAD = 3;
+	COP = 4;
+	PEN = 5;
+	GBP = 6;
+	USDC = 7;
+	USDT = 8;
+	BTC = 9;
+	ETH = 10;
+	EUR = 11;
+
+}
+
+message Order {
+	string account = 1;
+	string id = 2;
+	string symbol = 7;
+	double price = 9;
+	double avgPrice = 10;
+	string clOrdId = 11;
+	double cumQty = 14;
+	Currency currency = 15;
+	string operator = 16;
+	string execId = 17;
+	OrderStatus ordStatus = 19;
+	HandlInst handlInst = 21;
+	ExecBroker broker = 24;
+	double lastPx = 31;
+	double lastQty = 32;
+	string orderID = 37;
+	double orderQty = 38;
+	OrdType ordType = 40;
+	string origClOrdID = 41;
+	Side side = 54;
+	string settlDate = 64;
+	string text = 58;
+	Tif tif = 59;
+	google.protobuf.Timestamp time = 60;
+	SettlType settlType = 63;
+	string prefixID = 97;
+	double maxFloor = 111;
+	bool chkIndivisible = 113;
+	ExecutionType execType = 150;
+	double leaves = 151;
+	SecurityType securityType = 167;
+	SecurityExchangeRouting securityExchange = 207;
+	string icebergPercentage = 225;
+	string basketID = 227;
+	double spread = 229;
+	double limit = 230;
+	bool hideOrder = 231;
+	string codeOperator = 232;
+	StrategyOrder strategyOrder = 233;
+	ExStrategy exStrategy = 228;
+	double riskRate = 1190;
+	string clOrdLinkID = 583;
+	double amount = 584;
+	string folio = 5463;
+	string contraBroker = 375;
+	string contraTrader = 337;
+	string securityID = 48;
+
+	string commission = 49;
+	string commission_type = 50;
+	string icebergValue = 226;
+
+	google.protobuf.Timestamp effectiveTime = 168;
+	google.protobuf.Timestamp expireTime = 126;
+
+	}
+
+
+message TradeExecution {
+	Order order = 1;
+}
+
+message basketOrder {
+	Order order = 1;
+	string basketID = 221;
+	string strategyID = 98;
+	double noStrategyParameters = 957;
+	repeated StrategyParameters bStrgy = 958;
+	ExStrategy exStrategy = 222;
+	double spread = 223;
+	double limit = 224;
+}
+
+message StrategyParameters {
+	string StrategyParameterName = 958;
+	string StrategyParameterType = 959;
+	double 	StrategyParameterValue = 960;
+}
+
+message OrderCancelReject {
+	string id = 1;
+	string text = 2;
+	string execId = 3;
+}
+
+message NewOrderRequest {
+	Order order = 1;
+}
+
+message OrderReplaceRequest {
+	string id = 1;
+	double quantity = 2;
+	double price = 3;
+	double limit = 4;
+	double spread = 5;
+	double maxFloor = 111;
+	string icebergPercentage = 225;
+	double amount = 584;
+}
+
+message OrderCancelRequest {
+	string id = 1;
+}
+
+message OrdersCancelRequestList {
+	repeated string id = 1;
+}
+
+message OrdersCancelUnsolicited {
+	repeated Order orders = 1;
+}
+
+message OrderList {
+	repeated Order orders = 1;
+}
+

@@ -17,6 +17,7 @@ import cl.vc.module.protocolbuff.ws.vectortrade.MessageUtilVT;
 import cl.vc.service.MainApp;
 import cl.vc.service.akka.actors.mkd.ActorPerSubscriptionMkd;
 import cl.vc.service.akka.actors.routing.ActorGroupPerAccount;
+import cl.vc.service.util.IpsaPortfolioService;
 import com.google.protobuf.Message;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -575,21 +576,11 @@ public class ActorPerSession extends AbstractActor {
     public void onPortfolioRequest(BlotterMessage.PortfolioRequest portfolioRequest) {
 
         try {
-            // Asegura nodo de usuario con portafolio "Principal"
-            if (!MainApp.getPortfolioMaps().containsKey(portfolioRequest.getUsername())) {
-                BlotterMessage.Portfolio newPortfolio = BlotterMessage.Portfolio.newBuilder()
-                        .setId("Principal")
-                        .setNamePortfolio("Principal")
-                        .setUsername(portfolioRequest.getUsername())
-                        .build();
-
-                HashMap<String, BlotterMessage.Portfolio> portfolios = new HashMap<>();
-                portfolios.put(newPortfolio.getNamePortfolio(), newPortfolio);
-                MainApp.getPortfolioMaps().put(portfolioRequest.getUsername(), portfolios);
-            }
+            ensureSystemPortfolios(portfolioRequest.getUsername());
 
             if (portfolioRequest.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.SNAPSHOT_PORTFOLIO)) {
 
+                ensureSystemPortfolios(portfolioRequest.getUsername());
                 HashMap<String, BlotterMessage.Portfolio> porfolios =
                         MainApp.getPortfolioMaps().get(portfolioRequest.getUsername());
 
@@ -604,6 +595,11 @@ public class ActorPerSession extends AbstractActor {
 
                 HashMap<String, BlotterMessage.Portfolio> porfolios =
                         MainApp.getPortfolioMaps().get(portfolioRequest.getUsername());
+
+                if (isProtectedPortfolio(portfolioRequest.getNamePortfolio())) {
+                    sendPortfolioBlockedNotification("No se puede crear un portafolio con nombre " + portfolioRequest.getNamePortfolio());
+                    return;
+                }
 
                 // Crea portafolio nuevo
                 BlotterMessage.Portfolio newPortfolio = BlotterMessage.Portfolio.newBuilder()
@@ -630,6 +626,12 @@ public class ActorPerSession extends AbstractActor {
                 BlotterMessage.Asset asset = portfolioRequest.getAsset();
                 String namePortfolio = portfolioRequest.getNamePortfolio();
                 String username = portfolioRequest.getUsername();
+
+                if (isSystemManagedPortfolio(namePortfolio)
+                        || (isProtectedPortfolio(namePortfolio) && !isPrincipalPortfolio(namePortfolio))) {
+                    sendPortfolioBlockedNotification("El portafolio " + namePortfolio + " es generado por el sistema");
+                    return;
+                }
 
                 HashMap<String, BlotterMessage.Portfolio> portfolioHashMap =
                         MainApp.getPortfolioMaps().get(username);
@@ -658,6 +660,12 @@ public class ActorPerSession extends AbstractActor {
                     BlotterMessage.Asset asset = portfolioRequest.getAsset();
                     String namePortfolio = portfolioRequest.getNamePortfolio();
                     String username = portfolioRequest.getUsername();
+
+                    if (isSystemManagedPortfolio(namePortfolio)
+                            || (isProtectedPortfolio(namePortfolio) && !isPrincipalPortfolio(namePortfolio))) {
+                        sendPortfolioBlockedNotification("El portafolio " + namePortfolio + " es generado por el sistema");
+                        return;
+                    }
 
                     HashMap<String, BlotterMessage.Portfolio> portfolioHashMap =
                             MainApp.getPortfolioMaps().get(username);
@@ -718,11 +726,11 @@ public class ActorPerSession extends AbstractActor {
                     String username = portfolioRequest.getUsername();
                     String namePortfolio = portfolioRequest.getNamePortfolio();
 
-                    if ("Principal".equalsIgnoreCase(namePortfolio)) {
+                    if (isProtectedPortfolio(namePortfolio)) {
                         NotificationMessage.Notification notification = NotificationMessage.Notification.newBuilder()
                                 .setTitle("Portfolio")
                                 .setTime(TimeGenerator.getTimeGeneral(MainApp.getZoneId()))
-                                .setMessage("No se puede eliminar el portafolio Principal")
+                                .setMessage("No se puede eliminar el portafolio " + namePortfolio)
                                 .setLevel(NotificationMessage.Level.ERROR)
                                 .build();
                         sendMessages(notification);
@@ -777,6 +785,61 @@ public class ActorPerSession extends AbstractActor {
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
+    }
+
+    private void ensureSystemPortfolios(String username) {
+        HashMap<String, BlotterMessage.Portfolio> portfolios = MainApp.getPortfolioMaps().get(username);
+        if (portfolios == null) {
+            portfolios = new HashMap<>();
+        } else {
+            portfolios = new HashMap<>(portfolios);
+        }
+
+        portfolios.putIfAbsent(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME, BlotterMessage.Portfolio.newBuilder()
+                .setId(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME)
+                .setNamePortfolio(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME)
+                .setUsername(username)
+                .build());
+
+        String ipsaPortfolioName = IpsaPortfolioService.getPortfolioName(MainApp.getProperties());
+        if (IpsaPortfolioService.isEnabled(MainApp.getProperties())) {
+            BlotterMessage.Portfolio ipsaPortfolio = IpsaPortfolioService.buildPortfolio(
+                    username,
+                    MainApp.getProperties(),
+                    ipsaPortfolioName
+            );
+            portfolios.put(ipsaPortfolioName, ipsaPortfolio);
+        } else {
+            portfolios.remove(ipsaPortfolioName);
+        }
+
+        MainApp.getPortfolioMaps().put(username, portfolios);
+    }
+
+    private boolean isPrincipalPortfolio(String namePortfolio) {
+        return namePortfolio != null && "Principal".equalsIgnoreCase(namePortfolio);
+    }
+
+    private boolean isProtectedPortfolio(String namePortfolio) {
+        return namePortfolio != null && (isPrincipalPortfolio(namePortfolio)
+                || IpsaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio));
+    }
+
+    private boolean isSystemManagedPortfolio(String namePortfolio) {
+        return namePortfolio != null
+                && (isPrincipalPortfolio(namePortfolio)
+                || (IpsaPortfolioService.isEnabled(MainApp.getProperties())
+                && IpsaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio)));
+    }
+
+    private void sendPortfolioBlockedNotification(String message) {
+        NotificationMessage.Notification notification = NotificationMessage.Notification.newBuilder()
+                .setTitle("Portfolio")
+                .setTime(TimeGenerator.getTimeGeneral(MainApp.getZoneId()))
+                .setMessage(message)
+                .setLevel(NotificationMessage.Level.ERROR)
+                .build();
+        sendMessages(notification);
     }
 
 

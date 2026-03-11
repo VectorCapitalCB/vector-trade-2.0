@@ -5,6 +5,7 @@ import javafx.animation.KeyFrame;
 import javafx.animation.Timeline;
 import javafx.collections.ListChangeListener;
 import javafx.fxml.FXML;
+import javafx.scene.Cursor;
 import javafx.scene.control.Hyperlink;
 import javafx.scene.control.Label;
 import javafx.scene.control.ListView;
@@ -116,6 +117,13 @@ public class NewsController {
             link.setManaged(hasUrl);
             link.setText(hasUrl ? formatLinkLabel(url) : "Abrir fuente");
             link.setOnAction(e -> openLink(url));
+            box.setCursor(hasUrl ? Cursor.HAND : Cursor.DEFAULT);
+            box.setOnMouseClicked(e -> {
+                if (hasUrl) {
+                    openLink(url);
+                }
+            });
+            setCursor(hasUrl ? Cursor.HAND : Cursor.DEFAULT);
 
             setGraphic(box);
             setText(null);

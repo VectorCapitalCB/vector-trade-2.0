@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -180,13 +181,18 @@ public class MongoMarketRepository implements AutoCloseable {
     }
 
     public BigDecimal findPreviousClose(InstrumentKey key, LocalDate tradingDay, ZoneId zoneId) {
-        Instant dayStart = tradingDay.atStartOfDay(zoneId).toInstant();
-        String dayStartIso = dayStart.toString();
+        // Usar medianoche UTC como límite para candles diarias.
+        // Los buckets diarios se almacenan como 2026-03-09T00:00:00Z (medianoche UTC),
+        // por lo que comparar contra medianoche Santiago (03:00Z) incluiría la candle
+        // del día actual. Usando medianoche UTC se excluye correctamente el día actual.
+        String candleDayStart = tradingDay.atStartOfDay(ZoneOffset.UTC).toInstant().toString();
+        // Para trades usamos medianoche Santiago (zona del mercado).
+        String tradeDayStart = tradingDay.atStartOfDay(zoneId).toInstant().toString();
 
         Document dailyCandle = candlesCollection.find(Filters.and(
                         Filters.eq("instrumentId", key.id()),
                         Filters.eq("timeframe", Duration.ofDays(1).toString()),
-                        Filters.lt("bucketStart", dayStartIso)
+                        Filters.lt("bucketStart", candleDayStart)
                 ))
                 .sort(Sorts.descending("bucketStart"))
                 .limit(1)
@@ -198,7 +204,7 @@ public class MongoMarketRepository implements AutoCloseable {
 
         Document lastTrade = tradesCollection.find(Filters.and(
                         Filters.eq("instrumentId", key.id()),
-                        Filters.lt("eventTime", dayStartIso)
+                        Filters.lt("eventTime", tradeDayStart)
                 ))
                 .sort(Sorts.descending("eventTime"))
                 .limit(1)
