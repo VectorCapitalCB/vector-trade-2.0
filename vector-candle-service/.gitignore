@@ -1,0 +1,12 @@
+# Build outputs
+**/target/
+vector-candle-service.iml
+vector-candle-service.ipr
+vector-candle-service.iws
+# Large compressed artifacts
+*.gz
+*.log
+vector-trade-front/src/main/resources/libs/ios/libjfxwebkit.dylib
+
+# IntelliJ IDEA project metadata (XML)
+**/.idea/*.xml
