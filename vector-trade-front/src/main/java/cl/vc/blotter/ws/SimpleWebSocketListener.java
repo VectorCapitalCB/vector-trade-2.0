@@ -53,7 +53,7 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
 
     private String username;
 
-    private ScheduledExecutorService schedulersound = Executors.newScheduledThreadPool(1);
+    private ScheduledExecutorService schedulersound = Executors.newSingleThreadScheduledExecutor();
 
     @Setter
     @Getter
@@ -108,7 +108,7 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
             tasks = new Runnable() {
                 public void run() {
                     Repository.setSound(true);
-                    schedulersound.shutdown();
+                    shutdownSoundScheduler();
                 }
             };
 
@@ -147,13 +147,14 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
         Platform.runLater(() -> {
             if (isServiceChannel()) {
                 if (schedulersound.isShutdown() || schedulersound.isTerminated()) {
-                    schedulersound = Executors.newScheduledThreadPool(1);
+                    schedulersound = Executors.newSingleThreadScheduledExecutor();
                 }
-                schedulersound.scheduleAtFixedRate(tasks, 7, 7, TimeUnit.SECONDS);
+                schedulersound.schedule(tasks, 7, TimeUnit.SECONDS);
             }
 
             if (scheduler != null) {
-                scheduler.shutdown();
+                scheduler.shutdownNow();
+                scheduler = null;
             }
 
             if ("chat".equals(channelName)) {
@@ -259,11 +260,14 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
                                 RoutingMessage.SecurityType.CS);
 
                         try {
-                            schedulersound.scheduleAtFixedRate(tasks, 13, 13, TimeUnit.SECONDS);
+                            if (schedulersound.isShutdown() || schedulersound.isTerminated()) {
+                                schedulersound = Executors.newSingleThreadScheduledExecutor();
+                            }
+                            schedulersound.schedule(tasks, 13, TimeUnit.SECONDS);
                         } catch (Exception e) {
                             Thread.sleep(5000);
                             Repository.setSound(true);
-                            schedulersound.shutdown();
+                            shutdownSoundScheduler();
                         }
                     } else if ("chat".equals(channelName)) {
                         sendChatConnectEvent();
@@ -459,7 +463,16 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
     @Override
     public void stopService() {
         try {
-
+            autoReconnect = false;
+            stopChatHeartbeat();
+            shutdownSoundScheduler();
+            if (scheduler != null) {
+                scheduler.shutdownNow();
+                scheduler = null;
+            }
+            if (getSession() != null && getSession().isOpen()) {
+                getSession().close();
+            }
         } catch (Exception e) {
             log.error("Unexpected error while closing WebSocket session: {}", e.getMessage(), e);
         }
@@ -571,6 +584,12 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
         if (chatHeartbeatScheduler != null) {
             chatHeartbeatScheduler.shutdownNow();
             chatHeartbeatScheduler = null;
+        }
+    }
+
+    private void shutdownSoundScheduler() {
+        if (schedulersound != null) {
+            schedulersound.shutdownNow();
         }
     }
 

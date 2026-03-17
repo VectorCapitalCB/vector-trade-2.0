@@ -7,10 +7,11 @@ import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.module.protocolbuff.utils.Corredoras;
 import com.google.protobuf.Timestamp;
+import javafx.animation.PauseTransition;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
-import javafx.collections.ObservableList;
 import javafx.collections.ListChangeListener;
+import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -28,12 +29,15 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Locale;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.ResourceBundle;
 
 @Data
 @Slf4j
 public class TradeMKDController implements Initializable {
+    private static final int MAX_VISIBLE_TRADES = 200;
 
     @FXML
     private TableView<MarketDataMessage.Trade> marketDataTradeTable;
@@ -65,6 +69,11 @@ public class TradeMKDController implements Initializable {
     private final java.util.HashMap<String, String> allbrokercode = Corredoras.getAll();
     private ObservableList<MarketDataMessage.Trade> tradesBacking = FXCollections.observableArrayList();
     private SortedList<MarketDataMessage.Trade> sortedTrades = new SortedList<>(tradesBacking);
+    private final PauseTransition sortDebouncer = new PauseTransition(javafx.util.Duration.millis(75));
+    private final List<MarketDataMessage.Trade> pendingTrades = new ArrayList<>();
+    private List<MarketDataMessage.Trade> pendingReplacement;
+    private boolean flushScheduled;
+    private ListChangeListener<MarketDataMessage.Trade> boundTradesListener;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
@@ -154,7 +163,6 @@ public class TradeMKDController implements Initializable {
                             setText(allbrokercode.get(item));
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTable.refresh();
                             } else {
                                 getStyleClass().add("notvc");
                             }
@@ -177,7 +185,6 @@ public class TradeMKDController implements Initializable {
                             getStyleClass().clear();
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTable.refresh();
                             } else {
                                 getStyleClass().add("notvc");
                             }
@@ -189,8 +196,10 @@ public class TradeMKDController implements Initializable {
             });
 
             marketDataTradeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            marketDataTradeTable.setFixedCellSize(24);
             sortedTrades.comparatorProperty().bind(marketDataTradeTable.comparatorProperty());
             marketDataTradeTable.setItems(sortedTrades);
+            sortDebouncer.setOnFinished(evt -> sortTableIfNeeded());
 
             time.setSortType(TableColumn.SortType.DESCENDING);
             marketDataTradeTable.getSortOrder().setAll(time);
@@ -220,61 +229,135 @@ public class TradeMKDController implements Initializable {
                 }
             });
 
-            tradesBacking.addListener((ListChangeListener<MarketDataMessage.Trade>) c -> {
-                if (!marketDataTradeTable.getSortOrder().isEmpty()) {
-                    marketDataTradeTable.sort();
-                }
-            });
+            attachTradesListener(tradesBacking);
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
     }
 
-    public void setTrades(java.util.Collection<MarketDataMessage.Trade> nuevos) {
-        Platform.runLater(() -> {
-            tradesBacking.setAll(nuevos);
-            marketDataTradeTable.sort();
-        });
+    public void setTrades(Collection<MarketDataMessage.Trade> nuevos) {
+        synchronized (pendingTrades) {
+            pendingReplacement = new ArrayList<>(nuevos);
+            pendingTrades.clear();
+        }
+        scheduleFlush();
     }
 
-    public void addTrades(java.util.Collection<MarketDataMessage.Trade> nuevos) {
-        Platform.runLater(() -> {
-            tradesBacking.addAll(nuevos);
-            marketDataTradeTable.sort();
-        });
+    public void addTrades(Collection<MarketDataMessage.Trade> nuevos) {
+        synchronized (pendingTrades) {
+            pendingTrades.addAll(nuevos);
+        }
+        scheduleFlush();
     }
 
     public void addTrade(MarketDataMessage.Trade t) {
-        Platform.runLater(() -> {
-            tradesBacking.add(t);
-            marketDataTradeTable.sort();
-        });
+        synchronized (pendingTrades) {
+            pendingTrades.add(t);
+        }
+        scheduleFlush();
     }
 
     public void sortByTimeDesc() {
-        Platform.runLater(() -> {
-            if (!marketDataTradeTable.getSortOrder().contains(time)) {
-                marketDataTradeTable.getSortOrder().setAll(time);
-            }
-            time.setSortType(TableColumn.SortType.DESCENDING);
-            marketDataTradeTable.sort();
-        });
+        runFx(this::sortTableIfNeeded);
     }
 
     public void bindTrades(ObservableList<MarketDataMessage.Trade> source) {
-        Platform.runLater(() -> {
+        runFx(() -> {
+            if (tradesBacking == source) {
+                return;
+            }
+            detachTradesListener();
             tradesBacking = source;
             sortedTrades = new SortedList<>(tradesBacking);
             sortedTrades.comparatorProperty().bind(marketDataTradeTable.comparatorProperty());
             marketDataTradeTable.setItems(sortedTrades);
+            attachTradesListener(tradesBacking);
 
             time.setSortType(TableColumn.SortType.DESCENDING);
             marketDataTradeTable.getSortOrder().setAll(time);
-            marketDataTradeTable.sort();
-
-            tradesBacking.addListener((ListChangeListener<MarketDataMessage.Trade>) c -> marketDataTradeTable.sort());
+            sortTableIfNeeded();
         });
+    }
+
+    private void scheduleFlush() {
+        synchronized (pendingTrades) {
+            if (flushScheduled) {
+                return;
+            }
+            flushScheduled = true;
+        }
+        runFx(this::flushPendingTrades);
+    }
+
+    private void flushPendingTrades() {
+        List<MarketDataMessage.Trade> replacement;
+        List<MarketDataMessage.Trade> additions;
+        synchronized (pendingTrades) {
+            replacement = pendingReplacement;
+            pendingReplacement = null;
+            additions = new ArrayList<>(pendingTrades);
+            pendingTrades.clear();
+            flushScheduled = false;
+        }
+
+        if (replacement != null) {
+            tradesBacking.setAll(trimToMaxVisible(replacement));
+        }
+        if (!additions.isEmpty()) {
+            tradesBacking.addAll(additions);
+            trimTradesBacking();
+        }
+        requestSort();
+    }
+
+    private void requestSort() {
+        runFx(() -> {
+            sortDebouncer.stop();
+            sortDebouncer.playFromStart();
+        });
+    }
+
+    private void sortTableIfNeeded() {
+        if (!marketDataTradeTable.getSortOrder().contains(time)) {
+            marketDataTradeTable.getSortOrder().setAll(time);
+        }
+        time.setSortType(TableColumn.SortType.DESCENDING);
+        marketDataTradeTable.sort();
+    }
+
+    private void trimTradesBacking() {
+        int overflow = tradesBacking.size() - MAX_VISIBLE_TRADES;
+        if (overflow > 0) {
+            tradesBacking.remove(0, overflow);
+        }
+    }
+
+    private List<MarketDataMessage.Trade> trimToMaxVisible(Collection<MarketDataMessage.Trade> source) {
+        List<MarketDataMessage.Trade> snapshot = new ArrayList<>(source);
+        int fromIndex = Math.max(0, snapshot.size() - MAX_VISIBLE_TRADES);
+        return new ArrayList<>(snapshot.subList(fromIndex, snapshot.size()));
+    }
+
+    private void attachTradesListener(ObservableList<MarketDataMessage.Trade> source) {
+        detachTradesListener();
+        boundTradesListener = c -> requestSort();
+        source.addListener(boundTradesListener);
+    }
+
+    private void detachTradesListener() {
+        if (boundTradesListener != null && tradesBacking != null) {
+            tradesBacking.removeListener(boundTradesListener);
+            boundTradesListener = null;
+        }
+    }
+
+    private void runFx(Runnable action) {
+        if (Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            Platform.runLater(action);
+        }
     }
 
 }

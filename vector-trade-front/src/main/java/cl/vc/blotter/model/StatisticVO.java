@@ -15,6 +15,8 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 @Data
 @Slf4j
@@ -25,6 +27,7 @@ public class StatisticVO {
     private DecimalFormat decimalFormat;
     private DecimalFormat decimalFormatBkp = new DecimalFormat("#,##0.0000");
     private DecimalFormat decimalFormatPor = new DecimalFormat("#,##0.00");
+    private final DecimalFormat ratioFormat = new DecimalFormat("0.00", DecimalFormatSymbols.getInstance(Locale.US));
     private StringProperty settlType = new SimpleStringProperty();
     private StringProperty securityType = new SimpleStringProperty();
     private StringProperty securityExchange = new SimpleStringProperty();
@@ -275,7 +278,7 @@ public class StatisticVO {
 
             this.volume.set(statistic.getTradeVolume());
 
-            this.ratio.set(statistic.getRatio());
+            this.ratio.set(formatRatio(statistic.getRatio()));
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -337,11 +340,45 @@ public class StatisticVO {
     }
 
     public void setRatio(String ratio) {
-        this.ratio.set(ratio);
+        this.ratio.set(formatRatio(ratio));
     }
 
     public StringProperty ratioProperty() {
         return ratio;
+    }
+
+    private String formatRatio(String rawRatio) {
+        if (rawRatio == null) {
+            return "";
+        }
+
+        String raw = rawRatio.trim();
+        if (raw.isBlank()) {
+            return "";
+        }
+
+        boolean hasPercent = raw.contains("%");
+        String normalized = raw
+                .replace("%", "")
+                .replace("âˆ’", "-")
+                .replaceAll("[^0-9,.-]", "");
+
+        if (normalized.isBlank() || "-".equals(normalized)) {
+            return rawRatio;
+        }
+
+        if (normalized.indexOf(',') >= 0 && normalized.indexOf('.') >= 0) {
+            normalized = normalized.replace(".", "").replace(",", ".");
+        } else if (normalized.indexOf(',') >= 0) {
+            normalized = normalized.replace(",", ".");
+        }
+
+        try {
+            String formatted = ratioFormat.format(Double.parseDouble(normalized));
+            return hasPercent ? formatted + "%" : formatted;
+        } catch (Exception e) {
+            return rawRatio;
+        }
     }
 
     public MarketDataMessage.Statistic getStatistic() {

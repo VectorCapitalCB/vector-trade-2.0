@@ -15,12 +15,14 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Data
 @Slf4j
 public class BookVO {
+
+    private static final int MAX_TRADES = 200;
 
 
     private String id;
@@ -43,7 +45,7 @@ public class BookVO {
 
     private ObservableList<MarketDataMessage.Trade> tradesVO = FXCollections.observableArrayList();
 
-    private List<String> tradesListId = new ArrayList<>();
+    private Set<String> tradesListId = new LinkedHashSet<>();
 
     private MarketDataMessage.SecurityExchangeMarketData securityExchangeObj;
 
@@ -148,12 +150,32 @@ public class BookVO {
     }
 
     public void addtrade(MarketDataMessage.Trade trade) {
-        if (!tradesListId.contains(trade.getIdGenerico())) {
-            tradesListId.add(trade.getIdGenerico());
-            if (Platform.isFxApplicationThread()) {
-                tradesVO.add(trade);
-            } else {
-                Platform.runLater(() -> tradesVO.add(trade));
+        if (trade == null) {
+            return;
+        }
+
+        String tradeId = trade.getIdGenerico();
+        if (tradeId == null || tradeId.isBlank() || !tradesListId.add(tradeId)) {
+            return;
+        }
+
+        Runnable addTrade = () -> {
+            tradesVO.add(trade);
+            trimTrades();
+        };
+
+        if (Platform.isFxApplicationThread()) {
+            addTrade.run();
+        } else {
+            Platform.runLater(addTrade);
+        }
+    }
+
+    private void trimTrades() {
+        while (tradesVO.size() > MAX_TRADES) {
+            MarketDataMessage.Trade removed = tradesVO.remove(0);
+            if (removed != null) {
+                tradesListId.remove(removed.getIdGenerico());
             }
         }
     }

@@ -249,6 +249,8 @@ public enum Notifier {
         hb.getChildren().addAll(icon, popupLayout);
 
         StackPane popupPane = new StackPane();
+        popupPane.setMouseTransparent(true);
+        popupPane.setFocusTraversable(false);
 
         DropShadow ds = new DropShadow();
         ds.setOffsetY(0.1);
@@ -261,6 +263,9 @@ public enum Notifier {
         popupPane.getChildren().addAll(body, hb);
 
         final Popup POPUP = new Popup();
+        POPUP.setAutoFix(false);
+        POPUP.setAutoHide(false);
+        POPUP.setHideOnEscape(false);
         POPUP.setX(getX());
         POPUP.setY(getY());
         POPUP.getContent().add(popupPane);
@@ -295,6 +300,9 @@ public enum Notifier {
         Window owner = stageRef != null ? stageRef : Repository.getPrincipal();
         if (owner != null && owner.isShowing()) {
             POPUP.show(owner);
+            if (owner instanceof Stage ownerStage) {
+                Platform.runLater(ownerStage::requestFocus);
+            }
         } else {
             log.debug("Notification popup skipped: owner window is not showing");
             popups.remove(POPUP);

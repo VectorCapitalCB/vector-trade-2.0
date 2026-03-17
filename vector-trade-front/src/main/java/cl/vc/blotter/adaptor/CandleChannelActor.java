@@ -12,7 +12,7 @@ import java.util.Set;
 
 @Slf4j
 public class CandleChannelActor extends AbstractActor {
-    private static final int MAX_INCREMENTAL_TRADES = 200_000;
+    private static final int MAX_INCREMENTAL_TRADES = 20_000;
 
     private final Set<String> seenTradeIds = new HashSet<>();
 
@@ -47,9 +47,9 @@ public class CandleChannelActor extends AbstractActor {
 
     private void onSnapshotTradeGeneral(MarketDataMessage.SnapshotTradeGeneral snapshot) {
         Platform.runLater(() -> {
-            Repository.getCandleTradeGenerales().clear();
+            Repository.replaceCandleTradeGenerales(snapshot.getTradesList());
             seenTradeIds.clear();
-            snapshot.getTradesList().forEach(this::addSnapshotTradeIfNew);
+            Repository.getCandleTradeGenerales().forEach(this::rememberSeenTradeId);
         });
     }
 
@@ -60,30 +60,29 @@ public class CandleChannelActor extends AbstractActor {
     private void addTradeIfNew(MarketDataMessage.TradeGeneral trade) {
         String id = trade.getIdGenerico().isEmpty() ? trade.getId() : trade.getIdGenerico();
         if (id == null || id.isBlank()) {
-            Repository.getCandleTradeGenerales().add(trade);
+            Repository.addCandleTradeGeneral(trade);
             trimIncrementalWindow();
             return;
         }
         if (seenTradeIds.add(id)) {
-            Repository.getCandleTradeGenerales().add(trade);
+            Repository.addCandleTradeGeneral(trade);
             trimIncrementalWindow();
-        }
-    }
-
-    private void addSnapshotTradeIfNew(MarketDataMessage.TradeGeneral trade) {
-        String id = trade.getIdGenerico().isEmpty() ? trade.getId() : trade.getIdGenerico();
-        if (id == null || id.isBlank()) {
-            Repository.getCandleTradeGenerales().add(trade);
-            return;
-        }
-        if (seenTradeIds.add(id)) {
-            Repository.getCandleTradeGenerales().add(trade);
         }
     }
 
     private void trimIncrementalWindow() {
         if (Repository.getCandleTradeGenerales().size() > MAX_INCREMENTAL_TRADES) {
             Repository.getCandleTradeGenerales().remove(0, Repository.getCandleTradeGenerales().size() - MAX_INCREMENTAL_TRADES);
+        }
+    }
+
+    private void rememberSeenTradeId(MarketDataMessage.TradeGeneral trade) {
+        if (trade == null) {
+            return;
+        }
+        String id = trade.getIdGenerico().isEmpty() ? trade.getId() : trade.getIdGenerico();
+        if (id != null && !id.isBlank()) {
+            seenTradeIds.add(id);
         }
     }
 }

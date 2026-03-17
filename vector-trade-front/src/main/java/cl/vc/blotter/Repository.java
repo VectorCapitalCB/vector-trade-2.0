@@ -35,6 +35,9 @@ import java.util.prefs.Preferences;
 @Slf4j
 public class Repository {
 
+    private static final int MAX_TRADE_GENERALES = 5_000;
+    private static final int MAX_CANDLE_TRADE_GENERALES = 20_000;
+
 
     @Getter
     @Setter
@@ -141,7 +144,7 @@ public class Repository {
     private static  RoutingController routingController;
 
     @Getter
-    private static final Set<String> hashSet = new HashSet<>();
+    private static final Set<String> hashSet = new LinkedHashSet<>();
 
     @Getter
     @Setter
@@ -546,6 +549,79 @@ public class Repository {
                 newsMessages.remove(0, newsMessages.size() - 2000);
             }
         });
+    }
+
+    public static void replaceTradeGenerales(List<MarketDataMessage.TradeGeneral> trades) {
+        tradeGenerales.clear();
+        hashSet.clear();
+        if (trades == null || trades.isEmpty()) {
+            return;
+        }
+
+        int start = Math.max(0, trades.size() - MAX_TRADE_GENERALES);
+        for (int i = start; i < trades.size(); i++) {
+            addTradeGeneral(trades.get(i));
+        }
+    }
+
+    public static void addTradeGeneral(MarketDataMessage.TradeGeneral trade) {
+        if (trade == null) {
+            return;
+        }
+
+        String tradeId = trade.getIdGenerico();
+        if (tradeId != null && !tradeId.isBlank()) {
+            if (!hashSet.add(tradeId)) {
+                return;
+            }
+        }
+
+        tradeGenerales.add(trade);
+        trimTradeGenerales();
+    }
+
+    public static void replaceCandleTradeGenerales(List<MarketDataMessage.TradeGeneral> trades) {
+        candleTradeGenerales.clear();
+        if (trades == null || trades.isEmpty()) {
+            return;
+        }
+
+        int start = Math.max(0, trades.size() - MAX_CANDLE_TRADE_GENERALES);
+        candleTradeGenerales.addAll(trades.subList(start, trades.size()));
+    }
+
+    public static void addCandleTradeGeneral(MarketDataMessage.TradeGeneral trade) {
+        if (trade == null) {
+            return;
+        }
+
+        candleTradeGenerales.add(trade);
+        if (candleTradeGenerales.size() > MAX_CANDLE_TRADE_GENERALES) {
+            candleTradeGenerales.remove(0, candleTradeGenerales.size() - MAX_CANDLE_TRADE_GENERALES);
+        }
+    }
+
+    private static void trimTradeGenerales() {
+        if (tradeGenerales.size() <= MAX_TRADE_GENERALES) {
+            return;
+        }
+
+        int removeCount = tradeGenerales.size() - MAX_TRADE_GENERALES;
+        tradeGenerales.remove(0, removeCount);
+        rebuildTradeGeneralIds();
+    }
+
+    private static void rebuildTradeGeneralIds() {
+        hashSet.clear();
+        for (MarketDataMessage.TradeGeneral trade : tradeGenerales) {
+            if (trade == null) {
+                continue;
+            }
+            String tradeId = trade.getIdGenerico();
+            if (tradeId != null && !tradeId.isBlank()) {
+                hashSet.add(tradeId);
+            }
+        }
     }
 
     public static class NewsItem {

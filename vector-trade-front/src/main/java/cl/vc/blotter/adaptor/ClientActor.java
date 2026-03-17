@@ -425,21 +425,15 @@ public class ClientActor extends AbstractActor {
 
     private void onSnapshotTradeGeneral(MarketDataMessage.SnapshotTradeGeneral snapshot) {
         Platform.runLater(() -> {
-            Repository.getTradeGenerales().addAll(snapshot.getTradesList());
+            Repository.replaceTradeGenerales(snapshot.getTradesList());
+            Repository.getPrincipalController().getTabGenerales().setText("Trades Generales (" + Repository.getTradeGenerales().size() + ")");
         });
 
     }
 
     private void onTradeGeneral(MarketDataMessage.TradeGeneral tradeg) {
-
-        if (Repository.getHashSet().contains(tradeg.getIdGenerico()) && !tradeg.getIdGenerico().isEmpty()) {
-            return;
-        }
-
-        Repository.getHashSet().add(tradeg.getIdGenerico());
-
         Platform.runLater(() -> {
-            Repository.getTradeGenerales().add(tradeg);
+            Repository.addTradeGeneral(tradeg);
             Repository.getPrincipalController().getTabGenerales().setText("Trades Generales (" + Repository.getTradeGenerales().size() + ")");
         });
 

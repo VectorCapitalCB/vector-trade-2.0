@@ -102,7 +102,7 @@
                             <columns>
                                 <TableColumn fx:id="symbol" prefWidth="65" text="Instrumento"/>
                                 <TableColumn fx:id="settlTypeCol" prefWidth="30" text="Condición"/>
-                                <TableColumn fx:id="imbalanceGen" prefWidth="65" text="Variación Porcentual" visible="true"/>
+                                <TableColumn fx:id="imbalanceGen" prefWidth="40" text="Var %" visible="true"/>
                                 <TableColumn fx:id="market" prefWidth="55" text="Mercado"/>
                                 <TableColumn fx:id="bidQtyGen" prefWidth="65" text="Qty Compra"/>
                                 <TableColumn fx:id="bidpriceGen" prefWidth="65" text="Px Compra"/>

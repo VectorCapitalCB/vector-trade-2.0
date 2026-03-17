@@ -7,8 +7,6 @@ import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.module.protocolbuff.utils.Corredoras;
 import com.google.protobuf.Timestamp;
-import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -160,7 +158,6 @@ public class TradeGeneralesController implements Initializable {
 
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTable.refresh();
                             } else {
                                 getStyleClass().add("notvc");
                             }
@@ -187,7 +184,6 @@ public class TradeGeneralesController implements Initializable {
 
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTable.refresh();
                             } else {
                                 getStyleClass().add("notvc");
                             }
@@ -199,6 +195,7 @@ public class TradeGeneralesController implements Initializable {
             });
 
             marketDataTradeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            marketDataTradeTable.setFixedCellSize(24);
             marketDataTradeTable.getSortOrder().add(time);
             SortedList<MarketDataMessage.TradeGeneral> sortedData = new SortedList<>(Repository.getTradeGenerales());
             sortedData.comparatorProperty().bind(marketDataTradeTable.comparatorProperty());

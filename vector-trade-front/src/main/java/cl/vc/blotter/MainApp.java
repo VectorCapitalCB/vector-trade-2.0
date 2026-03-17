@@ -38,6 +38,8 @@ import static java.lang.System.exit;
 @Slf4j
 public class MainApp extends Application {
 
+    private ScheduledExecutorService appShutdownScheduler;
+
     public static void main(String[] args) {
         launch(args);
     }
@@ -73,10 +75,6 @@ public class MainApp extends Application {
                     AnchorPane loginLoader = fxmlLoader.load();
                     LoginController loginController = fxmlLoader.getController();
 
-                    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-                    scheduler.scheduleAtFixedRate(() -> {
-                    }, 0, 3, TimeUnit.SECONDS);
-
                     loginLoader.addEventHandler(KeyEvent.KEY_PRESSED, ev -> {
                         if (ev.getCode() == KeyCode.ENTER) {
                             loginController.login();
@@ -87,6 +85,7 @@ public class MainApp extends Application {
                     Scene stage = new Scene(loginLoader);
                     principal.setScene(stage);
                     principal.setOnCloseRequest(t -> {
+                        shutdownSchedulers();
                         Platform.exit();
                         exit(0);
                         System.exit(0);
@@ -120,12 +119,8 @@ public class MainApp extends Application {
     }
 
     private void scheduleAppShutdown(Stage principal) {
-        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
-        Runnable shutdownTask = () -> {
-            Platform.runLater(() -> showShutdownMessage(principal));
-            scheduleAppShutdown(principal);
-        };
+        shutdownSchedulers();
+        appShutdownScheduler = Executors.newSingleThreadScheduledExecutor();
 
         LocalDateTime now = LocalDateTime.now();
         ZonedDateTime zonedNow = now.atZone(ZoneId.of("America/Santiago"));
@@ -137,7 +132,7 @@ public class MainApp extends Application {
 
         long delay = ChronoUnit.MILLIS.between(zonedNow, zonedNext7AM);
 
-        scheduler.schedule(shutdownTask, delay, TimeUnit.MILLISECONDS);
+        appShutdownScheduler.schedule(() -> Platform.runLater(() -> showShutdownMessage(principal)), delay, TimeUnit.MILLISECONDS);
     }
 
     private void showShutdownMessage(Stage principal) {
@@ -157,8 +152,21 @@ public class MainApp extends Application {
 
         Optional<ButtonType> result = alert.showAndWait();
         if (result.isPresent() && result.get().getButtonData() == ButtonData.OK_DONE) {
+            shutdownSchedulers();
             Platform.exit();
             System.exit(0);
+        }
+    }
+
+    @Override
+    public void stop() {
+        shutdownSchedulers();
+    }
+
+    private void shutdownSchedulers() {
+        if (appShutdownScheduler != null) {
+            appShutdownScheduler.shutdownNow();
+            appShutdownScheduler = null;
         }
     }
 }

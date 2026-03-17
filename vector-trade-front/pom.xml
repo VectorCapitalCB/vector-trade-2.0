@@ -20,7 +20,7 @@
         <connect.version>2.0.1</connect.version>
         <javafx.maven.plugin.version>0.0.8</javafx.maven.plugin.version>
         <gluonfx.maven.plugin.version>1.0.27</gluonfx.maven.plugin.version>
-        <main.class>cl.vc.blotter.MainAppRicci</main.class>
+        <main.class>cl.vc.blotter.MainApp</main.class>
         <app.identifier>${main.class}</app.identifier>
         <app.description>Vector Trade App</app.description>
         <package.type/>
@@ -717,7 +717,7 @@
 
             <properties>
                 <gluonfx.target>host</gluonfx.target>
-                <main.class>cl.vc.blotter.MainAppRicci</main.class>
+                <main.class>cl.vc.blotter.MainApp</main.class>
             </properties>
 
             <build>

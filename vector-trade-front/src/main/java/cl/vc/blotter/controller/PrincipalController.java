@@ -38,9 +38,6 @@ import java.io.IOException;
 import java.net.URL;
 import java.text.DecimalFormatSymbols;
 import java.util.*;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Data
@@ -288,10 +285,6 @@ public class PrincipalController {
 
             SessionsMessage.Connect connect = SessionsMessage.Connect.newBuilder().setUsername(Repository.getUsername()).build();
             Repository.getClientService().sendMessage(connect);
-
-            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-            Runnable gcTask = System::gc;
-            scheduler.scheduleAtFixedRate(gcTask, 0, 10, TimeUnit.SECONDS);
 
             Repository.getFormatter0dec().setDecimalFormatSymbols(DecimalFormatSymbols.getInstance(Locale.US));
 

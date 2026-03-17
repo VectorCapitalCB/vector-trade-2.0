@@ -17,6 +17,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
+import java.math.RoundingMode;
+import java.text.DecimalFormatSymbols;
 import java.text.DecimalFormat;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -89,6 +91,10 @@ public class StadisticsController {
     private final DecimalFormat dfRatio  = new DecimalFormat("#,##0.####");
 
     public void initialize() {
+        DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
+        dfPct.setDecimalFormatSymbols(symbols);
+        dfPct.setRoundingMode(RoundingMode.HALF_UP);
+
         if (kpiWrap != null) {
             kpiWrap.sceneProperty().addListener((obs, oldScene, newScene) -> {
                 if (newScene != null) {
@@ -166,7 +172,7 @@ public class StadisticsController {
         // Columnas
         colSymbol.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(cd.getValue().getSymbol()));
         colPrecioUltimo.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(dfPrice.format(cd.getValue().getPrecioUltimo())));
-        colVariacionPct.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(dfPct.format(cd.getValue().getVariacionPct())));
+        colVariacionPct.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(formatPercentage(cd.getValue().getVariacionPct())));
         colVolumen.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(dfNumber.format(cd.getValue().getVolumen())));
         colMonto.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(dfNumber.format(cd.getValue().getMonto())));
         colLiquid.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(cd.getValue().getSettlType().name()));
@@ -555,6 +561,10 @@ public class StadisticsController {
             return "";
         }
         return symbol.trim().toUpperCase();
+    }
+
+    private String formatPercentage(double value) {
+        return dfPct.format(value);
     }
 
     private record HistoryPoint(Instant ts, String tf, double indicePromedio, double montoTotal) { }
