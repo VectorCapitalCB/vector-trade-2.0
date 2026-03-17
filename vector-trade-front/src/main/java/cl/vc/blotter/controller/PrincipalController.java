@@ -44,6 +44,8 @@ import java.util.concurrent.atomic.AtomicReference;
 @Slf4j
 public class PrincipalController {
 
+    private static final String DEFAULT_PORTFOLIO_NAME = "IPSA";
+
     @FXML
     private RoutingController routingViewController;
 
@@ -653,14 +655,14 @@ public class PrincipalController {
             table.setPlaceholder(new Label("Cargando…"));
 
 
-            c.setPortfolioName("Principal");
+            c.setPortfolioName(DEFAULT_PORTFOLIO_NAME);
             c.getData().clear();
 
             MarketDataPortfolioViewController principalCtrl =
-                    marketDataPortfolioViewControllers.get("Principal");
+                    marketDataPortfolioViewControllers.get(DEFAULT_PORTFOLIO_NAME);
 
             if (principalCtrl != null) {
-                // Copiamos lo que ya está en la pestaña Principal (sin re-suscribir)
+                // Copiamos lo que ya está en la pestaña por defecto (sin re-suscribir)
                 var snapshot = new ArrayList<>(principalCtrl.getData());
                 for (StatisticVO svo : snapshot) {
                     try {
@@ -674,7 +676,7 @@ public class PrincipalController {
                     }
                 }
             } else {
-                log.warn("No se encontró el controller del portafolio 'Principal'; el flotante quedará vacío.");
+                log.warn("No se encontró el controller del portafolio '{}'; el flotante quedará vacío.", DEFAULT_PORTFOLIO_NAME);
             }
 
             Scene scene = new Scene(root);
@@ -735,8 +737,26 @@ public class PrincipalController {
 
                     if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.SNAPSHOT_PORTFOLIO)) {
 
+                        // Clear stale portfolio tabs and controllers before re-creating.
+                        // Without this, each reconnect leaks the old controllers because the
+                        // old Tab objects (still in tpMkData) hold strong references to them.
+                        if (!marketDataPortfolioViewControllers.isEmpty()) {
+                            Set<String> staleNames = new HashSet<>(marketDataPortfolioViewControllers.keySet());
+                            tpMkData.getTabs().removeIf(tab -> {
+                                if (staleNames.contains(tab.getText())) {
+                                    tab.setContent(null);
+                                    return true;
+                                }
+                                return false;
+                            });
+                            marketDataPortfolioViewControllers.clear();
+                        }
+
                         List<BlotterMessage.Portfolio> orderedPortfolios =
                                 new ArrayList<>(Repository.getPortfolioResponse().getPostfolioList());
+                        orderedPortfolios.removeIf(p -> p != null
+                                && p.getNamePortfolio() != null
+                                && "Principal".equalsIgnoreCase(p.getNamePortfolio().trim()));
                         orderedPortfolios.sort(Comparator
                                 .comparingInt(this::portfolioOrderPriority)
                                 .thenComparing(BlotterMessage.Portfolio::getNamePortfolio, String.CASE_INSENSITIVE_ORDER));
@@ -755,7 +775,7 @@ public class PrincipalController {
                                 statisticsViewController.setIdController(s.getId());
                                 tab.setContent(root);
 
-                                if (s.getNamePortfolio().equals("Principal")) {
+                                if (s.getNamePortfolio().equalsIgnoreCase(DEFAULT_PORTFOLIO_NAME)) {
                                     principal.set(tab);
                                 }
 
@@ -817,17 +837,24 @@ public class PrincipalController {
 
                         }
 
-                        Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
-                                .get("Principal").getMarketDataStatisticsTable().getSelectionModel().selectFirst();
+                        MarketDataPortfolioViewController defaultPortfolioController =
+                                Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
+                                        .get(DEFAULT_PORTFOLIO_NAME);
 
-                        StatisticVO statistic = Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
-                                .get("Principal").getMarketDataStatisticsTable().getSelectionModel().getSelectedItem();
+                        if (defaultPortfolioController != null) {
+                            defaultPortfolioController.getMarketDataStatisticsTable().getSelectionModel().selectFirst();
+                            StatisticVO statistic = defaultPortfolioController.getMarketDataStatisticsTable().getSelectionModel().getSelectedItem();
+                            if (statistic != null) {
+                                defaultPortfolioController.onClick(statistic);
+                                Repository.getClientActor().tell(statistic, ActorRef.noSender());
+                            }
+                        }
 
-                        Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
-                                .get("Principal").onClick(statistic);
-                        Repository.getClientActor().tell(statistic, ActorRef.noSender());
-
-                        tpMkData.getSelectionModel().select(principal.get());
+                        if (principal.get() != null) {
+                            tpMkData.getSelectionModel().select(principal.get());
+                        } else {
+                            selectPrincipalOrFirst();
+                        }
 
                     } else if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.REMOVE_ASSET)) {
 
@@ -950,16 +977,13 @@ public class PrincipalController {
         if ("IPSA".equalsIgnoreCase(name)) {
             return 0;
         }
-        if ("Principal".equalsIgnoreCase(name)) {
-            return 1;
-        }
-        return 2;
+        return 1;
     }
 
     private void selectPrincipalOrFirst() {
         runFx(() -> {
             if (tpMkData == null) return;
-            Tab principal = findTabByText("Principal");
+            Tab principal = findTabByText(DEFAULT_PORTFOLIO_NAME);
             if (principal != null) {
                 tpMkData.getSelectionModel().select(principal);
             } else {

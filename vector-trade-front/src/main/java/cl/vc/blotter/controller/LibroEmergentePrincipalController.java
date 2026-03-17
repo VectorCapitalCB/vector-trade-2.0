@@ -14,6 +14,8 @@ import java.util.ResourceBundle;
 @Slf4j
 public class LibroEmergentePrincipalController implements Initializable {
 
+    private static final int BOOKS_PER_WINDOW = 10;
+
     @Getter
     private final static HashMap<Integer, LibroEmergenteController> mapsLibroMaps = new HashMap<>();
 
@@ -48,41 +50,20 @@ public class LibroEmergentePrincipalController implements Initializable {
     public void initialize(URL url, ResourceBundle resourceBundle) {
 
         try {
+            int basePosition = nextAvailableBasePosition();
 
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente0Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente0Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente1Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente1Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente2Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente2Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente3Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente3Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente4Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente4Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente5Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente5Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente6Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente6Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente7Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente7Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente8Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente8Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
-            mapsLibroMaps.put(Repository.countMultibook, libroEmergente9Controller);
-            mapsLibroMapsInstance.put(Repository.countMultibook, libroEmergente9Controller);
-            Repository.countMultibook = Repository.countMultibook + 1;
+            registerController(basePosition, libroEmergente0Controller);
+            registerController(basePosition + 1, libroEmergente1Controller);
+            registerController(basePosition + 2, libroEmergente2Controller);
+            registerController(basePosition + 3, libroEmergente3Controller);
+            registerController(basePosition + 4, libroEmergente4Controller);
+            registerController(basePosition + 5, libroEmergente5Controller);
+            registerController(basePosition + 6, libroEmergente6Controller);
+            registerController(basePosition + 7, libroEmergente7Controller);
+            registerController(basePosition + 8, libroEmergente8Controller);
+            registerController(basePosition + 9, libroEmergente9Controller);
 
-
-            mapsLibroMaps.forEach((key, value) -> {
+            mapsLibroMapsInstance.forEach((key, value) -> {
                 value.setPositions(key);
                 Repository.getLibroEmergenteMap().put(key, value);
             });
@@ -110,12 +91,37 @@ public class LibroEmergentePrincipalController implements Initializable {
 
     }
 
+    private void registerController(int position, LibroEmergenteController controller) {
+        mapsLibroMaps.put(position, controller);
+        mapsLibroMapsInstance.put(position, controller);
+    }
+
+    private int nextAvailableBasePosition() {
+        int base = 0;
+        while (windowBlockInUse(base)) {
+            base += BOOKS_PER_WINDOW;
+        }
+        return base;
+    }
+
+    private boolean windowBlockInUse(int base) {
+        for (int i = 0; i < BOOKS_PER_WINDOW; i++) {
+            if (mapsLibroMaps.containsKey(base + i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public void unsubscribe() {
 
         mapsLibroMapsInstance.forEach((key, value) -> {
             value.unsubscribe();
             value.isStart = false;
+            mapsLibroMaps.remove(key);
+            Repository.getLibroEmergenteMap().remove(key);
         });
+        mapsLibroMapsInstance.clear();
 
     }
 }

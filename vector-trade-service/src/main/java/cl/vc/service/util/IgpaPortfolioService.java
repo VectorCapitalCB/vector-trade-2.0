@@ -25,31 +25,34 @@ import java.util.Properties;
 import java.util.Set;
 
 @Slf4j
-public final class IpsaPortfolioService {
+public final class IgpaPortfolioService {
 
-    public static final String DEFAULT_PORTFOLIO_NAME = "IPSA";
-    public static final String DEFAULT_PRIMARY_PORTFOLIO_NAME = "Principal";
-    private static final String PROP_ENABLED = "ipsa.portfolio.enabled";
-    private static final String PROP_NAME = "ipsa.portfolio.name";
-    private static final String PROP_URL = "ipsa.portfolio.url";
-    private static final String PROP_REFRESH_MINUTES = "ipsa.portfolio.refresh.minutes";
-    private static final String PROP_TIMEOUT_SECONDS = "ipsa.portfolio.timeout.seconds";
-    private static final String PROP_USER_AGENT = "ipsa.portfolio.user.agent";
-    private static final String PROP_FALLBACK_SYMBOLS = "ipsa.portfolio.fallback.symbols";
-    private static final String DEFAULT_URL = "https://es.investing.com/indices/ipsa-components";
+    public static final String DEFAULT_PORTFOLIO_NAME = "IGPA";
+    private static final String PROP_ENABLED = "igpa.portfolio.enabled";
+    private static final String PROP_NAME = "igpa.portfolio.name";
+    private static final String PROP_URL = "igpa.portfolio.url";
+    private static final String PROP_REFRESH_MINUTES = "igpa.portfolio.refresh.minutes";
+    private static final String PROP_TIMEOUT_SECONDS = "igpa.portfolio.timeout.seconds";
+    private static final String PROP_USER_AGENT = "igpa.portfolio.user.agent";
+    private static final String PROP_FALLBACK_SYMBOLS = "igpa.portfolio.fallback.symbols";
+    private static final String DEFAULT_URL = "https://es.investing.com/indices/igpa-components";
     private static final String DEFAULT_USER_AGENT =
             "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                     + "(KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36";
     private static final List<String> DEFAULT_SYMBOLS = List.of(
-            "AGUAS-A", "BCI", "IAM", "CCU", "SONDA", "VAPORES", "COPEC",
-            "ANDINA-B", "RIPLEY", "CMPC", "CAP", "SQM-B", "CONCHATORO", "ILC",
-            "MALLPLAZA", "ENELCHILE", "FALABELLA", "LTM", "SALFACORP", "CHILE",
-            "ENTEL", "CENCOSUD", "ECL", "ENELAM", "BSANTANDER", "PARAUCO", "COLBUN"
+            "AGUAS-A", "ANDINA-A", "ANDINA-B", "ANTARCHILE", "BCI", "BESALCO", "CAP", "CMPC",
+            "CCU", "CENCOSUD", "CHILE", "ALMENDRAL", "CONCHATORO", "CAMANCHACA", "ITAUCL",
+            "COLBUN", "COPEC", "CRISTALES", "ECL", "ECH", "EMBONOR-B", "ENELGXCH", "ENELAM",
+            "ENTEL", "ENAEX", "FALABELLA", "FORUS", "HITES", "IAM", "INGEVEC", "ILC",
+            "INVERCAP", "ABC", "MASISA", "MULTI-X", "NORTEGRANDE", "OROBLANCO", "PARAUCO",
+            "PAZ", "QUINENCO", "RIPLEY", "SMSAAM", "SALFACORP", "SOCOVESA", "SK", "SONDA",
+            "SQM-B", "BSANTANDER", "VAPORES", "WATTS", "BLUMAR", "ENELCHILE", "TRICOT", "SMU",
+            "SALMOCAM", "MALLPLAZA", "MANQUEHUE"
     );
-    private static final Map<String, List<String>> IPSA_ALIASES = createAliases();
+    private static final Map<String, List<String>> IGPA_ALIASES = createAliases();
     private static volatile CacheEntry cache;
 
-    private IpsaPortfolioService() {
+    private IgpaPortfolioService() {
     }
 
     public static boolean isEnabled(Properties properties) {
@@ -73,14 +76,14 @@ public final class IpsaPortfolioService {
                 .setNamePortfolio(resolvedPortfolioName)
                 .setUsername(username == null ? "" : username);
 
-        for (String symbol : resolveIpsaSymbols(properties)) {
+        for (String symbol : resolveIgpaSymbols(properties)) {
             builder.addAsset(buildAsset(symbol));
         }
 
         return builder.build();
     }
 
-    public static List<String> resolveIpsaSymbols(Properties properties) {
+    public static List<String> resolveIgpaSymbols(Properties properties) {
         if (!isEnabled(properties)) {
             return List.of();
         }
@@ -91,7 +94,7 @@ public final class IpsaPortfolioService {
             return current.symbols;
         }
 
-        synchronized (IpsaPortfolioService.class) {
+        synchronized (IgpaPortfolioService.class) {
             current = cache;
             now = Instant.now();
             if (current != null && current.expiresAt.isAfter(now)) {
@@ -112,13 +115,13 @@ public final class IpsaPortfolioService {
         try {
             String html = download(url, properties);
             List<String> fromHtml = extractSymbolsFromHtml(html, fallback);
-            if (fromHtml.size() >= 20) {
-                log.info("IPSA portfolio actualizado desde {} con {} simbolos", url, fromHtml.size());
+            if (fromHtml.size() >= 30) {
+                log.info("IGPA portfolio actualizado desde {} con {} simbolos", url, fromHtml.size());
                 return fromHtml;
             }
-            log.warn("IPSA source {} devolvio {} simbolos detectados; usando fallback", url, fromHtml.size());
+            log.warn("IGPA source {} devolvio {} simbolos detectados; usando fallback", url, fromHtml.size());
         } catch (Exception e) {
-            log.warn("No fue posible actualizar portfolio IPSA desde {}: {}", url, e.getMessage());
+            log.warn("No fue posible actualizar portfolio IGPA desde {}: {}", url, e.getMessage());
         }
 
         return fallback;
@@ -150,7 +153,7 @@ public final class IpsaPortfolioService {
         Set<String> resolved = new LinkedHashSet<>();
 
         for (String symbol : fallbackOrder) {
-            for (String alias : IPSA_ALIASES.getOrDefault(symbol, List.of(symbol))) {
+            for (String alias : IGPA_ALIASES.getOrDefault(symbol, List.of(symbol))) {
                 if (normalizedHtml.contains(normalize(alias))) {
                     resolved.add(symbol);
                     break;
@@ -211,35 +214,63 @@ public final class IpsaPortfolioService {
 
     private static Map<String, List<String>> createAliases() {
         Map<String, List<String>> aliases = new LinkedHashMap<>();
-        aliases.put("AGUAS-A", List.of("Aguas Andinas SA", "Aguas Andinas"));
-        aliases.put("ANDINA-B", List.of("Andina-B", "Embotelladora Andina SA", "Embotelladora Andina B"));
-        aliases.put("BCI", List.of("Banco de Credito e Inversiones", "Banco de Credito e Inversion", "BCI"));
-        aliases.put("CAP", List.of("CAP SA", "CAP"));
-        aliases.put("CCU", List.of("CCU", "Compania Cervecerias Unidas"));
-        aliases.put("CENCOSHOPP", List.of("Cencosud Shopping SA", "Cencosud Shopping"));
-        aliases.put("CENCOSUD", List.of("Cencosud SA", "Cencosud"));
-        aliases.put("CHILE", List.of("Banco de Chile"));
-        aliases.put("CMPC", List.of("CMPC"));
-        aliases.put("COLBUN", List.of("Colbun SA", "Colbun"));
-        aliases.put("CONCHATORO", List.of("Vina Concha y Toro SA", "Concha y Toro"));
-        aliases.put("COPEC", List.of("Copec SA", "Copec"));
-        aliases.put("ECL", List.of("Engie Energia Chile SA", "Engie Energia Chile", "ECL"));
-        aliases.put("ENELAM", List.of("Enel Americas SA", "Enel Americas"));
-        aliases.put("ENELCHILE", List.of("Enel Chile SA", "Enel Chile"));
-        aliases.put("ENTEL", List.of("Entel SA", "Entel"));
-        aliases.put("FALABELLA", List.of("Falabella SA", "Falabella"));
-        aliases.put("IAM", List.of("Inversiones Aguas Metropolitanas SA", "Inversiones Aguas Metropolitanas"));
-        aliases.put("ILC", List.of("ILC", "Inversiones La Construccion", "Inv La Construccion"));
-        aliases.put("LTM", List.of("Latam Airlines", "LATAM Airlines Group", "LATAM"));
-        aliases.put("MALLPLAZA", List.of("Mallplaza", "Plaza SA"));
-        aliases.put("PARAUCO", List.of("Parque Arauco SA", "Parque Arauco"));
-        aliases.put("RIPLEY", List.of("Ripley Corp", "Ripley"));
-        aliases.put("SALFACORP", List.of("Salfacorp", "SalfaCorp"));
-        aliases.put("SMU", List.of("SMU SA", "SMU"));
-        aliases.put("SONDA", List.of("Sonda SA", "Sonda"));
-        aliases.put("SQM-B", List.of("SQM-B", "Sociedad Quimica y Minera de Chile SA B"));
-        aliases.put("BSANTANDER", List.of("Santander Chile", "Banco Santander-Chile", "Banco Santander Chile"));
-        aliases.put("VAPORES", List.of("Vapores", "Compania Sud Americana de Vapores SA", "Sud Americana de Vapores"));
+        aliases.put("AGUAS-A", List.of("Aguas Andinas"));
+        aliases.put("ANDINA-A", List.of("Embotelladora Andina"));
+        aliases.put("ANDINA-B", List.of("Embotelladora Andina B"));
+        aliases.put("ANTARCHILE", List.of("Antar Chile"));
+        aliases.put("BCI", List.of("Banco de Credito e Inversiones", "BCI"));
+        aliases.put("BESALCO", List.of("Besalco"));
+        aliases.put("CAP", List.of("Cap", "CAP"));
+        aliases.put("CMPC", List.of("Empresas CMPC", "CMPC"));
+        aliases.put("CCU", List.of("Cervecerias", "Compania Cervecerias Unidas", "CCU"));
+        aliases.put("CENCOSUD", List.of("Cencosud"));
+        aliases.put("CHILE", List.of("Banco De Chile", "Banco de Chile"));
+        aliases.put("ALMENDRAL", List.of("Almendral"));
+        aliases.put("CONCHATORO", List.of("Vina Concha To", "Concha y Toro"));
+        aliases.put("CAMANCHACA", List.of("Pes Camanchaca"));
+        aliases.put("ITAUCL", List.of("Itau CorpBanca"));
+        aliases.put("COLBUN", List.of("Colbun"));
+        aliases.put("COPEC", List.of("Empresas Copec", "Copec"));
+        aliases.put("CRISTALES", List.of("Cristales"));
+        aliases.put("ECL", List.of("Engie Energia Chile"));
+        aliases.put("ECH", List.of("Eche Izquierdo"));
+        aliases.put("EMBONOR-B", List.of("Embonor B"));
+        aliases.put("ENELGXCH", List.of("Enel Generacion Chile"));
+        aliases.put("ENELAM", List.of("ENEL Americas", "Enel Americas"));
+        aliases.put("ENTEL", List.of("Empresa Nacional de Telecomunicaciones", "Entel"));
+        aliases.put("ENAEX", List.of("Enaex"));
+        aliases.put("FALABELLA", List.of("Falabella"));
+        aliases.put("FORUS", List.of("Forus"));
+        aliases.put("HITES", List.of("Hites"));
+        aliases.put("IAM", List.of("Inversiones Aguas Metropolitanas"));
+        aliases.put("INGEVEC", List.of("Ingevec"));
+        aliases.put("ILC", List.of("Inv La Constru"));
+        aliases.put("INVERCAP", List.of("Invercap"));
+        aliases.put("ABC", List.of("ABC SA"));
+        aliases.put("MASISA", List.of("Masisa"));
+        aliases.put("MULTI-X", List.of("Multiexport Fo"));
+        aliases.put("NORTEGRANDE", List.of("Norte Grande"));
+        aliases.put("OROBLANCO", List.of("Oro Blanco"));
+        aliases.put("PARAUCO", List.of("Parq Arauco", "Parque Arauco"));
+        aliases.put("PAZ", List.of("Paz Corp"));
+        aliases.put("QUINENCO", List.of("Quinenco"));
+        aliases.put("RIPLEY", List.of("Ripley Corp"));
+        aliases.put("SMSAAM", List.of("Sociedad Matriz"));
+        aliases.put("SALFACORP", List.of("Salfacorp"));
+        aliases.put("SOCOVESA", List.of("Socovesa"));
+        aliases.put("SK", List.of("Sigdo Koppers"));
+        aliases.put("SONDA", List.of("Sonda"));
+        aliases.put("SQM-B", List.of("Soquimich B"));
+        aliases.put("BSANTANDER", List.of("Santander Chile"));
+        aliases.put("VAPORES", List.of("Vapores"));
+        aliases.put("WATTS", List.of("Watts SA", "Watts"));
+        aliases.put("BLUMAR", List.of("Blumar"));
+        aliases.put("ENELCHILE", List.of("Enel Chile"));
+        aliases.put("TRICOT", List.of("Empresas Tricot", "Tricot"));
+        aliases.put("SMU", List.of("SMU"));
+        aliases.put("SALMOCAM", List.of("Salmones Camanchaca"));
+        aliases.put("MALLPLAZA", List.of("Plaza", "Mallplaza"));
+        aliases.put("MANQUEHUE", List.of("Inmobiliaria Manquehue", "Manquehue"));
         return aliases;
     }
 

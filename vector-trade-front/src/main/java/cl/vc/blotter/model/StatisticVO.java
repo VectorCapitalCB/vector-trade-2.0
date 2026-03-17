@@ -47,6 +47,7 @@ public class StatisticVO {
     private StringProperty tradeVolume = new SimpleStringProperty();
     private StringProperty delta = new SimpleStringProperty();
     private StringProperty previusClose = new SimpleStringProperty();
+    private StringProperty ohlcvClose = new SimpleStringProperty();
     private StringProperty referencialPrice = new SimpleStringProperty();
     private StringProperty indicativeOpening = new SimpleStringProperty();
     private StringProperty last = new SimpleStringProperty();
@@ -237,6 +238,11 @@ public class StatisticVO {
 
             this.delta.set(fmt.format(statistic.getDelta()));
             this.previusClose.set(fmt.format(statistic.getPreviusClose()));
+            if (statistic.getClose() > 0d) {
+                this.ohlcvClose.set(fmt.format(statistic.getClose()));
+            } else {
+                this.ohlcvClose.set("0");
+            }
             this.referencialPrice.set(fmt.format(statistic.getReferencialPrice()));
             this.indicativeOpening.set(fmt.format(statistic.getIndicativeOpening()));
             this.last.set(fmt.format(statistic.getLast()));
@@ -261,14 +267,10 @@ public class StatisticVO {
             this.ownDemand.set(fmt.format(statistic.getOwnDemand()));
 
             try {
-                if (statistic.getOhlcv().getClose() > 0d) {
-                    this.close.set(statistic.getOhlcv().getClose());
-                } else {
-                    this.close.set(0d);
-                }
-                this.open.set(statistic.getOhlcv().getOpen());
-                this.low.set((statistic.getOhlcv().getLow()));
-                this.high.set(statistic.getOhlcv().getHigh());
+                this.close.set(resolveLastPrice(statistic));
+                this.open.set(resolveOpenPrice(statistic));
+                this.high.set(resolveHighPrice(statistic));
+                this.low.set(resolveLowPrice(statistic));
             } catch (Exception ignore) {
                 this.close.set(0d);
                 this.open.set(0d);
@@ -381,6 +383,70 @@ public class StatisticVO {
         }
     }
 
+    private double resolveOpenPrice(MarketDataMessage.Statistic statistic) {
+        if (statistic.getOpen() > 0d) {
+            return statistic.getOpen();
+        }
+
+        return 0d;
+    }
+
+    private double resolveLastPrice(MarketDataMessage.Statistic statistic) {
+        if (statistic.getLast() > 0d) {
+            return statistic.getLast();
+        }
+        if (statistic.getBidPx() > 0d && statistic.getAskPx() > 0d) {
+            return (statistic.getBidPx() + statistic.getAskPx()) / 2d;
+        }
+        if (statistic.getBidPx() > 0d) {
+            return statistic.getBidPx();
+        }
+        if (statistic.getAskPx() > 0d) {
+            return statistic.getAskPx();
+        }
+        return 0d;
+    }
+
+    private double resolveHighPrice(MarketDataMessage.Statistic statistic) {
+        double high = 0d;
+        high = maxPositive(high, statistic.getLast());
+        high = maxPositive(high, statistic.getIndicativeOpening());
+        high = maxPositive(high, statistic.getReferencialPrice());
+        high = maxPositive(high, statistic.getPreviusClose());
+        high = maxPositive(high, statistic.getBidPx());
+        high = maxPositive(high, statistic.getAskPx());
+        return high;
+    }
+
+    private double resolveLowPrice(MarketDataMessage.Statistic statistic) {
+        double low = minPositive(
+                statistic.getLast(),
+                statistic.getIndicativeOpening(),
+                statistic.getReferencialPrice(),
+                statistic.getPreviusClose(),
+                statistic.getBidPx(),
+                statistic.getAskPx()
+        );
+        return Double.isInfinite(low) ? 0d : low;
+    }
+
+    private double maxPositive(double current, double candidate) {
+        if (candidate > 0d) {
+            return Math.max(current, candidate);
+        }
+        return current;
+    }
+
+    private double minPositive(double... values) {
+        double min = Double.POSITIVE_INFINITY;
+        for (double value : values) {
+            if (value > 0d && value < min) {
+                min = value;
+            }
+        }
+        return min;
+    }
+
     public MarketDataMessage.Statistic getStatistic() {
         return statistic;
     }
@@ -483,6 +549,18 @@ public class StatisticVO {
 
     public StringProperty previusCloseProperty() {
         return previusClose;
+    }
+
+    public String getOhlcvClose() {
+        return ohlcvClose.get();
+    }
+
+    public void setOhlcvClose(String ohlcvClose) {
+        this.ohlcvClose.set(ohlcvClose);
+    }
+
+    public StringProperty ohlcvCloseProperty() {
+        return ohlcvClose;
     }
 
     public String getReferencialPrice() {

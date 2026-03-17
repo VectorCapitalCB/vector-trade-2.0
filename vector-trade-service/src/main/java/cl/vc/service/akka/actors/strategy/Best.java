@@ -68,6 +68,11 @@ public class Best implements StrategyI {
             return;
         }
 
+        if (snapshot == null) {
+            log.warn("BEST onSnapshot null order={}", order.getId());
+            return;
+        }
+
         this.snapshot = snapshot;
 
         if (order.getLimit() <= 0) {
@@ -82,6 +87,12 @@ public class Best implements StrategyI {
         }
 
         if (order.getSide().equals(RoutingMessage.Side.BUY)) {
+
+            if (snapshot.getBid() == null || snapshot.getBid().isEmpty()) {
+                log.warn("BEST snapshot without bid levels order={} symbol={} idSubscribe={}",
+                        order.getId(), order.getSymbol(), snapshot.getId());
+                return;
+            }
 
             MarketDataMessage.DataBook dataBook = snapshot.getBid().get(0);
 
@@ -121,6 +132,11 @@ public class Best implements StrategyI {
                         MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(replace);
 
                     } else if (order.getPrice() == dataBook.getPrice()) {
+                        if (snapshot.getBid().size() < 2) {
+                            log.warn("BEST snapshot without second bid level order={} symbol={} idSubscribe={}",
+                                    order.getId(), order.getSymbol(), snapshot.getId());
+                            return;
+                        }
 
                         MarketDataMessage.DataBook dataBookSecond = snapshot.getBid().get(1);
 
@@ -161,6 +177,12 @@ public class Best implements StrategyI {
 
         } else if (order.getSide().equals(RoutingMessage.Side.SELL) || order.getSide().equals(RoutingMessage.Side.SELL_SHORT)) {
 
+            if (snapshot.getAsk() == null || snapshot.getAsk().isEmpty()) {
+                log.warn("BEST snapshot without ask levels order={} symbol={} idSubscribe={}",
+                        order.getId(), order.getSymbol(), snapshot.getId());
+                return;
+            }
+
             MarketDataMessage.DataBook dataBook = snapshot.getAsk().get(0);
 
             if (!blockOrders && order.getOrdStatus().equals(RoutingMessage.OrderStatus.PENDING_NEW)) {
@@ -199,6 +221,11 @@ public class Best implements StrategyI {
                         MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(replace);
 
                     } else if (order.getPrice() == dataBook.getPrice() && !blockOrders) {
+                        if (snapshot.getAsk().size() < 2) {
+                            log.warn("BEST snapshot without second ask level order={} symbol={} idSubscribe={}",
+                                    order.getId(), order.getSymbol(), snapshot.getId());
+                            return;
+                        }
 
                         MarketDataMessage.DataBook dataBookSecond = snapshot.getAsk().get(1);
 

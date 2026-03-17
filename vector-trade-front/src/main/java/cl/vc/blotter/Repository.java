@@ -36,7 +36,7 @@ import java.util.prefs.Preferences;
 public class Repository {
 
     private static final int MAX_TRADE_GENERALES = 5_000;
-    private static final int MAX_CANDLE_TRADE_GENERALES = 20_000;
+    private static final int MAX_CANDLE_TRADE_GENERALES = 5_000;
 
 
     @Getter
@@ -216,6 +216,9 @@ public class Repository {
     @Setter
     @Getter
     public static SessionsMessage.Enviroment enviroment;
+    @Setter
+    @Getter
+    public static String enviromentKey;
     @Getter
     public static Scene login;
     @Getter
@@ -387,7 +390,7 @@ public class Repository {
 
             } else {
                 BookVO bookVO =  bookPortMaps.get(id);
-                if(bookVO.getBidBook().isEmpty() && bookVO.getAskBook().isEmpty()){
+                if (bookVO != null && shouldRefreshSubscription(bookVO)) {
                     Repository.getClientService().sendMessage(aux);
                 }
 
@@ -401,6 +404,50 @@ public class Repository {
 
         return null;
 
+    }
+
+    public static void refreshSubscription(MarketDataMessage.Subscribe subscribe, String reason) {
+        try {
+            if (subscribe == null || getClientService() == null) {
+                return;
+            }
+
+            subscribeIdsMaps.put(subscribe.getId(), subscribe);
+            log.warn("Reenviando suscripcion id={} symbol={} market={} settl={} securityType={} reason={}",
+                    subscribe.getId(),
+                    subscribe.getSymbol(),
+                    subscribe.getSecurityExchange(),
+                    subscribe.getSettlType(),
+                    subscribe.getSecurityType(),
+                    reason);
+            getClientService().sendMessage(subscribe);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    private static boolean shouldRefreshSubscription(BookVO bookVO) {
+        if (bookVO == null) {
+            return true;
+        }
+
+        if (bookVO.getBidBook().isEmpty() && bookVO.getAskBook().isEmpty()) {
+            if (bookVO.getStatisticVO() == null) {
+                return true;
+            }
+
+            MarketDataMessage.Statistic statistic = bookVO.getStatisticVO().getStatistic();
+            return statistic == null
+                    || (statistic.getBidPx() <= 0d
+                    && statistic.getAskPx() <= 0d
+                    && statistic.getLast() <= 0d
+                    && statistic.getPreviusClose() <= 0d
+                    && statistic.getTradeVolume() <= 0d
+                    && statistic.getIndicativeOpening() <= 0d
+                    && statistic.getReferencialPrice() <= 0d);
+        }
+
+        return false;
     }
 
     public static void unSuscripcion(String id) {

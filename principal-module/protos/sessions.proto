@@ -48,5 +48,6 @@ enum Enviroment {
 	LOCALHOST = 2;
 	PRODUCTION_VPN = 3;
 	QA = 4;
+	ARB = 5;
 
 }

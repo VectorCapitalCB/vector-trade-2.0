@@ -118,22 +118,22 @@ public class FooterController {
 
 
 
-            if (Repository.enviroment.equals(SessionsMessage.Enviroment.PRODUCTION) ||
-                    Repository.enviroment.equals(SessionsMessage.Enviroment.PRODUCTION_VPN)) {
+            if (Repository.enviroment != null && (Repository.enviroment.equals(SessionsMessage.Enviroment.PRODUCTION) ||
+                    Repository.enviroment.equals(SessionsMessage.Enviroment.PRODUCTION_VPN))) {
                 lbEnviroment.setText("Entorno: " + SessionsMessage.Enviroment.PRODUCTION.name());
                 ImageView imageView = new ImageView();
                 imageView.setFitHeight(35);
                 imageView.setFitWidth(35);
                 enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/prod.png"))));
 
-            } else if (Repository.enviroment.equals(SessionsMessage.Enviroment.TEST)) {
+            } else if (Repository.enviroment != null && Repository.enviroment.equals(SessionsMessage.Enviroment.TEST)) {
                 lbEnviroment.setText("Entorno: TEST");
                 ImageView imageView = new ImageView();
                 imageView.setFitHeight(35);
                 imageView.setFitWidth(35);
                 enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/desarrollo.png"))));
 
-            } else if (Repository.enviroment.equals(SessionsMessage.Enviroment.QA)) {
+            } else if (Repository.enviroment != null && Repository.enviroment.equals(SessionsMessage.Enviroment.QA)) {
                 lbEnviroment.setText("Entorno: QA");
                 ImageView imageView = new ImageView();
                 imageView.setFitHeight(35);
@@ -141,11 +141,15 @@ public class FooterController {
                 enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/aprobado.png"))));
 
 
-            } else if (Repository.enviroment.equals(SessionsMessage.Enviroment.LOCALHOST)) {
+            } else if (Repository.enviroment != null && Repository.enviroment.equals(SessionsMessage.Enviroment.LOCALHOST)) {
                 lbEnviroment.setText("Entorno: LOCALHOST");
                 ImageView imageView = new ImageView();
                 imageView.setFitHeight(35);
                 imageView.setFitWidth(35);
+                enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/desarrollo.png"))));
+            } else {
+                String key = Repository.getEnviromentKey();
+                lbEnviroment.setText("Entorno: " + (key != null ? key.toUpperCase() : ""));
                 enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/desarrollo.png"))));
             }
 
@@ -595,7 +599,7 @@ public class FooterController {
 
             double newBid = statistic.getBidPx();
             double newAsk = statistic.getAskPx();
-            double newClose = statistic.getOhlcv().getClose();
+            double newClose = statistic.getClose();
 
             if ((lastBid == null || !lastBid.equals(newBid)) ||
                     (lastAsk == null || !lastAsk.equals(newAsk)) ||

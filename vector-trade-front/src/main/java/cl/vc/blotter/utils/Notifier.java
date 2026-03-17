@@ -46,7 +46,7 @@ public enum Notifier {
     private static double width = 300;
     private static double height = 80;
     private static double offsetX = 10;
-    private static double offsetY = 1000;
+    private static double offsetY = 10;
     private static double spacingY = 25;
     private static Pos popupLocation = Pos.TOP_RIGHT;
     private static Stage stageRef = null;
@@ -300,9 +300,6 @@ public enum Notifier {
         Window owner = stageRef != null ? stageRef : Repository.getPrincipal();
         if (owner != null && owner.isShowing()) {
             POPUP.show(owner);
-            if (owner instanceof Stage ownerStage) {
-                Platform.runLater(ownerStage::requestFocus);
-            }
         } else {
             log.debug("Notification popup skipped: owner window is not showing");
             popups.remove(POPUP);

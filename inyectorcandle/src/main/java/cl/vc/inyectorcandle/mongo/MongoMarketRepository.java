@@ -39,6 +39,7 @@ public class MongoMarketRepository implements AutoCloseable {
     private final MongoCollection<Document> candlesCollection;
     private final MongoCollection<Document> instrumentStatsCollection;
     private final MongoCollection<Document> rankingsCollection;
+    private final MongoCollection<Document> bolsaStatsHistoryCollection;
     private final AtomicLong insertedMarketData = new AtomicLong();
     private final AtomicLong insertedTrades = new AtomicLong();
     private final AtomicLong upsertedCandles = new AtomicLong();
@@ -55,6 +56,7 @@ public class MongoMarketRepository implements AutoCloseable {
         this.candlesCollection = database.getCollection("candles");
         this.instrumentStatsCollection = database.getCollection("instrument_stats");
         this.rankingsCollection = database.getCollection("market_rankings");
+        this.bolsaStatsHistoryCollection = database.getCollection("bolsa_stats_history");
         LOG.info("MongoMarketRepository conectado. database={}", databaseName);
     }
 
@@ -233,8 +235,12 @@ public class MongoMarketRepository implements AutoCloseable {
 
         rankingsCollection.deleteOne(Filters.eq("_id", "latest"));
 
-        LOG.info("Mongo purge day={} md={} trades={} candles={}",
-                day, mdDeleted.getDeletedCount(), tradesDeleted.getDeletedCount(), candlesDeleted.getDeletedCount());
+        String snapshotKey = "1d:" + day;
+        DeleteResult historyDeleted = bolsaStatsHistoryCollection.deleteOne(Filters.eq("snapshotKey", snapshotKey));
+
+        LOG.info("Mongo purge day={} md={} trades={} candles={} bolsaStatsHistory={}",
+                day, mdDeleted.getDeletedCount(), tradesDeleted.getDeletedCount(), candlesDeleted.getDeletedCount(),
+                historyDeleted.getDeletedCount());
     }
 
     public void logInjectionAnalysis(Set<LocalDate> days, ZoneId zoneId, int topN) {

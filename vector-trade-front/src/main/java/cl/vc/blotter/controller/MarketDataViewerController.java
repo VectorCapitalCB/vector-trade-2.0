@@ -46,6 +46,7 @@ import java.util.*;
 @Data
 @Slf4j
 public class MarketDataViewerController implements Initializable {
+    private static final DateTimeFormatter TRADE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     public static final int QTY_DATA_TRADE = 200;
 
@@ -370,6 +371,7 @@ public class MarketDataViewerController implements Initializable {
     private FilteredList<String> filteredList;
 
     private Popup suggestionsPopup;
+    private final javafx.animation.PauseTransition tradeCountDebouncer = new javafx.animation.PauseTransition(javafx.util.Duration.millis(80));
 
     @FXML
     private LanzadorController lanzadorController;
@@ -518,9 +520,9 @@ public class MarketDataViewerController implements Initializable {
                             if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
                                 setStyle(BASE + " -fx-border-color: #14e8cf; -fx-text-fill: #ffffff; -fx-background-color: #450574;");
                             } else if (Repository.getUser() != null && Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
-                                setStyle(getStyle() + "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #8B3A3A; ");
+                                setStyle(BASE + " -fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #8B3A3A;");
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
-                                setStyle(getStyle() + "-fx-border-color: #2b3178; -fx-text-fill: #ffffff; -fx-background-color: #e01919;");
+                                setStyle(BASE + " -fx-border-color: #2b3178; -fx-text-fill: #ffffff; -fx-background-color: #e01919;");
                             } else {
                                 setStyle("-fx-text-fill: #db292b;");
                             }
@@ -565,9 +567,9 @@ public class MarketDataViewerController implements Initializable {
                                 setStyle(BASE + " -fx-border-color: #14e8cf; -fx-text-fill: #ffffff; -fx-background-color: #450574;");
 
                             } else if (Repository.getUser() != null && Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
-                                setStyle(getStyle() + "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #8B3A3A; ");
+                                setStyle(BASE + " -fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #8B3A3A;");
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
-                                setStyle(getStyle() + "-fx-border-color: #2b3178; -fx-text-fill: #ffffff; -fx-background-color: #e01919;");
+                                setStyle(BASE + " -fx-border-color: #2b3178; -fx-text-fill: #ffffff; -fx-background-color: #e01919;");
                             } else {
                                 setStyle("-fx-text-fill: #db282c;");
                             }
@@ -623,14 +625,14 @@ public class MarketDataViewerController implements Initializable {
                         Instant instant = Instant.ofEpochSecond(item.getSeconds(), item.getNanos());
                         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.UTC);
                         ZonedDateTime zonedDateTimeChile = zonedDateTime.withZoneSameInstant(Repository.getZoneID());
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-                        String formattedDateTime = zonedDateTimeChile.format(formatter);
+                        String formattedDateTime = zonedDateTimeChile.format(TRADE_TIME_FORMATTER);
                         setText(formattedDateTime);
                     }
                 }
             });
 
             priceTrade.setCellFactory(column -> new TableCell<>() {
+                private final Map<BigDecimal, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
 
@@ -645,14 +647,14 @@ public class MarketDataViewerController implements Initializable {
                         }
 
                         BigDecimal tick = Ticks.conversorExdestination(data.getSecurityExchange(), BigDecimal.valueOf(item));
-                        DecimalFormat decimalFormat = NumberGenerator.formetByticks(tick);
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(tick, NumberGenerator::formetByticks).format(item));
                     }
                 }
             });
 
 
             qtyTrade.setCellFactory(column -> new TableCell<>() {
+                private final Map<MarketDataMessage.SecurityExchangeMarketData, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty);
@@ -665,8 +667,7 @@ public class MarketDataViewerController implements Initializable {
                             return;
                         }
 
-                        DecimalFormat decimalFormat = NumberGenerator.getFormatNumberMilDec(data.getSecurityExchange());
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(data.getSecurityExchange(), NumberGenerator::getFormatNumberMilDec).format(item));
                     }
                 }
             });
@@ -687,14 +688,14 @@ public class MarketDataViewerController implements Initializable {
                         Instant instant = Instant.ofEpochSecond(item.getSeconds(), item.getNanos());
                         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.UTC);
                         ZonedDateTime zonedDateTimeChile = zonedDateTime.withZoneSameInstant(Repository.getZoneID());
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-                        String formattedDateTime = zonedDateTimeChile.format(formatter);
+                        String formattedDateTime = zonedDateTimeChile.format(TRADE_TIME_FORMATTER);
                         setText(formattedDateTime);
                     }
                 }
             });
 
             priceTradeG.setCellFactory(column -> new TableCell<>() {
+                private final Map<BigDecimal, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty);
@@ -708,13 +709,13 @@ public class MarketDataViewerController implements Initializable {
                         }
 
                         BigDecimal tick = Ticks.conversorExdestination(data.getSecurityExchange(), BigDecimal.valueOf(item));
-                        DecimalFormat decimalFormat = NumberGenerator.formetByticks(tick);
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(tick, NumberGenerator::formetByticks).format(item));
                     }
                 }
             });
 
             qtyTradeG.setCellFactory(column -> new TableCell<>() {
+                private final Map<MarketDataMessage.SecurityExchangeMarketData, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty);
@@ -727,8 +728,7 @@ public class MarketDataViewerController implements Initializable {
                             return;
                         }
 
-                        DecimalFormat decimalFormat = NumberGenerator.getFormatNumberMilDec(data.getSecurityExchange());
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(data.getSecurityExchange(), NumberGenerator::getFormatNumberMilDec).format(item));
                     }
                 }
             });
@@ -755,7 +755,6 @@ public class MarketDataViewerController implements Initializable {
 
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTable.refresh();
                             } else {
                                 getStyleClass().add("notvc");
                             }
@@ -780,7 +779,6 @@ public class MarketDataViewerController implements Initializable {
 
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTableG.refresh();
                             } else {
                                 getStyleClass().add("notvc");
 
@@ -806,7 +804,6 @@ public class MarketDataViewerController implements Initializable {
 
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTable.refresh();
                             } else {
                                 getStyleClass().add("notvc");
                             }
@@ -831,7 +828,6 @@ public class MarketDataViewerController implements Initializable {
                             getStyleClass().clear();
                             if (item.equals("041")) {
                                 getStyleClass().add("vc");
-                                marketDataTradeTableG.refresh();
                             } else {
                                 getStyleClass().add("notvc");
                             }
@@ -896,9 +892,6 @@ public class MarketDataViewerController implements Initializable {
             hideTableHeader(bidViewTable);
             hideTableHeader(offerViewTable);
 
-            bidViewTable.refresh();
-            offerViewTable.refresh();
-
             if (Repository.getIsLight()) {
                 isLight();
             }
@@ -911,15 +904,20 @@ public class MarketDataViewerController implements Initializable {
 
             marketDataTradeTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             marketDataTradeTableG.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+            marketDataTradeTable.setFixedCellSize(24);
+            marketDataTradeTableG.setFixedCellSize(24);
+            bidViewTable.setFixedCellSize(24);
+            offerViewTable.setFixedCellSize(24);
 
             this.marketDataTradeTableG.getSortOrder().add(this.timeG);
 
             marketDataTradeTableG.sort();
+            tradeCountDebouncer.setOnFinished(evt -> updateTradeTitles());
 
             marketDataTradeTable.getItems().addListener((ListChangeListener<MarketDataMessage.Trade>) change -> {
                 while (change.next()) {
                     if (change.wasAdded()) {
-
+                        requestTradeTitleRefresh();
                     }
                 }
             });
@@ -1356,6 +1354,20 @@ public class MarketDataViewerController implements Initializable {
                 }
             }
         });
+    }
+
+    private void requestTradeTitleRefresh() {
+        if (Platform.isFxApplicationThread()) {
+            tradeCountDebouncer.stop();
+            tradeCountDebouncer.playFromStart();
+        } else {
+            Platform.runLater(this::requestTradeTitleRefresh);
+        }
+    }
+
+    private void updateTradeTitles() {
+        titelpaneMarketDataMercadoGeneral.setText("Ãšltimas Operaciones (" + marketDataTradeTableG.getItems().size() + ")");
+        titelpaneMarketData.setText("Ãšltimas Operaciones Nemo (" + marketDataTradeTable.getItems().size() + ")");
     }
 }
 

@@ -31,13 +31,16 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 @Data
 @Slf4j
 public class TradeMKDController implements Initializable {
     private static final int MAX_VISIBLE_TRADES = 200;
+    private static final DateTimeFormatter TRADE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     @FXML
     private TableView<MarketDataMessage.Trade> marketDataTradeTable;
@@ -109,13 +112,13 @@ public class TradeMKDController implements Initializable {
                         Instant instant = Instant.ofEpochSecond(item.getSeconds(), item.getNanos());
                         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.UTC)
                                 .withZoneSameInstant(Repository.getZoneID());
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-                        setText(zonedDateTime.format(formatter));
+                        setText(zonedDateTime.format(TRADE_TIME_FORMATTER));
                     }
                 }
             });
 
             priceTrade.setCellFactory(column -> new TableCell<>() {
+                private final Map<BigDecimal, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty);
@@ -125,13 +128,13 @@ public class TradeMKDController implements Initializable {
                         MarketDataMessage.Trade data = getTableRow().getItem();
                         if (data == null) return;
                         BigDecimal tick = Ticks.conversorExdestination(data.getSecurityExchange(), BigDecimal.valueOf(item));
-                        DecimalFormat decimalFormat = NumberGenerator.formetByticks(tick);
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(tick, NumberGenerator::formetByticks).format(item));
                     }
                 }
             });
 
             qtyTrade.setCellFactory(column -> new TableCell<>() {
+                private final Map<MarketDataMessage.SecurityExchangeMarketData, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty);
@@ -140,8 +143,7 @@ public class TradeMKDController implements Initializable {
                     } else {
                         MarketDataMessage.Trade data = getTableRow().getItem();
                         if (data == null) return;
-                        DecimalFormat decimalFormat = NumberGenerator.getFormatNumberMilDec(data.getSecurityExchange());
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(data.getSecurityExchange(), NumberGenerator::getFormatNumberMilDec).format(item));
                     }
                 }
             });
@@ -158,17 +160,7 @@ public class TradeMKDController implements Initializable {
                     if (empty || item == null) {
                         setText(null);
                     } else {
-                        if (allbrokercode.containsKey(item)) {
-                            getStyleClass().clear();
-                            setText(allbrokercode.get(item));
-                            if (item.equals("041")) {
-                                getStyleClass().add("vc");
-                            } else {
-                                getStyleClass().add("notvc");
-                            }
-                        } else {
-                            setText(item);
-                        }
+                        applyBrokerDisplay(this, item);
                     }
                 }
             });
@@ -180,17 +172,7 @@ public class TradeMKDController implements Initializable {
                     if (empty || item == null) {
                         setText(null);
                     } else {
-                        if (allbrokercode.containsKey(item)) {
-                            setText(allbrokercode.get(item));
-                            getStyleClass().clear();
-                            if (item.equals("041")) {
-                                getStyleClass().add("vc");
-                            } else {
-                                getStyleClass().add("notvc");
-                            }
-                        } else {
-                            setText(item);
-                        }
+                        applyBrokerDisplay(this, item);
                     }
                 }
             });
@@ -357,6 +339,15 @@ public class TradeMKDController implements Initializable {
             action.run();
         } else {
             Platform.runLater(action);
+        }
+    }
+
+    private void applyBrokerDisplay(TableCell<MarketDataMessage.Trade, String> cell, String brokerCode) {
+        String brokerName = allbrokercode.get(brokerCode);
+        cell.setText(brokerName != null ? brokerName : brokerCode);
+        cell.getStyleClass().removeAll("vc", "notvc");
+        if (brokerName != null) {
+            cell.getStyleClass().add("041".equals(brokerCode) ? "vc" : "notvc");
         }
     }
 

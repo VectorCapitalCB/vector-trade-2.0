@@ -8,6 +8,9 @@ import cl.vc.module.protocolbuff.generator.IDGenerator;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
+import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
+import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -30,6 +33,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 import java.util.ResourceBundle;
+import javafx.util.Duration;
 
 @Slf4j
 @Data
@@ -92,6 +96,9 @@ public class LibroEmergenteController implements Initializable {
     private TextField activeTextField;
 
     private Stage stage;
+    private PauseTransition subscriptionHealthCheck;
+    private int subscriptionRetryCount = 0;
+    private static final int MAX_SUBSCRIPTION_RETRIES = 2;
 
 
     @FXML
@@ -120,6 +127,21 @@ public class LibroEmergenteController implements Initializable {
 
             cbMarket.setItems(x);
             cbMarket.getSelectionModel().select(MarketDataMessage.SecurityExchangeMarketData.BCS);
+
+            cbMarket.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+                String currentSymbol = ticket.getText();
+                if (currentSymbol != null && !currentSymbol.isBlank()) {
+                    updateSecurityTypeComboBox(currentSymbol.trim().toUpperCase(Locale.ROOT), newValue);
+                }
+            });
+
+            ticket.textProperty().addListener((obs, oldValue, newValue) -> {
+                if (newValue == null || newValue.isBlank()) {
+                    return;
+                }
+                updateSecurityTypeComboBox(newValue.trim().toUpperCase(Locale.ROOT),
+                        cbMarket.getSelectionModel().getSelectedItem());
+            });
 
 
             addTableClickListener(bidViewTable);
@@ -213,32 +235,49 @@ public class LibroEmergenteController implements Initializable {
             priceBid.setCellFactory(column -> {
 
                 TableCell<OrderBookEntry, String> cell = new TableCell<>() {
+                    private String prevItem = null;
+                    private String baseStyle = "";
+                    private final Timeline flash = new Timeline(
+                            new KeyFrame(Duration.millis(350), e -> setStyle(baseStyle))
+                    );
+
+                    @Override
+                    public void updateIndex(int i) {
+                        super.updateIndex(i);
+                        prevItem = null;
+                    }
+
                     @Override
                     protected void updateItem(String item, boolean empty) {
                         super.updateItem(item, empty);
+                        flash.stop();
                         if (empty || item == null) {
                             setText(null);
+                            baseStyle = "";
                             setStyle("");
-
+                            prevItem = null;
                         } else {
-
                             OrderBookEntry data = getTableRow().getItem();
+                            if (data == null || data.getDecimalFormat() == null) return;
 
-                            if (data == null || data.getDecimalFormat() == null) {
-                                return;
-                            }
-
+                            boolean changed = prevItem != null && !item.equals(prevItem);
+                            prevItem = item;
                             setText(item);
 
                             if (Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
-                                setStyle(getStyle() + "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
-
+                                baseStyle = "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;";
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
-
+                                baseStyle = "";
                             } else {
-                                setStyle("-fx-text-fill: green;");
+                                baseStyle = "-fx-text-fill: green;";
                             }
 
+                            if (changed) {
+                                setStyle(baseStyle + "; -fx-background-color: #69f0ae26; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #69f0ae; -fx-border-width: 0 0 0 3;");
+                                flash.playFromStart();
+                            } else {
+                                setStyle(baseStyle);
+                            }
                         }
                     }
                 };
@@ -253,32 +292,49 @@ public class LibroEmergenteController implements Initializable {
             priceOffer.setCellFactory(column -> {
 
                 TableCell<OrderBookEntry, String> cell = new TableCell<>() {
+                    private String prevItem = null;
+                    private String baseStyle = "";
+                    private final Timeline flash = new Timeline(
+                            new KeyFrame(Duration.millis(350), e -> setStyle(baseStyle))
+                    );
+
+                    @Override
+                    public void updateIndex(int i) {
+                        super.updateIndex(i);
+                        prevItem = null;
+                    }
+
                     @Override
                     protected void updateItem(String item, boolean empty) {
                         super.updateItem(item, empty);
+                        flash.stop();
                         if (empty || item == null) {
                             setText(null);
+                            baseStyle = "";
                             setStyle("");
-
+                            prevItem = null;
                         } else {
-
                             OrderBookEntry data = getTableRow().getItem();
+                            if (data == null || data.getDecimalFormat() == null) return;
 
-                            if (data == null || data.getDecimalFormat() == null) {
-                                return;
-                            }
-
+                            boolean changed = prevItem != null && !item.equals(prevItem);
+                            prevItem = item;
                             setText(item);
 
                             if (Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
-                                setStyle(getStyle() + "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
+                                baseStyle = "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;";
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
-                                setStyle(getStyle() + "-fx-border-color: #e01919; -fx-text-fill: #ffffff; -fx-background-color: #2b3178;");
+                                baseStyle = "-fx-border-color: #e01919; -fx-text-fill: #ffffff; -fx-background-color: #2b3178;";
                             } else {
-                                setStyle("-fx-text-fill: red;");
+                                baseStyle = "-fx-text-fill: red;";
                             }
 
-
+                            if (changed) {
+                                setStyle(baseStyle + "; -fx-background-color: #ff525226; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #ff5252; -fx-border-width: 0 0 0 3;");
+                                flash.playFromStart();
+                            } else {
+                                setStyle(baseStyle);
+                            }
                         }
                     }
                 };
@@ -405,6 +461,8 @@ public class LibroEmergenteController implements Initializable {
                 String selectedItem = suggestionsList.getSelectionModel().getSelectedItem();
                 if (selectedItem != null && activeTextField != null) {
                     activeTextField.setText(selectedItem);
+                    updateSecurityTypeComboBox(selectedItem.trim().toUpperCase(Locale.ROOT),
+                            cbMarket.getSelectionModel().getSelectedItem());
                     suggestionsPopup.hide();
                 }
             });
@@ -419,6 +477,12 @@ public class LibroEmergenteController implements Initializable {
     public void subscribeSymbol() {
 
         try {
+            String symbol = ticket.getText() == null ? "" : ticket.getText().trim().toUpperCase(Locale.ROOT);
+            if (symbol.isEmpty()) {
+                return;
+            }
+
+            ticket.setText(symbol);
 
             if (!Repository.getLibroEmergenteMap().containsKey(positions)) {
                 Repository.getLibroEmergenteMap().put(positions, this);
@@ -430,21 +494,31 @@ public class LibroEmergenteController implements Initializable {
             }
 
 
-            if(Repository.getStaticSecurityType().containsKey(ticket.getText())){
+            if(Repository.getStaticSecurityType().containsKey(symbol)){
                 securityType.getSelectionModel().select(RoutingMessage.SecurityType.CS);
             }
 
-            idSubscribeBook = Repository.createSuscripcion(ticket.getText(),
+            updateSecurityTypeComboBox(symbol, cbMarket.getSelectionModel().getSelectedItem());
+
+            idSubscribeBook = Repository.createSuscripcion(symbol,
                     cbMarket.getSelectionModel().getSelectedItem(),
                     settlType.getSelectionModel().getSelectedItem(),
                     securityType.getSelectionModel().getSelectedItem());
 
             subscribe = MarketDataMessage.Subscribe.newBuilder()
                     .setId(idSubscribeBook)
-                    .setSymbol(ticket.getText())
+                    .setSymbol(symbol)
                     .setSecurityExchange(cbMarket.getSelectionModel().getSelectedItem())
                     .setSettlType(settlType.getSelectionModel().getSelectedItem())
                     .setSecurityType(securityType.getSelectionModel().getSelectedItem()).build();
+
+            log.info("MULTIBOOK subscribe position={} id={} symbol={} market={} settl={} securityType={}",
+                    positions,
+                    idSubscribeBook,
+                    symbol,
+                    cbMarket.getSelectionModel().getSelectedItem(),
+                    settlType.getSelectionModel().getSelectedItem(),
+                    securityType.getSelectionModel().getSelectedItem());
 
 
             bidViewTable.setItems(FXCollections.observableArrayList());
@@ -487,8 +561,13 @@ public class LibroEmergenteController implements Initializable {
                 }
             });
 
-            Repository.getClientService().sendMessage(multibook.build());
+            BlotterMessage.Multibook multibookState = multibook.build();
+            Repository.setMultibook(multibookState);
+
+            Repository.getClientService().sendMessage(multibookState);
             Repository.getClientService().sendMessage(subscribe);
+            subscriptionRetryCount = 0;
+            scheduleSubscriptionHealthCheck();
 
 
 
@@ -503,6 +582,11 @@ public class LibroEmergenteController implements Initializable {
 
             if(!bookVO.getId().equals(idSubscribeBook)){
                 return;
+            }
+
+            if (hasLiveData(bookVO)) {
+                cancelSubscriptionHealthCheck();
+                subscriptionRetryCount = 0;
             }
 
             Platform.runLater(() ->{
@@ -582,6 +666,7 @@ public class LibroEmergenteController implements Initializable {
     }
 
     public void unsubscribe() {
+        cancelSubscriptionHealthCheck();
         Repository.unSuscripcion(idSubscribeBook);
     }
 
@@ -590,5 +675,74 @@ public class LibroEmergenteController implements Initializable {
             stage.close();
         }
 
+    }
+
+    private void scheduleSubscriptionHealthCheck() {
+        cancelSubscriptionHealthCheck();
+
+        subscriptionHealthCheck = new PauseTransition(Duration.seconds(2));
+        subscriptionHealthCheck.setOnFinished(event -> {
+            if (subscribe == null || idSubscribeBook == null || idSubscribeBook.isBlank()) {
+                return;
+            }
+
+            BookVO bookVO = Repository.getBookPortMaps().get(idSubscribeBook);
+            if (hasLiveData(bookVO)) {
+                subscriptionRetryCount = 0;
+                return;
+            }
+
+            if (subscriptionRetryCount >= MAX_SUBSCRIPTION_RETRIES) {
+                log.warn("MULTIBOOK sin data tras reintentos position={} id={} symbol={}",
+                        positions,
+                        idSubscribeBook,
+                        subscribe.getSymbol());
+                return;
+            }
+
+            subscriptionRetryCount++;
+            log.warn("MULTIBOOK retry {}/{} position={} id={} symbol={} market={} settl={} securityType={}",
+                    subscriptionRetryCount,
+                    MAX_SUBSCRIPTION_RETRIES,
+                    positions,
+                    idSubscribeBook,
+                    subscribe.getSymbol(),
+                    subscribe.getSecurityExchange(),
+                    subscribe.getSettlType(),
+                    subscribe.getSecurityType());
+            Repository.refreshSubscription(subscribe, "multibook-zero-data-retry-" + subscriptionRetryCount);
+            scheduleSubscriptionHealthCheck();
+        });
+        subscriptionHealthCheck.playFromStart();
+    }
+
+    private void cancelSubscriptionHealthCheck() {
+        if (subscriptionHealthCheck != null) {
+            subscriptionHealthCheck.stop();
+            subscriptionHealthCheck = null;
+        }
+    }
+
+    private boolean hasLiveData(BookVO bookVO) {
+        if (bookVO == null) {
+            return false;
+        }
+
+        if (!bookVO.getBidBook().isEmpty() || !bookVO.getAskBook().isEmpty()) {
+            return true;
+        }
+
+        if (bookVO.getStatisticVO() == null || bookVO.getStatisticVO().getStatistic() == null) {
+            return false;
+        }
+
+        MarketDataMessage.Statistic statistic = bookVO.getStatisticVO().getStatistic();
+        return statistic.getBidPx() > 0d
+                || statistic.getAskPx() > 0d
+                || statistic.getLast() > 0d
+                || statistic.getPreviusClose() > 0d
+                || statistic.getTradeVolume() > 0d
+                || statistic.getIndicativeOpening() > 0d
+                || statistic.getReferencialPrice() > 0d;
     }
 }

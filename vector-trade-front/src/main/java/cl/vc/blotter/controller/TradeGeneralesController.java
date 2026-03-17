@@ -27,6 +27,7 @@ import java.util.*;
 @Data
 @Slf4j
 public class TradeGeneralesController implements Initializable {
+    private static final DateTimeFormatter TRADE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
 
     @FXML
     private TableView<MarketDataMessage.TradeGeneral> marketDataTradeTable;
@@ -88,14 +89,14 @@ public class TradeGeneralesController implements Initializable {
                         Instant instant = Instant.ofEpochSecond(item.getSeconds(), item.getNanos());
                         ZonedDateTime zonedDateTime = ZonedDateTime.ofInstant(instant, ZoneOffset.UTC);
                         ZonedDateTime zonedDateTimeChile = zonedDateTime.withZoneSameInstant(Repository.getZoneID());
-                        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS");
-                        String formattedDateTime = zonedDateTimeChile.format(formatter);
+                        String formattedDateTime = zonedDateTimeChile.format(TRADE_TIME_FORMATTER);
                         setText(formattedDateTime);
                     }
                 }
             });
 
             priceTrade.setCellFactory(column -> new TableCell<>() {
+                private final Map<BigDecimal, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
 
@@ -110,14 +111,14 @@ public class TradeGeneralesController implements Initializable {
                         }
 
                         BigDecimal tick = Ticks.conversorExdestination(data.getSecurityExchange(), BigDecimal.valueOf(item));
-                        DecimalFormat decimalFormat = NumberGenerator.formetByticks(tick);
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(tick, NumberGenerator::formetByticks).format(item));
                     }
                 }
             });
 
 
             qtyTrade.setCellFactory(column -> new TableCell<>() {
+                private final Map<MarketDataMessage.SecurityExchangeMarketData, DecimalFormat> fmtCache = new HashMap<>();
                 @Override
                 protected void updateItem(Double item, boolean empty) {
                     super.updateItem(item, empty);
@@ -130,8 +131,7 @@ public class TradeGeneralesController implements Initializable {
                             return;
                         }
 
-                        DecimalFormat decimalFormat = NumberGenerator.getFormatNumberMilDec(data.getSecurityExchange());
-                        setText(decimalFormat.format(item));
+                        setText(fmtCache.computeIfAbsent(data.getSecurityExchange(), NumberGenerator::getFormatNumberMilDec).format(item));
                     }
                 }
             });
@@ -150,21 +150,7 @@ public class TradeGeneralesController implements Initializable {
                     if (empty || item == null) {
                         setText(null);
                     } else {
-                        if (allbrokercode.containsKey(item)) {
-
-                            getStyleClass().clear();
-
-                            setText(allbrokercode.get(item));
-
-                            if (item.equals("041")) {
-                                getStyleClass().add("vc");
-                            } else {
-                                getStyleClass().add("notvc");
-                            }
-
-                        } else {
-                            setText(item);
-                        }
+                        applyBrokerDisplay(this, item);
                     }
                 }
             });
@@ -177,19 +163,7 @@ public class TradeGeneralesController implements Initializable {
                     if (empty || item == null) {
                         setText(null);
                     } else {
-                        if (allbrokercode.containsKey(item)) {
-                            setText(allbrokercode.get(item));
-
-                            getStyleClass().clear();
-
-                            if (item.equals("041")) {
-                                getStyleClass().add("vc");
-                            } else {
-                                getStyleClass().add("notvc");
-                            }
-                        } else {
-                            setText(item);
-                        }
+                        applyBrokerDisplay(this, item);
                     }
                 }
             });
@@ -204,6 +178,15 @@ public class TradeGeneralesController implements Initializable {
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    private void applyBrokerDisplay(TableCell<MarketDataMessage.TradeGeneral, String> cell, String brokerCode) {
+        String brokerName = allbrokercode.get(brokerCode);
+        cell.setText(brokerName != null ? brokerName : brokerCode);
+        cell.getStyleClass().removeAll("vc", "notvc");
+        if (brokerName != null) {
+            cell.getStyleClass().add("041".equals(brokerCode) ? "vc" : "notvc");
         }
     }
 

@@ -42,6 +42,7 @@ import java.util.HashSet;
 @Data
 @Slf4j
 public class MarketDataPortfolioViewController {
+    private static final Duration UI_REFRESH_DELAY = Duration.millis(80);
 
     @FXML
     public ChoiceBox<MarketDataMessage.SecurityExchangeMarketData> cbMarket;
@@ -84,6 +85,10 @@ public class MarketDataPortfolioViewController {
     @FXML
     private TableColumn<StatisticVO, Double> closepriceGen;
     @FXML
+    private TableColumn<StatisticVO, String> previusCloseGen;
+    @FXML
+    private TableColumn<StatisticVO, String> ohlcvCloseGen;
+    @FXML
     private TableColumn<StatisticVO, String> bidpriceGen;
     @FXML
     private TableColumn<StatisticVO, Double> bidQtyGen;
@@ -112,6 +117,7 @@ public class MarketDataPortfolioViewController {
     @FXML
     private HBox newsHBox;
     private String id = IDGenerator.getID();
+    private final Timeline statisticsRefreshTimeline = new Timeline(new KeyFrame(UI_REFRESH_DELAY, e -> marketDataStatisticsTable.refresh()));
 
 
     @FXML
@@ -134,6 +140,8 @@ public class MarketDataPortfolioViewController {
                 offerQtyGen.setVisible(cfg.isOfferQtyGen());
                 openpriceGen.setVisible(cfg.isOpenpriceGen());
                 closepriceGen.setVisible(cfg.isClosepriceGen());
+                previusCloseGen.setVisible(cfg.isPreviusCloseGen());
+                ohlcvCloseGen.setVisible(cfg.isOhlcvCloseGen());
                 highpriceGen.setVisible(cfg.isHighpriceGen());
                 lowpriceGen.setVisible(cfg.isLowpriceGen());
                 amountGen.setVisible(cfg.isAmountGen());
@@ -165,6 +173,8 @@ public class MarketDataPortfolioViewController {
                         else if (column == offerQtyGen) cfg.setOfferQtyGen(isSelected);
                         else if (column == openpriceGen) cfg.setOpenpriceGen(isSelected);
                         else if (column == closepriceGen) cfg.setClosepriceGen(isSelected);
+                        else if (column == previusCloseGen) cfg.setPreviusCloseGen(isSelected);
+                        else if (column == ohlcvCloseGen) cfg.setOhlcvCloseGen(isSelected);
                         else if (column == highpriceGen) cfg.setHighpriceGen(isSelected);
                         else if (column == lowpriceGen) cfg.setLowpriceGen(isSelected);
                         else if (column == amountGen) cfg.setAmountGen(isSelected);
@@ -196,6 +206,8 @@ public class MarketDataPortfolioViewController {
                         else if (column == offerQtyGen) cfg.setOfferQtyGen(newV);
                         else if (column == openpriceGen) cfg.setOpenpriceGen(newV);
                         else if (column == closepriceGen) cfg.setClosepriceGen(newV);
+                        else if (column == previusCloseGen) cfg.setPreviusCloseGen(newV);
+                        else if (column == ohlcvCloseGen) cfg.setOhlcvCloseGen(newV);
                         else if (column == highpriceGen) cfg.setHighpriceGen(newV);
                         else if (column == lowpriceGen) cfg.setLowpriceGen(newV);
                         else if (column == amountGen) cfg.setAmountGen(newV);
@@ -250,6 +262,7 @@ public class MarketDataPortfolioViewController {
             data = FXCollections.observableArrayList();
 
             marketDataStatisticsTable.setItems(data);
+            marketDataStatisticsTable.setFixedCellSize(26);
             this.marketDataStatisticsTable.setEditable(true);
             this.marketDataStatisticsTable.getSortOrder().add(this.symbol);
             this.marketDataStatisticsTable.setRowFactory(tv -> new RatioAwareTableRow());
@@ -345,6 +358,40 @@ public class MarketDataPortfolioViewController {
             this.bidpriceGen.setCellValueFactory(new PropertyValueFactory<>("bidPx"));
             this.bidpriceGen.getStyleClass().add("buyOrder");
 
+            bidpriceGen.setCellFactory(column -> new TableCell<StatisticVO, String>() {
+                private String prevItem = null;
+                private final Timeline flash = new Timeline(
+                        new KeyFrame(Duration.millis(400), e -> setStyle(""))
+                );
+
+                @Override
+                public void updateIndex(int i) {
+                    super.updateIndex(i);
+                    prevItem = null;
+                }
+
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    flash.stop();
+                    if (empty || item == null || item.isEmpty()) {
+                        setText(null);
+                        setStyle("");
+                        prevItem = null;
+                    } else {
+                        boolean changed = prevItem != null && !item.equals(prevItem);
+                        prevItem = item;
+                        setText(item);
+                        if (changed) {
+                            setStyle("-fx-background-color: #69f0ae26; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #69f0ae; -fx-border-width: 0 0 0 3;");
+                            flash.playFromStart();
+                        } else {
+                            setStyle("");
+                        }
+                    }
+                }
+            });
+
             this.bidQtyGen.setCellValueFactory(new PropertyValueFactory<>("bidQty"));
 
             bidQtyGen.setCellFactory(column -> new TableCell<StatisticVO, Double>() {
@@ -369,6 +416,40 @@ public class MarketDataPortfolioViewController {
             this.offerpriceGen.setCellValueFactory(new PropertyValueFactory<>("askPx"));
             this.offerpriceGen.getStyleClass().add("sellOrder");
 
+            offerpriceGen.setCellFactory(column -> new TableCell<StatisticVO, String>() {
+                private String prevItem = null;
+                private final Timeline flash = new Timeline(
+                        new KeyFrame(Duration.millis(400), e -> setStyle(""))
+                );
+
+                @Override
+                public void updateIndex(int i) {
+                    super.updateIndex(i);
+                    prevItem = null;
+                }
+
+                @Override
+                protected void updateItem(String item, boolean empty) {
+                    super.updateItem(item, empty);
+                    flash.stop();
+                    if (empty || item == null || item.isEmpty()) {
+                        setText(null);
+                        setStyle("");
+                        prevItem = null;
+                    } else {
+                        boolean changed = prevItem != null && !item.equals(prevItem);
+                        prevItem = item;
+                        setText(item);
+                        if (changed) {
+                            setStyle("-fx-background-color: #ff525226; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #ff5252; -fx-border-width: 0 0 0 3;");
+                            flash.playFromStart();
+                        } else {
+                            setStyle("");
+                        }
+                    }
+                }
+            });
+
             this.offerQtyGen.setCellValueFactory(new PropertyValueFactory<>("askQty"));
 
             offerQtyGen.setCellFactory(column -> new TableCell<StatisticVO, Double>() {
@@ -391,6 +472,25 @@ public class MarketDataPortfolioViewController {
 
 
             this.imbalanceGen.setCellValueFactory(new PropertyValueFactory<>("imbalance"));
+            imbalanceGen.setCellFactory(column -> new TableCell<StatisticVO, Double>() {
+                @Override
+                protected void updateItem(Double item, boolean empty) {
+                    super.updateItem(item, empty);
+                    if (empty || item == null) {
+                        setText(null);
+                        setStyle("");
+                    } else {
+                        setText(Repository.getFormatter2dec().format(item));
+                        if (item < 0) {
+                            setStyle("-fx-text-fill: #de292c;");
+                        } else if (item > 0) {
+                            setStyle("-fx-text-fill: #23a126;");
+                        } else {
+                            setStyle("-fx-text-fill: white;");
+                        }
+                    }
+                }
+            });
             this.lowpriceGen.setCellValueFactory(new PropertyValueFactory<>("low"));
             lowpriceGen.setCellFactory(column -> new TableCell<StatisticVO, Double>() {
                 @Override
@@ -431,6 +531,10 @@ public class MarketDataPortfolioViewController {
 
 
             this.closepriceGen.setCellValueFactory(new PropertyValueFactory<>("close"));
+
+            this.previusCloseGen.setCellValueFactory(new PropertyValueFactory<>("previusClose"));
+
+            this.ohlcvCloseGen.setCellValueFactory(new PropertyValueFactory<>("ohlcvClose"));
 
 
 
@@ -517,7 +621,6 @@ public class MarketDataPortfolioViewController {
 
             if (selectedItem != null) {
                 setValueSubscribe(selectedItem.getStatistic());
-                this.marketDataStatisticsTable.refresh();
             }
 
         } catch (Exception e) {
@@ -539,6 +642,7 @@ public class MarketDataPortfolioViewController {
             Platform.runLater(() -> {
 
                 BookVO bookVO = Repository.getBookPortMaps().get(id);
+                ensureLiveSubscription(bookVO, selectedItem, "portfolio-click");
 
                 Repository.getPrincipalController().getTableViewBookVController().getBidViewTable().setItems(bookVO.getBidBook());
                 Repository.getPrincipalController().getTableViewBookVController().getOfferViewTable().setItems(bookVO.getAskBook());
@@ -578,6 +682,57 @@ public class MarketDataPortfolioViewController {
             log.error("objeto bookVO no existe, muy raro por que está en el portafolio {}", id);
         }
 
+    }
+
+    private void ensureLiveSubscription(BookVO bookVO, MarketDataMessage.Statistic selectedItem, String reason) {
+        try {
+            if (selectedItem == null) {
+                return;
+            }
+
+            boolean emptyBook = bookVO == null
+                    || (bookVO.getBidBook().isEmpty() && bookVO.getAskBook().isEmpty());
+
+            boolean zeroStatistic = selectedItem.getBidPx() <= 0d
+                    && selectedItem.getAskPx() <= 0d
+                    && selectedItem.getLast() <= 0d
+                    && selectedItem.getPreviusClose() <= 0d
+                    && selectedItem.getTradeVolume() <= 0d
+                    && selectedItem.getIndicativeOpening() <= 0d
+                    && selectedItem.getReferencialPrice() <= 0d;
+
+            if (!emptyBook && !zeroStatistic) {
+                return;
+            }
+
+            String id = TopicGenerator.getTopicMKD(selectedItem);
+            MarketDataMessage.Subscribe subscribe = Repository.getSubscribeIdsMaps().get(id);
+            if (subscribe == null) {
+                subscribe = MarketDataMessage.Subscribe.newBuilder()
+                        .setId(id)
+                        .setSymbol(selectedItem.getSymbol())
+                        .setSecurityExchange(selectedItem.getSecurityExchange())
+                        .setSettlType(selectedItem.getSettlType())
+                        .setSecurityType(selectedItem.getSecurityType())
+                        .setBook(true)
+                        .setStatistic(true)
+                        .setTrade(true)
+                        .setDepth(MarketDataMessage.Depth.FULL_BOOK)
+                        .build();
+            }
+
+            log.warn("PORTFOLIO zero-data click symbol={} id={} market={} settl={} securityType={} emptyBook={} zeroStatistic={}",
+                    selectedItem.getSymbol(),
+                    id,
+                    selectedItem.getSecurityExchange(),
+                    selectedItem.getSettlType(),
+                    selectedItem.getSecurityType(),
+                    emptyBook,
+                    zeroStatistic);
+            Repository.refreshSubscription(subscribe, reason);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     private String safeStatSymbol(MarketDataMessage.Statistic s) {
@@ -676,7 +831,7 @@ public class MarketDataPortfolioViewController {
                 return;
             }
             data.add(bookVO.getStatisticVO());
-            marketDataStatisticsTable.refresh();
+            scheduleStatisticsRefresh();
 
         } catch (Exception e) {
             log.error("addModelVo error", e);
@@ -689,7 +844,7 @@ public class MarketDataPortfolioViewController {
             String key = TopicGenerator.getTopicMKD(vo.getStatistic());
             loadedKeys.remove(key);
             data.remove(vo);
-            marketDataStatisticsTable.refresh();
+            scheduleStatisticsRefresh();
         } catch (Exception e) {
             log.error("removeModelVo error", e);
         }
@@ -703,8 +858,8 @@ public class MarketDataPortfolioViewController {
                 Notifier.INSTANCE.notifyError("Error", "Portafolio inválido.");
                 return;
             }
-            if ("Principal".equalsIgnoreCase(portfolioName)) {
-                Notifier.INSTANCE.notifyError("No permitido", "No puedes eliminar el portafolio Principal.");
+            if ("IPSA".equalsIgnoreCase(portfolioName) || "IGPA".equalsIgnoreCase(portfolioName)) {
+                Notifier.INSTANCE.notifyError("No permitido", "No puedes eliminar el portafolio " + portfolioName + ".");
                 return;
             }
 
@@ -756,6 +911,13 @@ public class MarketDataPortfolioViewController {
     private void runFx(Runnable r) {
         if (Platform.isFxApplicationThread()) r.run();
         else Platform.runLater(r);
+    }
+
+    private void scheduleStatisticsRefresh() {
+        runFx(() -> {
+            statisticsRefreshTimeline.stop();
+            statisticsRefreshTimeline.playFromStart();
+        });
     }
 
     private static double parseRatioValue(StatisticVO item) {

@@ -469,6 +469,20 @@ public class ClientActor extends AbstractActor {
                 BookVO bookVO = Repository.getBookPortMaps().get(id);
                 bookVO.updateStatistic(statistic);
 
+                if (isActiveMultibookSubscription(id) && isZeroStatistic(statistic)) {
+                    log.warn("MULTIBOOK zero statistic id={} symbol={} market={} settl={} securityType={} bidPx={} askPx={} last={} prevClose={} volume={}",
+                            id,
+                            statistic.getSymbol(),
+                            statistic.getSecurityExchange(),
+                            statistic.getSettlType(),
+                            statistic.getSecurityType(),
+                            statistic.getBidPx(),
+                            statistic.getAskPx(),
+                            statistic.getLast(),
+                            statistic.getPreviusClose(),
+                            statistic.getTradeVolume());
+                }
+
                 LibroEmergentePrincipalController.getMapsLibroMaps().entrySet().forEach(s -> {
                     s.getValue().update(bookVO);
                 });
@@ -504,12 +518,45 @@ public class ClientActor extends AbstractActor {
                 return;
             }
 
+            if (isActiveMultibookSubscription(id)
+                    && snapshot.getBidsList().isEmpty()
+                    && snapshot.getAsksList().isEmpty()
+                    && (snapshot.getStatistic() == null || isZeroStatistic(snapshot.getStatistic()))) {
+                log.warn("MULTIBOOK empty snapshot id={} symbol={} market={} settl={} securityType={} bids={} asks={}",
+                        id,
+                        snapshot.getSymbol(),
+                        snapshot.getSecurityExchange(),
+                        snapshot.getSettlType(),
+                        snapshot.getSecurityType(),
+                        snapshot.getBidsCount(),
+                        snapshot.getAsksCount());
+            }
+
             Repository.getBookPortMaps().get(id).update(snapshot);
 
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private boolean isActiveMultibookSubscription(String id) {
+        return Repository.getLibroEmergenteMap().values().stream()
+                .filter(Objects::nonNull)
+                .anyMatch(controller -> id.equals(controller.getIdSubscribeBook()));
+    }
+
+    private boolean isZeroStatistic(MarketDataMessage.Statistic statistic) {
+        if (statistic == null) {
+            return true;
+        }
+        return statistic.getBidPx() <= 0d
+                && statistic.getAskPx() <= 0d
+                && statistic.getLast() <= 0d
+                && statistic.getPreviusClose() <= 0d
+                && statistic.getTradeVolume() <= 0d
+                && statistic.getIndicativeOpening() <= 0d
+                && statistic.getReferencialPrice() <= 0d;
     }
 
     private void onConnect(SessionsMessage.Connect message) {

@@ -38,15 +38,7 @@ import java.io.BufferedReader;
 import java.io.FileReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.LinkedHashSet;
-import java.util.Objects;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -106,25 +98,25 @@ public class LoginController {
 
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(System::gc, 0, 1, TimeUnit.MINUTES);
 
-            Set<String> validEnvs = new HashSet<>();
-            Arrays.stream(SessionsMessage.Enviroment.values())
-                    .map(v -> v.name().toLowerCase())
-                    .forEach(validEnvs::add);
+            envKeys.addAll(discoverAvailableEnvironments());
 
-            envKeys.addAll(discoverAvailableEnvironments(validEnvs));
-
-            if (envKeys.size() > 1) {
-                String segundo = envKeys.remove(1);
-                envKeys.add(0, segundo);
+            // production first, localhost last
+            if (envKeys.remove("production")) {
+                envKeys.add(0, "production");
+            }
+            if (envKeys.remove("localhost")) {
+                envKeys.add("localhost");
             }
 
             enviroment.setItems(envKeys);
             enviroment.getSelectionModel().selectFirst();
             String selectedEnv = enviroment.getSelectionModel().getSelectedItem();
             if (selectedEnv != null && !selectedEnv.isBlank()) {
-                Repository.setEnviroment(SessionsMessage.Enviroment.valueOf(selectedEnv.toUpperCase()));
+                applyEnviroment(selectedEnv);
             }
-            enviroment.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> Repository.setEnviroment(SessionsMessage.Enviroment.valueOf(newV.toUpperCase())));
+            enviroment.getSelectionModel().selectedItemProperty().addListener((obs, oldV, newV) -> {
+                if (newV != null && !newV.isBlank()) applyEnviroment(newV);
+            });
 
             Repository.setLoginController(this);
 
@@ -193,7 +185,7 @@ public class LoginController {
                     .encodeToString(credentials.getBytes(StandardCharsets.UTF_8));
 
             Repository.setCredencial(credentials);
-            String envKey = Repository.getEnviroment().name().toLowerCase();
+            String envKey = Repository.getEnviromentKey();
 
             String serviceEndpoint = resolveEndpoint(envKey, "service");
             String candleEndpoint = resolveEndpoint(envKey, "candle");
@@ -313,36 +305,27 @@ public class LoginController {
         return null;
     }
 
-    private java.util.List<String> discoverAvailableEnvironments(Set<String> validEnvs) {
+    private void applyEnviroment(String key) {
+        Repository.setEnviromentKey(key);
+        try {
+            Repository.setEnviroment(SessionsMessage.Enviroment.valueOf(key.toUpperCase()));
+        } catch (IllegalArgumentException ignored) {
+            Repository.setEnviroment(null);
+        }
+    }
+
+    private java.util.List<String> discoverAvailableEnvironments() {
         Set<String> discovered = new LinkedHashSet<>();
 
         for (String key : props.stringPropertyNames()) {
-            String normalized = key == null ? "" : key.trim().toLowerCase();
+            if (key == null) continue;
+            String normalized = key.trim().toLowerCase();
             String value = props.getProperty(key);
-            if (value == null || value.isBlank()) {
-                continue;
-            }
-
-            if (validEnvs.contains(normalized) && isWsUrl(value)) {
-                discovered.add(normalized);
-                continue;
-            }
+            if (value == null || value.isBlank() || !isWsUrl(value)) continue;
 
             int firstDot = normalized.indexOf('.');
             if (firstDot > 0) {
-                String prefix = normalized.substring(0, firstDot);
-                if (validEnvs.contains(prefix) && isWsUrl(value)) {
-                    discovered.add(prefix);
-                    continue;
-                }
-            }
-
-            int lastDot = normalized.lastIndexOf('.');
-            if (lastDot > 0) {
-                String suffix = normalized.substring(lastDot + 1);
-                if (validEnvs.contains(suffix) && isWsUrl(value)) {
-                    discovered.add(suffix);
-                }
+                discovered.add(normalized.substring(0, firstDot));
             }
         }
 
@@ -415,6 +398,7 @@ public class LoginController {
 
                     Platform.runLater(() -> {
                         try {
+
 
                             updateProgress(1, 10);
 

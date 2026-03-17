@@ -17,6 +17,7 @@ import cl.vc.module.protocolbuff.ws.vectortrade.MessageUtilVT;
 import cl.vc.service.MainApp;
 import cl.vc.service.akka.actors.mkd.ActorPerSubscriptionMkd;
 import cl.vc.service.akka.actors.routing.ActorGroupPerAccount;
+import cl.vc.service.util.IgpaPortfolioService;
 import cl.vc.service.util.IpsaPortfolioService;
 import com.google.protobuf.Message;
 import lombok.AllArgsConstructor;
@@ -219,18 +220,19 @@ public class ActorPerSession extends AbstractActor {
 
             String username = connect.getUsername();
 
-            if(MainApp.getMultiBookMaps().containsKey(username)){
-                List<BlotterMessage.SubMultibook> x = MainApp.getMultiBookMaps().get(username);
-                List<BlotterMessage.SubMultibook> aux = new ArrayList<>(x);
-                aux.addAll(multiBook.getSubmultibookList());
-                MainApp.getMultiBookMaps().put(username, aux);
+            LinkedHashMap<Integer, BlotterMessage.SubMultibook> mergedByPosition = new LinkedHashMap<>();
 
-            } else {
-                MainApp.getMultiBookMaps().put(username, multiBook.getSubmultibookList());
+            if (MainApp.getMultiBookMaps().containsKey(username)) {
+                List<BlotterMessage.SubMultibook> existing = MainApp.getMultiBookMaps().get(username);
+                if (existing != null) {
+                    existing.forEach(sub -> mergedByPosition.put(sub.getPositions(), sub));
+                }
             }
 
+            multiBook.getSubmultibookList().forEach(sub -> mergedByPosition.put(sub.getPositions(), sub));
 
-            List<BlotterMessage.SubMultibook> list = MainApp.getMultiBookMaps().get(username);
+            List<BlotterMessage.SubMultibook> list = new ArrayList<>(mergedByPosition.values());
+            MainApp.getMultiBookMaps().put(username, list);
             BlotterMessage.Multibook.Builder multibook = BlotterMessage.Multibook.newBuilder()
                     .addAllSubmultibook(list)
                     .setUsername(username);
@@ -795,11 +797,7 @@ public class ActorPerSession extends AbstractActor {
             portfolios = new HashMap<>(portfolios);
         }
 
-        portfolios.putIfAbsent(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME, BlotterMessage.Portfolio.newBuilder()
-                .setId(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME)
-                .setNamePortfolio(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME)
-                .setUsername(username)
-                .build());
+        portfolios.remove(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME);
 
         String ipsaPortfolioName = IpsaPortfolioService.getPortfolioName(MainApp.getProperties());
         if (IpsaPortfolioService.isEnabled(MainApp.getProperties())) {
@@ -813,6 +811,18 @@ public class ActorPerSession extends AbstractActor {
             portfolios.remove(ipsaPortfolioName);
         }
 
+        String igpaPortfolioName = IgpaPortfolioService.getPortfolioName(MainApp.getProperties());
+        if (IgpaPortfolioService.isEnabled(MainApp.getProperties())) {
+            BlotterMessage.Portfolio igpaPortfolio = IgpaPortfolioService.buildPortfolio(
+                    username,
+                    MainApp.getProperties(),
+                    igpaPortfolioName
+            );
+            portfolios.put(igpaPortfolioName, igpaPortfolio);
+        } else {
+            portfolios.remove(igpaPortfolioName);
+        }
+
         MainApp.getPortfolioMaps().put(username, portfolios);
     }
 
@@ -822,7 +832,8 @@ public class ActorPerSession extends AbstractActor {
 
     private boolean isProtectedPortfolio(String namePortfolio) {
         return namePortfolio != null && (isPrincipalPortfolio(namePortfolio)
-                || IpsaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio));
+                || IpsaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio)
+                || IgpaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio));
     }
 
     private boolean isSystemManagedPortfolio(String namePortfolio) {

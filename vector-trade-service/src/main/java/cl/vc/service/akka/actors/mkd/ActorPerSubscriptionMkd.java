@@ -271,6 +271,12 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
             this.statistics.setOwnDemand(bookSnapshot.getStatistic().getOwnDemand());
             this.statistics.setTickDirecion(bookSnapshot.getStatistic().getTickDirecion());
             this.statistics.setReferencialPrice(bookSnapshot.getStatistic().getReferencialPrice());
+            this.statistics.setOpen(bookSnapshot.getStatistic().getOpen());
+            this.statistics.setClose(bookSnapshot.getStatistic().getClose());
+            this.statistics.setLast(bookSnapshot.getStatistic().getLast());
+            this.statistics.setHigh(bookSnapshot.getStatistic().getHigh());
+            this.statistics.setLow(bookSnapshot.getStatistic().getLow());
+            this.statistics.setVolume(bookSnapshot.getStatistic().getVolume());
             this.statistics.setVwap(bookSnapshot.getStatistic().getVwap());
 
             actorRef.tell(statistics.build(), ActorRef.noSender());

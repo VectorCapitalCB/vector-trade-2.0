@@ -1,28 +1,23 @@
 {
   "BCS": {
-    "host": "68.211.112.146",
+    "host": "localhost",
     "port": 8060,
     "status": "true"
   },
   "FH_IBKR": {
     "host": "10.0.1.9",
     "port": 8004,
-    "status": "false"
+    "status": "true"
   },
   "ALPACA_MKD": {
     "host": "10.0.1.9",
-    "port": 8050,
-    "status": "false"
+    "port": 8051,
+    "status": "true"
   },
   "DATATEC_XBCL": {
-    "host": "10.0.1.9",
-    "port": 8050,
-    "status": "false"
-  },
-  "NUAM_MKD": {
-    "host": "10.0.1.9",
-    "port": 8050,
-    "status": "false"
+    "host": "10.0.1.8",
+    "port": 8113,
+    "status": "true"
   }
 
 }

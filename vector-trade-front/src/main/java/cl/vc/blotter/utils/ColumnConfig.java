@@ -13,6 +13,8 @@ public class ColumnConfig {
     private boolean offerQtyGen = true;
     private boolean openpriceGen = true;
     private boolean closepriceGen = true;
+    private boolean previusCloseGen = true;
+    private boolean ohlcvCloseGen = true;
     private boolean highpriceGen = true;
     private boolean lowpriceGen = true;
     private boolean amountGen = true;
@@ -101,6 +103,22 @@ public class ColumnConfig {
 
     public void setClosepriceGen(boolean closepriceGen) {
         this.closepriceGen = closepriceGen;
+    }
+
+    public boolean isPreviusCloseGen() {
+        return previusCloseGen;
+    }
+
+    public void setPreviusCloseGen(boolean previusCloseGen) {
+        this.previusCloseGen = previusCloseGen;
+    }
+
+    public boolean isOhlcvCloseGen() {
+        return ohlcvCloseGen;
+    }
+
+    public void setOhlcvCloseGen(boolean ohlcvCloseGen) {
+        this.ohlcvCloseGen = ohlcvCloseGen;
     }
 
     public boolean isHighpriceGen() {

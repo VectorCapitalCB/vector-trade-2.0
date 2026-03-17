@@ -110,6 +110,8 @@
                                 <TableColumn fx:id="offerQtyGen" prefWidth="65" text="Qty Venta"/>
                                 <TableColumn fx:id="openpriceGen" prefWidth="65" text="Apertura" visible="false"/>
                                 <TableColumn fx:id="closepriceGen" prefWidth="65" text="Ultimo"/>
+                                <TableColumn fx:id="previusCloseGen" prefWidth="65" text="Cierre Ant."/>
+                                <TableColumn fx:id="ohlcvCloseGen" prefWidth="65" text="Cierre"/>
                                 <TableColumn fx:id="highpriceGen" prefWidth="65" text="Mayor"/>
                                 <TableColumn fx:id="lowpriceGen" prefWidth="65" text="Menor" visible="false"/>
                                 <TableColumn fx:id="amountGen" prefWidth="95" text="Monto"/>

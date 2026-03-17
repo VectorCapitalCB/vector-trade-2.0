@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="fc0792c9-c01e-442f-af37-37bcfd8af94d" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/logs/fix-logs/ofs_symbols.txt" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/logs/fix-logs/report_fix_vs_mongo_20260309.txt" beforeDir="false" />
@@ -16,209 +15,10 @@
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.senderseqnums" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.session" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/logs/fix-store/FIX.4.4-CHANGE_ME_SENDER-BCSGATEWAY.targetseqnums" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-classic/1.2.13/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-classic/1.2.13/logback-classic-1.2.13.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-classic/1.2.13/logback-classic-1.2.13.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-classic/1.2.13/logback-classic-1.2.13.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-classic/1.2.13/logback-classic-1.2.13.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-core/1.2.13/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-core/1.2.13/logback-core-1.2.13.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-core/1.2.13/logback-core-1.2.13.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-core/1.2.13/logback-core-1.2.13.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-core/1.2.13/logback-core-1.2.13.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-parent/1.2.13/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-parent/1.2.13/logback-parent-1.2.13.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/ch/qos/logback/logback-parent/1.2.13/logback-parent-1.2.13.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/com/github/VectorCapitalCB/principal-module/1.4.4/principal-module-1.4.4.jar.lastUpdated" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/com/github/VectorCapitalCB/principal-module/1.4.4/principal-module-1.4.4.pom.lastUpdated" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/net/java/jvnet-parent/3/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/net/java/jvnet-parent/3/jvnet-parent-3.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/net/java/jvnet-parent/3/jvnet-parent-3.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/27/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/27/apache-27.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/27/apache-27.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/29/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/29/apache-29.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/29/apache-29.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/30/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/30/apache-30.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/30/apache-30.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/31/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/31/apache-31.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/apache/31/apache-31.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/37/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/37/maven-parent-37.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/37/maven-parent-37.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/39/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/39/maven-parent-39.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/39/maven-parent-39.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/40/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/40/maven-parent-40.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/40/maven-parent-40.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/41/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/41/maven-parent-41.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/maven-parent/41/maven-parent-41.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-compiler-plugin/3.11.0/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-compiler-plugin/3.11.0/maven-compiler-plugin-3.11.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-compiler-plugin/3.11.0/maven-compiler-plugin-3.11.0.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-compiler-plugin/3.11.0/maven-compiler-plugin-3.11.0.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-compiler-plugin/3.11.0/maven-compiler-plugin-3.11.0.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/3.6.1/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/3.6.1/maven-dependency-plugin-3.6.1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/3.6.1/maven-dependency-plugin-3.6.1.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/3.6.1/maven-dependency-plugin-3.6.1.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-dependency-plugin/3.6.1/maven-dependency-plugin-3.6.1.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-jar-plugin/3.3.0/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-jar-plugin/3.3.0/maven-jar-plugin-3.3.0.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-jar-plugin/3.3.0/maven-jar-plugin-3.3.0.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-jar-plugin/3.3.0/maven-jar-plugin-3.3.0.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-jar-plugin/3.3.0/maven-jar-plugin-3.3.0.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/37/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/37/maven-plugins-37.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/37/maven-plugins-37.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/39/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/39/maven-plugins-39.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/39/maven-plugins-39.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/40/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/40/maven-plugins-40.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/40/maven-plugins-40.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/41/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/41/maven-plugins-41.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-plugins/41/maven-plugins-41.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-resources-plugin/3.3.1/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-resources-plugin/3.3.1/maven-resources-plugin-3.3.1.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-resources-plugin/3.3.1/maven-resources-plugin-3.3.1.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-resources-plugin/3.3.1/maven-resources-plugin-3.3.1.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-resources-plugin/3.3.1/maven-resources-plugin-3.3.1.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-shade-plugin/3.5.2/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-shade-plugin/3.5.2/maven-shade-plugin-3.5.2.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-shade-plugin/3.5.2/maven-shade-plugin-3.5.2.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-shade-plugin/3.5.2/maven-shade-plugin-3.5.2.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-shade-plugin/3.5.2/maven-shade-plugin-3.5.2.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-surefire-plugin/3.2.5/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-surefire-plugin/3.2.5/maven-surefire-plugin-3.2.5.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-surefire-plugin/3.2.5/maven-surefire-plugin-3.2.5.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-surefire-plugin/3.2.5/maven-surefire-plugin-3.2.5.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/plugins/maven-surefire-plugin/3.2.5/maven-surefire-plugin-3.2.5.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/surefire/surefire/3.2.5/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/surefire/surefire/3.2.5/surefire-3.2.5.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/apache/maven/surefire/surefire/3.2.5/surefire-3.2.5.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-client/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-client/9.4.52.v20230823/jetty-client-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-client/9.4.52.v20230823/jetty-client-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-client/9.4.52.v20230823/jetty-client-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-client/9.4.52.v20230823/jetty-client-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-http/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-http/9.4.52.v20230823/jetty-http-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-http/9.4.52.v20230823/jetty-http-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-http/9.4.52.v20230823/jetty-http-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-http/9.4.52.v20230823/jetty-http-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-io/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-io/9.4.52.v20230823/jetty-io-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-io/9.4.52.v20230823/jetty-io-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-io/9.4.52.v20230823/jetty-io-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-io/9.4.52.v20230823/jetty-io-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-project/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-project/9.4.52.v20230823/jetty-project-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-project/9.4.52.v20230823/jetty-project-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-security/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-security/9.4.52.v20230823/jetty-security-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-security/9.4.52.v20230823/jetty-security-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-security/9.4.52.v20230823/jetty-security-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-security/9.4.52.v20230823/jetty-security-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-server/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-server/9.4.52.v20230823/jetty-server-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-server/9.4.52.v20230823/jetty-server-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-server/9.4.52.v20230823/jetty-server-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-server/9.4.52.v20230823/jetty-server-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-servlet/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-servlet/9.4.52.v20230823/jetty-servlet-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-servlet/9.4.52.v20230823/jetty-servlet-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-servlet/9.4.52.v20230823/jetty-servlet-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-servlet/9.4.52.v20230823/jetty-servlet-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util-ajax/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util-ajax/9.4.52.v20230823/jetty-util-ajax-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util-ajax/9.4.52.v20230823/jetty-util-ajax-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util-ajax/9.4.52.v20230823/jetty-util-ajax-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util-ajax/9.4.52.v20230823/jetty-util-ajax-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util/9.4.52.v20230823/jetty-util-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util/9.4.52.v20230823/jetty-util-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util/9.4.52.v20230823/jetty-util-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/jetty-util/9.4.52.v20230823/jetty-util-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-api/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-api/9.4.52.v20230823/websocket-api-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-api/9.4.52.v20230823/websocket-api-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-api/9.4.52.v20230823/websocket-api-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-api/9.4.52.v20230823/websocket-api-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-client/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-client/9.4.52.v20230823/websocket-client-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-client/9.4.52.v20230823/websocket-client-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-client/9.4.52.v20230823/websocket-client-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-client/9.4.52.v20230823/websocket-client-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-common/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-common/9.4.52.v20230823/websocket-common-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-common/9.4.52.v20230823/websocket-common-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-common/9.4.52.v20230823/websocket-common-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-common/9.4.52.v20230823/websocket-common-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-parent/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-parent/9.4.52.v20230823/websocket-parent-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-parent/9.4.52.v20230823/websocket-parent-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-server/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-server/9.4.52.v20230823/websocket-server-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-server/9.4.52.v20230823/websocket-server-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-server/9.4.52.v20230823/websocket-server-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-server/9.4.52.v20230823/websocket-server-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-servlet/9.4.52.v20230823/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-servlet/9.4.52.v20230823/websocket-servlet-9.4.52.v20230823.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-servlet/9.4.52.v20230823/websocket-servlet-9.4.52.v20230823.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-servlet/9.4.52.v20230823/websocket-servlet-9.4.52.v20230823.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/eclipse/jetty/websocket/websocket-servlet/9.4.52.v20230823/websocket-servlet-9.4.52.v20230823.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/infinispan/infinispan-bom/11.0.17.Final/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/infinispan/infinispan-bom/11.0.17.Final/infinispan-bom-11.0.17.Final.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/infinispan/infinispan-bom/11.0.17.Final/infinispan-bom-11.0.17.Final.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/infinispan/infinispan-build-configuration-parent/11.0.17.Final/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/infinispan/infinispan-build-configuration-parent/11.0.17.Final/infinispan-build-configuration-parent-11.0.17.Final.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/infinispan/infinispan-build-configuration-parent/11.0.17.Final/infinispan-build-configuration-parent-11.0.17.Final.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/jboss/jboss-parent/36/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/jboss/jboss-parent/36/jboss-parent-36.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/jboss/jboss-parent/36/jboss-parent-36.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/json/json/20231013/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/json/json/20231013/json-20231013.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/json/json/20231013/json-20231013.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/json/json/20231013/json-20231013.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/json/json/20231013/json-20231013.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/junit/junit-bom/5.9.1/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/junit/junit-bom/5.9.1/junit-bom-5.9.1.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/junit/junit-bom/5.9.1/junit-bom-5.9.1.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/junit/junit-bom/5.9.3/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/junit/junit-bom/5.9.3/junit-bom-5.9.3.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/junit/junit-bom/5.9.3/junit-bom-5.9.3.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/mongodb/mongo-java-driver/3.12.14/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/mongodb/mongo-java-driver/3.12.14/mongo-java-driver-3.12.14.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/mongodb/mongo-java-driver/3.12.14/mongo-java-driver-3.12.14.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/mongodb/mongo-java-driver/3.12.14/mongo-java-driver-3.12.14.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/mongodb/mongo-java-driver/3.12.14/mongo-java-driver-3.12.14.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-api/1.7.32/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-api/1.7.32/slf4j-api-1.7.32.jar" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-api/1.7.32/slf4j-api-1.7.32.jar.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-api/1.7.32/slf4j-api-1.7.32.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-api/1.7.32/slf4j-api-1.7.32.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-parent/1.7.32/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-parent/1.7.32/slf4j-parent-1.7.32.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/slf4j/slf4j-parent/1.7.32/slf4j-parent-1.7.32.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/sonatype/oss/oss-parent/9/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/sonatype/oss/oss-parent/9/oss-parent-9.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/sonatype/oss/oss-parent/9/oss-parent-9.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/testcontainers/testcontainers-bom/1.16.1/_remote.repositories" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/testcontainers/testcontainers-bom/1.16.1/testcontainers-bom-1.16.1.pom" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/.m2/repository/org/testcontainers/testcontainers-bom/1.16.1/testcontainers-bom-1.16.1.pom.sha1" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/vector-candle-service.ipr" beforeDir="false" afterPath="$PROJECT_DIR$/vector-candle-service.ipr" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../inyectorcandle/src/main/java/cl/vc/inyectorcandle/mongo/MongoMarketRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/src/main/java/cl/vc/inyectorcandle/mongo/MongoMarketRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../inyectorcandle/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../principal-module/protos/sessions.proto" beforeDir="false" afterPath="$PROJECT_DIR$/../principal-module/protos/sessions.proto" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/vector-candle-service.iws" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-chat-service/.m2/repository/aopalliance/aopalliance/1.0/_remote.repositories" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-chat-service/.m2/repository/aopalliance/aopalliance/1.0/aopalliance-1.0.pom" beforeDir="false" />
@@ -2841,7 +2641,31 @@
       <change beforePath="$PROJECT_DIR$/../vector-news-service/.m2/repository/xml-apis/xml-apis/1.0.b2/_remote.repositories" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-news-service/.m2/repository/xml-apis/xml-apis/1.0.b2/xml-apis-1.0.b2.pom" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-news-service/.m2/repository/xml-apis/xml-apis/1.0.b2/xml-apis-1.0.b2.pom.sha1" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/profiling/class_histogram.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/profiling/heap_info.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/profiling/vm_command_line.txt" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/adaptor/ClientActor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LibroEmergenteController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LibroEmergenteController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LibroEmergentePrincipalController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LibroEmergentePrincipalController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LoginController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/LoginController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/MarketDataPortfolioViewController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/MarketDataPortfolioViewController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/MarketDataViewerController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/MarketDataViewerController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/PrincipalController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/PrincipalController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/TradeGeneralesController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/TradeGeneralesController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/TradeMKDController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/TradeMKDController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/model/StatisticVO.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/model/StatisticVO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/utils/ColumnConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/utils/ColumnConfig.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/utils/Notifier.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/utils/Notifier.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.production.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.production.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/MarketDataPortfolioView.fxml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/view/MarketDataPortfolioView.fxml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/ActorPerSession.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/ActorPerSession.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/mkd/ActorPerSubscriptionMkd.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/mkd/ActorPerSubscriptionMkd.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/strategy/Best.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/akka/actors/strategy/Best.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/util/IpsaPortfolioService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/util/IpsaPortfolioService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/application.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/connectionsmkd.json" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/connectionsmkd.json" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -3011,7 +2835,7 @@
     <EjbView showMembers="false" autoscrollToSource="false" />
   </component>
   <component name="EmbeddingIndexingInfo">
-    <option name="cachedIndexableFilesCount" value="14" />
+    <option name="cachedIndexableFilesCount" value="18" />
   </component>
   <component name="ErrorTreeViewConfiguration">
     <option name="IS_AUTOSCROLL_TO_SOURCE" value="false" />
@@ -3086,32 +2910,32 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Application.CandleMain.executor": "Debug",
-    "ModuleVcsDetector.initialDetectionPerformed": "true",
-    "RunOnceActivity.MCP Project settings loaded": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
-    "RunOnceActivity.git.unshallow": "true",
-    "RunOnceActivity.typescript.service.memoryLimit.init": "true",
-    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
-    "dart.analysis.tool.window.visible": "false",
-    "git-widget-placeholder": "main",
-    "ignore.virus.scanning.warn.message": "true",
-    "junie.onboarding.icon.badge.shown": "true",
-    "kotlin-language-version-configured": "true",
-    "last_opened_file_path": "E:/VC-GITHUB/vector-trade-2.0/vector-candle-service",
-    "node.js.detected.package.eslint": "true",
-    "node.js.detected.package.tslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "node.js.selected.package.tslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "show.migrate.to.gradle.popup": "false",
-    "to.speed.mode.migration.done": "true",
-    "vue.rearranger.settings.migration": "true"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Application.CandleMain.executor&quot;: &quot;Debug&quot;,
+    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
+    &quot;com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1&quot;: &quot;true&quot;,
+    &quot;dart.analysis.tool.window.visible&quot;: &quot;false&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
+    &quot;ignore.virus.scanning.warn.message&quot;: &quot;true&quot;,
+    &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;E:/VC-GITHUB/vector-trade-2.0/vector-candle-service&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;show.migrate.to.gradle.popup&quot;: &quot;false&quot;,
+    &quot;to.speed.mode.migration.done&quot;: &quot;true&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
   }
-}]]></component>
+}</component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="E:\VC-GITHUB\vector-trade-2.0\vector-candle-service" />
@@ -3131,7 +2955,7 @@
     <configuration name="CandleMain" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
       <option name="MAIN_CLASS_NAME" value="cl.vc.candle.CandleMain" />
       <module name="vector-candle-service" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="PROGRAM_PARAMETERS" value="E:\VC-GITHUB\vector-trade-2.0\vector-candle-service\src\main\resources\application.properties" />
       <extension name="coverage">
         <pattern>
           <option name="PATTERN" value="cl.vc.candle.*" />
@@ -3212,7 +3036,9 @@
       <workItem from="1772845693778" duration="2073000" />
       <workItem from="1772856825861" duration="13589000" />
       <workItem from="1773062147659" duration="3751000" />
-      <workItem from="1773677217946" duration="1458000" />
+      <workItem from="1773677217946" duration="2536000" />
+      <workItem from="1773682133507" duration="10028000" />
+      <workItem from="1773770306643" duration="3132000" />
     </task>
     <servers />
   </component>
