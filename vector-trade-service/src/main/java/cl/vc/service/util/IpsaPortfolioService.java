@@ -43,7 +43,7 @@ public final class IpsaPortfolioService {
     private static final List<String> DEFAULT_SYMBOLS = List.of(
             "AGUAS-A", "BCI", "IAM", "CCU", "SONDA", "VAPORES", "COPEC",
             "ANDINA-B", "RIPLEY", "CMPC", "CAP", "SQM-B", "CONCHATORO", "ILC",
-            "MALLPLAZA", "ENELCHILE", "FALABELLA", "LTM", "SALFACORP", "CHILE",
+            "MALLPLAZA", "ENELCHILE", "FALABELLA", "LTM", "CENCOMALLS", "SALFACORP", "CHILE",
             "ENTEL", "CENCOSUD", "ECL", "ENELAM", "BSANTANDER", "PARAUCO", "COLBUN"
     );
     private static final Map<String, List<String>> IPSA_ALIASES = createAliases();
@@ -169,7 +169,7 @@ public final class IpsaPortfolioService {
 
         List<String> symbols = new ArrayList<>();
         for (String token : raw.split(",")) {
-            String value = token == null ? "" : token.trim().toUpperCase(Locale.ROOT);
+            String value = canonicalSymbol(token == null ? "" : token.trim().toUpperCase(Locale.ROOT));
             if (!value.isBlank()) {
                 symbols.add(value);
             }
@@ -209,6 +209,13 @@ public final class IpsaPortfolioService {
         }
     }
 
+    private static String canonicalSymbol(String symbol) {
+        if ("CENCOSHOPP".equalsIgnoreCase(symbol) || "CENCOSUDSHOPP".equalsIgnoreCase(symbol)) {
+            return "CENCOMALLS";
+        }
+        return symbol;
+    }
+
     private static Map<String, List<String>> createAliases() {
         Map<String, List<String>> aliases = new LinkedHashMap<>();
         aliases.put("AGUAS-A", List.of("Aguas Andinas SA", "Aguas Andinas"));
@@ -216,7 +223,13 @@ public final class IpsaPortfolioService {
         aliases.put("BCI", List.of("Banco de Credito e Inversiones", "Banco de Credito e Inversion", "BCI"));
         aliases.put("CAP", List.of("CAP SA", "CAP"));
         aliases.put("CCU", List.of("CCU", "Compania Cervecerias Unidas"));
-        aliases.put("CENCOSHOPP", List.of("Cencosud Shopping SA", "Cencosud Shopping"));
+        aliases.put("CENCOMALLS", List.of(
+                "Cenco Malls SA",
+                "Cenco Malls",
+                "Cencosud Shopping SA",
+                "Cencosud Shopping",
+                "CENCOSHOPP"
+        ));
         aliases.put("CENCOSUD", List.of("Cencosud SA", "Cencosud"));
         aliases.put("CHILE", List.of("Banco de Chile"));
         aliases.put("CMPC", List.of("CMPC"));

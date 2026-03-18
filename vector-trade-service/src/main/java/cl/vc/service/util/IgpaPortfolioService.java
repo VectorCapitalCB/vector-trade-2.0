@@ -44,9 +44,10 @@ public final class IgpaPortfolioService {
             "CCU", "CENCOSUD", "CHILE", "ALMENDRAL", "CONCHATORO", "CAMANCHACA", "ITAUCL",
             "COLBUN", "COPEC", "CRISTALES", "ECL", "ECH", "EMBONOR-B", "ENELGXCH", "ENELAM",
             "ENTEL", "ENAEX", "FALABELLA", "FORUS", "HITES", "IAM", "INGEVEC", "ILC",
-            "INVERCAP", "ABC", "MASISA", "MULTI-X", "NORTEGRANDE", "OROBLANCO", "PARAUCO",
+            "INVERCAP", "ABC", "MASISA", "MULTI X", "NORTEGRAN", "ORO BLANCO", "PARAUCO",
             "PAZ", "QUINENCO", "RIPLEY", "SMSAAM", "SALFACORP", "SOCOVESA", "SK", "SONDA",
             "SQM-B", "BSANTANDER", "VAPORES", "WATTS", "BLUMAR", "ENELCHILE", "TRICOT", "SMU",
+            "CENCOMALLS",
             "SALMOCAM", "MALLPLAZA", "MANQUEHUE"
     );
     private static final Map<String, List<String>> IGPA_ALIASES = createAliases();
@@ -172,7 +173,7 @@ public final class IgpaPortfolioService {
 
         List<String> symbols = new ArrayList<>();
         for (String token : raw.split(",")) {
-            String value = token == null ? "" : token.trim().toUpperCase(Locale.ROOT);
+            String value = canonicalSymbol(token == null ? "" : token.trim().toUpperCase(Locale.ROOT));
             if (!value.isBlank()) {
                 symbols.add(value);
             }
@@ -212,6 +213,22 @@ public final class IgpaPortfolioService {
         }
     }
 
+    private static String canonicalSymbol(String symbol) {
+        if ("CENCOSHOPP".equalsIgnoreCase(symbol) || "CENCOSUDSHOPP".equalsIgnoreCase(symbol)) {
+            return "CENCOMALLS";
+        }
+        if ("MULTI-X".equalsIgnoreCase(symbol)) {
+            return "MULTI X";
+        }
+        if ("NORTEGRANDE".equalsIgnoreCase(symbol)) {
+            return "NORTEGRAN";
+        }
+        if ("OROBLANCO".equalsIgnoreCase(symbol)) {
+            return "ORO BLANCO";
+        }
+        return symbol;
+    }
+
     private static Map<String, List<String>> createAliases() {
         Map<String, List<String>> aliases = new LinkedHashMap<>();
         aliases.put("AGUAS-A", List.of("Aguas Andinas"));
@@ -223,6 +240,13 @@ public final class IgpaPortfolioService {
         aliases.put("CAP", List.of("Cap", "CAP"));
         aliases.put("CMPC", List.of("Empresas CMPC", "CMPC"));
         aliases.put("CCU", List.of("Cervecerias", "Compania Cervecerias Unidas", "CCU"));
+        aliases.put("CENCOMALLS", List.of(
+                "Cenco Malls SA",
+                "Cenco Malls",
+                "Cencosud Shopping SA",
+                "Cencosud Shopping",
+                "CENCOSHOPP"
+        ));
         aliases.put("CENCOSUD", List.of("Cencosud"));
         aliases.put("CHILE", List.of("Banco De Chile", "Banco de Chile"));
         aliases.put("ALMENDRAL", List.of("Almendral"));
@@ -248,9 +272,9 @@ public final class IgpaPortfolioService {
         aliases.put("INVERCAP", List.of("Invercap"));
         aliases.put("ABC", List.of("ABC SA"));
         aliases.put("MASISA", List.of("Masisa"));
-        aliases.put("MULTI-X", List.of("Multiexport Fo"));
-        aliases.put("NORTEGRANDE", List.of("Norte Grande"));
-        aliases.put("OROBLANCO", List.of("Oro Blanco"));
+        aliases.put("MULTI X", List.of("MULTI X", "MULTI-X", "Multiexport Fo"));
+        aliases.put("NORTEGRAN", List.of("NORTEGRAN", "NORTEGRANDE", "Norte Grande"));
+        aliases.put("ORO BLANCO", List.of("ORO BLANCO", "OROBLANCO", "Oro Blanco"));
         aliases.put("PARAUCO", List.of("Parq Arauco", "Parque Arauco"));
         aliases.put("PAZ", List.of("Paz Corp"));
         aliases.put("QUINENCO", List.of("Quinenco"));
