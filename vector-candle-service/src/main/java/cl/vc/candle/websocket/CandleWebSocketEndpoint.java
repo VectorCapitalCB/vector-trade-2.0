@@ -9,6 +9,8 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.LocalDate;
+
 @WebSocket
 public class CandleWebSocketEndpoint {
     private static final Logger log = LoggerFactory.getLogger(CandleWebSocketEndpoint.class);
@@ -53,6 +55,31 @@ public class CandleWebSocketEndpoint {
 
         if ("ping".equals(action)) {
             session.getRemote().sendString(new JSONObject().put("type", "pong").toString());
+            return;
+        }
+
+        if ("load_day_stats".equals(action)) {
+            String date = request.optString("date", "").trim();
+            if (date.isEmpty()) {
+                sendError(session, "load_day_stats requiere date");
+                return;
+            }
+            CandleProtoMarketPublisher publisher = CandleProtoMarketPublisher.getInstance();
+            if (publisher == null) {
+                sendError(session, "publisher de mercado no disponible");
+                return;
+            }
+            LocalDate day;
+            try {
+                day = LocalDate.parse(date);
+            } catch (Exception e) {
+                sendError(session, "date invalida, formato esperado yyyy-MM-dd");
+                return;
+            }
+            boolean sent = publisher.sendHistoricalStatsForDate(session, day);
+            if (!sent) {
+                sendError(session, "sin data historica para " + date);
+            }
             return;
         }
 

@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
 
 public class CandleProtoMarketPublisher extends Thread {
     private static final Logger log = LoggerFactory.getLogger(CandleProtoMarketPublisher.class);
+    private static volatile CandleProtoMarketPublisher INSTANCE;
 
     private final Properties properties;
     private final Set<Session> snapshotSent = ConcurrentHashMap.newKeySet();
@@ -51,8 +52,13 @@ public class CandleProtoMarketPublisher extends Thread {
     public CandleProtoMarketPublisher(Properties properties) {
         this.properties = properties;
         this.excludedSymbols = parseExcludedSymbols(properties.getProperty("mongo.market.exclude.symbols", "TEST-STGOX"));
+        INSTANCE = this;
         setName("candle-proto-market-publisher");
         setDaemon(true);
+    }
+
+    public static CandleProtoMarketPublisher getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -220,6 +226,50 @@ public class CandleProtoMarketPublisher extends Thread {
             if (ok) {
                 historySent.add(session);
             }
+        }
+    }
+
+    public boolean sendHistoricalStatsForDate(Session session, LocalDate day) {
+        if (session == null || day == null) {
+            return false;
+        }
+
+        String mongoUri = properties.getProperty("mongo.candle.uri", "mongodb://127.0.0.1:27017");
+        String databaseName = properties.getProperty("mongo.candle.database", "market_data");
+        String historyCollectionName = properties.getProperty("mongo.market.history.collection", "bolsa_stats_history");
+        int topN = parseInt(properties.getProperty("mongo.market.stats.topn"), 20);
+        ZoneId marketZone = ZoneId.of("America/Santiago");
+
+        try (MongoClient client = new MongoClient(new MongoClientURI(mongoUri))) {
+            MongoDatabase database = client.getDatabase(databaseName);
+            MongoCollection<Document> trades = database.getCollection("trades");
+            MongoCollection<Document> instrumentStats = database.getCollection("instrument_stats");
+            MongoCollection<Document> history = database.getCollection(historyCollectionName);
+
+            Document historyDoc = history.find(Filters.eq("snapshotKey", "1d:" + day)).limit(1).first();
+            if (historyDoc == null) {
+                MarketDataMessage.BolsaStats stats = buildBolsaStatsForDay(trades, instrumentStats, day, marketZone, topN, false);
+                if (stats == null) {
+                    log.warn("[MONGO][LOAD_DAY_HOT] No fue posible construir BolsaStats para dia={}", day);
+                    return false;
+                }
+                Instant snapshotAt = loadTradeAggForDay(trades, day, marketZone).values().stream()
+                        .map(a -> a.lastTs)
+                        .filter(java.util.Objects::nonNull)
+                        .max(Comparator.naturalOrder())
+                        .orElse(day.atStartOfDay(marketZone).toInstant());
+                String snapshotKey = "1d:" + day;
+                historyDoc = toHistoryDocument(stats, snapshotAt, "1d", snapshotKey);
+                history.replaceOne(Filters.eq("snapshotKey", snapshotKey), historyDoc, new ReplaceOptions().upsert(true));
+                log.info("[MONGO][LOAD_DAY_HOT] Snapshot diario reconstruido y persistido para dia={}", day);
+            } else {
+                log.info("[MONGO][LOAD_DAY_HOT] Snapshot diario existente encontrado para dia={}", day);
+            }
+
+            return sendBinary(session, toPayload(historyDocToBolsaStats(historyDoc)));
+        } catch (Exception e) {
+            log.error("[MONGO][LOAD_DAY_HOT] Error cargando dia={} en caliente", day, e);
+            return false;
         }
     }
 
