@@ -100,6 +100,7 @@ public final class MarketDataParser {
         BigDecimal px = readDecimal(group, MDEntryPx.FIELD);
         BigDecimal size = readDecimal(group, MDEntrySize.FIELD);
         String mdEntryId = read(group, MDEntryID.FIELD);
+        char mdUpdateAction = readChar(group, MDUpdateAction.FIELD, '0');
         Instant eventTime = readTimestamp(group);
 
         MarketDataEvent event = new MarketDataEvent(
@@ -125,6 +126,7 @@ public final class MarketDataParser {
                     amount,
                     read(group, Side.FIELD),
                     mdEntryId,
+                    mdUpdateAction,
                     mdReqId,
                     sourceMsgType
             );

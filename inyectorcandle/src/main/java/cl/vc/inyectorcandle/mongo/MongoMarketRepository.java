@@ -96,7 +96,12 @@ public class MongoMarketRepository implements AutoCloseable {
     }
 
     public void insertTrade(TradeEvent trade) {
-        Document doc = new Document("instrumentId", trade.key().id())
+        String mdEntryId = trade.mdEntryId();
+        String id = trade.key().id() + "|" + ((mdEntryId == null || mdEntryId.isBlank())
+                ? trade.eventTime() + "|" + trade.price() + "|" + trade.quantity() + "|" + trade.sourceMsgType()
+                : mdEntryId);
+        Document doc = new Document("_id", id)
+                .append("instrumentId", trade.key().id())
                 .append("symbol", trade.key().symbol())
                 .append("settlement", trade.key().settlement())
                 .append("destination", trade.key().destination())
@@ -108,10 +113,13 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("amount", toDouble(trade.amount()))
                 .append("aggressorSide", trade.aggressorSide())
                 .append("mdEntryId", trade.mdEntryId())
+                .append("mdUpdateAction", String.valueOf(trade.mdUpdateAction()))
+                .append("deleted", trade.mdUpdateAction() == '2')
                 .append("mdReqId", trade.mdReqId())
-                .append("sourceMsgType", trade.sourceMsgType());
+                .append("sourceMsgType", trade.sourceMsgType())
+                .append("updatedAt", Instant.now().toString());
 
-        tradesCollection.insertOne(doc);
+        tradesCollection.replaceOne(Filters.eq("_id", id), doc, new ReplaceOptions().upsert(true));
         logProgress("trades.insert", insertedTrades.incrementAndGet());
     }
 

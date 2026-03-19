@@ -11,6 +11,7 @@ public record TradeEvent(
         BigDecimal amount,
         String aggressorSide,
         String mdEntryId,
+        char mdUpdateAction,
         String mdReqId,
         String sourceMsgType
 ) {

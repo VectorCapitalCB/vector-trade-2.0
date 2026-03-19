@@ -18,6 +18,8 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
@@ -70,6 +72,7 @@ public class InstrumentActor {
     private BigDecimal previousClose;
     private BigDecimal intradayVolume = BigDecimal.ZERO;
     private BigDecimal intradayTurnover = BigDecimal.ZERO;
+    private final Map<String, TradeEvent> activeTrades = new HashMap<>();
 
     public InstrumentActor(InstrumentKey key, List<Duration> timeframes, MongoMarketRepository repository) {
         this.key = key;
@@ -149,6 +152,20 @@ public class InstrumentActor {
     }
 
     private void onTrade(TradeEvent trade) {
+        if (trade.mdEntryId() == null || trade.mdEntryId().isBlank()) {
+            applyNewTrade(trade);
+            return;
+        }
+
+        switch (trade.mdUpdateAction()) {
+            case '0' -> applyUpsertTrade(trade);
+            case '1' -> applyChangeTrade(trade);
+            case '2' -> applyDeleteTrade(trade);
+            default -> applyUpsertTrade(trade);
+        }
+    }
+
+    private void applyNewTrade(TradeEvent trade) {
         repository.insertTrade(trade);
 
         totalTrades += 1;
@@ -162,6 +179,80 @@ public class InstrumentActor {
         }
         if (amount != null) {
             totalTurnover = totalTurnover.add(amount);
+        }
+
+        if (trade.price() != null) {
+            lastPrice = trade.price();
+            updateDailyMetrics(trade.eventTime(), trade.price(), trade.quantity(), amount);
+            updateIndicators(trade.price());
+        }
+
+        List<Candle> finalized = candleService.onTrade(trade.eventTime(), trade.price(), trade.quantity(), amount);
+        for (Candle candle : finalized) {
+            repository.upsertCandle(candle);
+        }
+
+        repository.upsertInstrumentStats(snapshot());
+    }
+
+    private void applyUpsertTrade(TradeEvent trade) {
+        TradeEvent previous = activeTrades.put(trade.mdEntryId(), trade);
+        repository.insertTrade(trade);
+
+        if (previous == null) {
+            applyTradeDelta(trade, true);
+            return;
+        }
+
+        applyTradeDelta(previous, false);
+        applyTradeDelta(trade, true);
+    }
+
+    private void applyChangeTrade(TradeEvent trade) {
+        TradeEvent previous = activeTrades.get(trade.mdEntryId());
+        if (previous == null) {
+            LOG.debug("Ignoring trade change without previous state instrument={} mdEntryId={}", key.id(), trade.mdEntryId());
+            return;
+        }
+
+        activeTrades.put(trade.mdEntryId(), trade);
+        repository.insertTrade(trade);
+        applyTradeDelta(previous, false);
+        applyTradeDelta(trade, true);
+        repository.upsertInstrumentStats(snapshot());
+    }
+
+    private void applyDeleteTrade(TradeEvent trade) {
+        TradeEvent previous = activeTrades.remove(trade.mdEntryId());
+        repository.insertTrade(trade);
+        if (previous == null) {
+            LOG.debug("Ignoring trade delete without previous state instrument={} mdEntryId={}", key.id(), trade.mdEntryId());
+            return;
+        }
+
+        applyTradeDelta(previous, false);
+        repository.upsertInstrumentStats(snapshot());
+    }
+
+    private void applyTradeDelta(TradeEvent trade, boolean add) {
+        BigDecimal sign = add ? BigDecimal.ONE : BigDecimal.ONE.negate();
+
+        totalTrades += add ? 1 : -1;
+
+        if (trade.quantity() != null) {
+            totalVolume = totalVolume.add(trade.quantity().multiply(sign, MC), MC);
+        }
+
+        BigDecimal amount = trade.amount();
+        if (amount == null && trade.price() != null && trade.quantity() != null) {
+            amount = trade.price().multiply(trade.quantity(), MC);
+        }
+        if (amount != null) {
+            totalTurnover = totalTurnover.add(amount.multiply(sign, MC), MC);
+        }
+
+        if (!add) {
+            return;
         }
 
         if (trade.price() != null) {

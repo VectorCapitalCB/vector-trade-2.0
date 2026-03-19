@@ -352,6 +352,7 @@ public class FixLogReplayService {
                     amount,
                     fallback(entry.get(TAG_SIDE), messageLevel.get(TAG_SIDE)),
                     fallback(entry.get(TAG_MDENTRYID), messageLevel.get(TAG_MDENTRYID)),
+                    charOrDefault(fallback(entry.get(TAG_MDUPDATEACTION), messageLevel.get(TAG_MDUPDATEACTION)), '0'),
                     mdReqId,
                     msgType
             );
@@ -678,6 +679,13 @@ public class FixLogReplayService {
         } catch (Exception e) {
             return null;
         }
+    }
+
+    private char charOrDefault(String value, char fallback) {
+        if (value == null || value.isBlank()) {
+            return fallback;
+        }
+        return value.trim().charAt(0);
     }
 
     private Integer intOrNull(String value) {
