@@ -26,6 +26,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
@@ -526,27 +527,40 @@ public class FooterController {
     @FXML
     private void readConnections() throws IOException {
 
-        FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/view/Notification.fxml"));
-        AnchorPane mainPane = loader.load();
-        Repository.setNotificationController(loader.getController());
-
         if (viewconsole != null && viewconsole.isShowing()) {
-            Notifier.INSTANCE.notifyInfo("Vista de Consola", "está abierta");
+            viewconsole.requestFocus();
             return;
         }
 
+        VBox content = new VBox(10);
+        content.setPadding(new Insets(16));
+        content.getChildren().addAll(
+                createConnectionRow("SERVICE", Repository.serviceConnectedProperty().get(), Repository.getServiceEndpoint()),
+                createConnectionRow("CANDLE", Repository.candleConnectedProperty().get(), Repository.getCandleEndpoint()),
+                createConnectionRow("CHAT", Repository.chatConnectedProperty().get(), Repository.getChatEndpoint()),
+                createConnectionRow("NEWS", Repository.newsConnectedProperty().get(), Repository.getNewsEndpoint())
+        );
+
         viewconsole = new Stage();
-        Scene scene = new Scene(mainPane);
+        Scene scene = new Scene(content, 760, 240);
         applyCurrentStyle(scene);
         viewconsole.setScene(scene);
+        viewconsole.setTitle("Estado de conexiones");
         viewconsole.show();
+    }
 
-        NotificationMessage.NotificationRequest notificationRequest = NotificationMessage.NotificationRequest.newBuilder()
-                .setId(IDGenerator.getID())
-                .setNotificationRequestType(NotificationMessage.NotificationRequestType.CONNECTION_REQUEST)
-                .build();
+    private HBox createConnectionRow(String channel, boolean connected, String endpoint) {
+        Label status = new Label(channel + ": " + (connected ? "ON" : "OFF"));
+        status.setMinWidth(130);
+        status.setStyle("-fx-font-size: 12; -fx-font-weight: bold; -fx-text-fill: " + (connected ? "#39c16c" : "#ff5f5f") + ";");
 
-        Repository.getClientService().sendMessage(notificationRequest);
+        Label url = new Label(endpoint == null || endpoint.isBlank() ? "Sin endpoint configurado" : endpoint);
+        url.setWrapText(true);
+        HBox.setHgrow(url, Priority.ALWAYS);
+
+        HBox row = new HBox(12, status, url);
+        row.setAlignment(Pos.CENTER_LEFT);
+        return row;
     }
 
     @FXML

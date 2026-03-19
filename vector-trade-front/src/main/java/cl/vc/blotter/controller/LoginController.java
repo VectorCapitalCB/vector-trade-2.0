@@ -192,6 +192,11 @@ public class LoginController {
             String chatEndpoint = resolveEndpoint(envKey, "chat");
             String newsEndpoint = resolveEndpoint(envKey, "news");
 
+            Repository.setServiceEndpoint(serviceEndpoint);
+            Repository.setCandleEndpoint(candleEndpoint);
+            Repository.setChatEndpoint(chatEndpoint);
+            Repository.setNewsEndpoint(newsEndpoint);
+
             simpleWebSocketListenerService = connectSocket(serviceEndpoint, encodedCredentials, "service", Repository.clientActor);
             simpleWebSocketListener = simpleWebSocketListenerService; // backward compatibility
 

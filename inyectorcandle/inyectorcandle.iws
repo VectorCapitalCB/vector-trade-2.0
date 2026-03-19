@@ -5,13 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="23b81911-ab74-4291-905d-2cafed251d36" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/inyectorcandle.iws" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/actor/InstrumentActor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/actor/InstrumentActor.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/MarketDataParser.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/fix/MarketDataParser.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/model/TradeEvent.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/model/TradeEvent.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/mongo/MongoMarketRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/mongo/MongoMarketRepository.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/replay/FixLogReplayService.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/inyectorcandle/replay/FixLogReplayService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-candle-service/vector-candle-service.iws" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/Repository.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/FooterController.java" afterDir="false" />
@@ -403,7 +396,7 @@
       <workItem from="1773766322094" duration="709000" />
       <workItem from="1773771291202" duration="3761000" />
       <workItem from="1773844666973" duration="1442000" />
-      <workItem from="1773926647467" duration="2600000" />
+      <workItem from="1773926647467" duration="2937000" />
     </task>
     <servers />
   </component>

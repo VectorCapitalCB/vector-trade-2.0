@@ -7,15 +7,9 @@
     <list default="true" id="fc0792c9-c01e-442f-af37-37bcfd8af94d" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/inyectorcandle.iws" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../inyectorcandle/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../inyectorcandle/src/main/resources/application.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleProtoMarketPublisher.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleWebSocketEndpoint.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/cl/vc/candle/websocket/CandleWebSocketEndpoint.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/vector-candle-service.iws" beforeDir="false" afterPath="$PROJECT_DIR$/vector-candle-service.iws" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/java/cl/vc/blotter/controller/StadisticsController.java" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.production.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-front/src/main/resources/blotter/enviroment/application.production.properties" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-service/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/pom.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/util/IgpaPortfolioService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/util/IgpaPortfolioService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/util/IpsaPortfolioService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/java/cl/vc/service/util/IpsaPortfolioService.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/../vector-trade-service/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -389,7 +383,7 @@
       <workItem from="1773677217946" duration="2536000" />
       <workItem from="1773682133507" duration="10028000" />
       <workItem from="1773770306643" duration="3856000" />
-      <workItem from="1773844867811" duration="632000" />
+      <workItem from="1773844867811" duration="1759000" />
     </task>
     <servers />
   </component>

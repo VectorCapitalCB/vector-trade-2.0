@@ -16,6 +16,7 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.json.JSONObject;
 
 import java.math.RoundingMode;
 import java.text.DecimalFormatSymbols;
@@ -405,6 +406,7 @@ public class StadisticsController {
                 .orElse(null);
 
         if (selected == null) {
+            requestHistoricalStatsForDate(selectedStatsDate);
             MarketDataMessage.BolsaStats empty = MarketDataMessage.BolsaStats.newBuilder()
                     .setTendenciaGeneral("neutral")
                     .build();
@@ -426,6 +428,16 @@ public class StadisticsController {
         refreshSymbolCombo(selected);
         refreshTable();
         refreshHistoryChart();
+    }
+
+    private void requestHistoricalStatsForDate(LocalDate date) {
+        if (date == null || Repository.getCandleClientService() == null) {
+            return;
+        }
+        JSONObject request = new JSONObject()
+                .put("action", "load_day_stats")
+                .put("date", date.toString());
+        Repository.getCandleClientService().sendMessage(request.toString());
     }
 
     private Instant computeFromInstant() {

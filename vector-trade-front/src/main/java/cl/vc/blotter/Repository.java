@@ -253,6 +253,18 @@ public class Repository {
     private static InterfaceTcp newsClientService;
     @Getter
     @Setter
+    private static String serviceEndpoint;
+    @Getter
+    @Setter
+    private static String candleEndpoint;
+    @Getter
+    @Setter
+    private static String chatEndpoint;
+    @Getter
+    @Setter
+    private static String newsEndpoint;
+    @Getter
+    @Setter
     private static LoginController loginController;
 
     @Getter
