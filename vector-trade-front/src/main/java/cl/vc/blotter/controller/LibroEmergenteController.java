@@ -3,7 +3,7 @@ package cl.vc.blotter.controller;
 import cl.vc.blotter.Repository;
 import cl.vc.blotter.model.BookVO;
 import cl.vc.blotter.model.OrderBookEntry;
-import cl.vc.module.protocolbuff.blotter.BlotterMessage;
+import cl.vc.blotter.utils.Sparkline;
 import cl.vc.module.protocolbuff.generator.IDGenerator;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
@@ -19,6 +19,7 @@ import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
@@ -86,6 +87,8 @@ public class LibroEmergenteController implements Initializable {
     private Label medioGen;
     @FXML
     private Label highpriceGen;
+    @FXML
+    private Canvas tendencia;
 
     private ObservableList<String> allSymbols;
 
@@ -527,6 +530,9 @@ public class LibroEmergenteController implements Initializable {
             bidViewTable.refresh();
             offerViewTable.refresh();
 
+            Sparkline.pintar(tendencia, null);
+            solicitarSerieIntradia(symbol);
+
 
             if (Repository.getBookPortMaps().containsKey(idSubscribeBook)) {
 
@@ -544,27 +550,8 @@ public class LibroEmergenteController implements Initializable {
             }
 
 
-            BlotterMessage.Multibook.Builder multibook = BlotterMessage.Multibook.newBuilder();
-            multibook.setUsername(Repository.getUsername());
+            MultibookController.bookChanged(positions);
 
-            Repository.getLibroEmergenteMap().forEach((key, value) -> {
-                try {
-                    if (value.getSubscribe() != null) {
-                        BlotterMessage.SubMultibook subMultibook = BlotterMessage.SubMultibook.newBuilder()
-                                .setPositions(value.getPositions())
-                                .setSubscribeBook(value.getSubscribe())
-                                .build();
-                        multibook.addSubmultibook(subMultibook);
-                    }
-                } catch (Exception e) {
-                    log.error(e.getMessage(), e);
-                }
-            });
-
-            BlotterMessage.Multibook multibookState = multibook.build();
-            Repository.setMultibook(multibookState);
-
-            Repository.getClientService().sendMessage(multibookState);
             Repository.getClientService().sendMessage(subscribe);
             subscriptionRetryCount = 0;
             scheduleSubscriptionHealthCheck();
@@ -573,6 +560,38 @@ public class LibroEmergenteController implements Initializable {
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Tendencia intradia del papel. Primero la serie que calcula el backend, que llega completa
+     * apenas se suscribe; si todavia no llego, el buffer local que acumula StatisticVO con los ticks.
+     */
+    private void pintarTendencia(BookVO bookVO) {
+        try {
+            double[] serie = Repository.getSerieIntradia(
+                    TopicGenerator.getTopicMKD(bookVO.getStatisticVO().getStatistic()));
+            if (serie == null || serie.length < 2) {
+                serie = bookVO.getStatisticVO().getSerieIntradia();
+            }
+            Sparkline.pintar(tendencia, serie);
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    /** La serie del dia la calcula el candle-service; sin esto el mini grafico parte vacio. */
+    private void solicitarSerieIntradia(String symbol) {
+        try {
+            if (Repository.getCandleClientService() == null || symbol == null || symbol.isBlank()) {
+                return;
+            }
+            Repository.getCandleClientService().sendMessage(new org.json.JSONObject()
+                    .put("action", "load_intraday_series")
+                    .put("symbols", new org.json.JSONArray().put(symbol))
+                    .toString());
+        } catch (Exception e) {
+            log.error("No se pudo pedir la serie intradia de {}", symbol, e);
         }
     }
 
@@ -597,6 +616,7 @@ public class LibroEmergenteController implements Initializable {
                     previusClose.setText(bookVO.getStatisticVO().getPreviusClose());
                     highpriceGen.setText(Repository.getFormatter2dec().format(bookVO.getStatisticVO().getHigh()));
                     imbalanceGen.setText(Repository.getFormatter2dec().format(bookVO.getStatisticVO().getImbalance()));
+                    pintarTendencia(bookVO);
             });
 
 

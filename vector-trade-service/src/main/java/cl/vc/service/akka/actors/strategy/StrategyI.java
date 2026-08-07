@@ -21,4 +21,20 @@ public interface StrategyI {
 
     void onStatistic(MarketDataMessage.Statistic statistic);
 
+    /**
+     * true si la estrategia sigue esperando el PRIMER libro usable (sin market data) y la orden
+     * aún no salió al mercado. Lo consulta ActorStrategy tras un timeout para no dejar la orden
+     * en el limbo (PENDING_NEW invisible para el operador).
+     */
+    default boolean awaitingFirstMarketData() {
+        return false;
+    }
+
+    /**
+     * Rechaza la orden hacia el front por falta de market data (libro vacío / sin suscripción).
+     * Se invoca desde ActorStrategy cuando awaitingFirstMarketData() sigue true tras el timeout.
+     */
+    default void rejectNoMarketData() {
+    }
+
 }

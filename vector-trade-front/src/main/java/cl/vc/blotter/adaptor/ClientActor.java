@@ -68,7 +68,6 @@ public class ClientActor extends AbstractActor {
                 .match(BktStrategyProtos.SnapshotBasket.class, this::onBasketMessage)
                 .match(BlotterMessage.UserList.class, this::onUserList)
                 .match(BlotterMessage.User.class, this::onUser)
-                .match(BlotterMessage.Multibook.class, this::onMultibook)
                 .match(MarketDataMessage.TradeGeneral.class, this::onTradeGeneral)
                 .match(MarketDataMessage.SnapshotTradeGeneral.class, this::onSnapshotTradeGeneral)
                 .match(BlotterMessage.SnapshotSimultaneas.class, this::onSnapshotSimultaneas)
@@ -84,16 +83,23 @@ public class ClientActor extends AbstractActor {
     public void preStart() {
     }
 
+    /**
+     * Estadisticas en vivo calculadas por el OMS desde el market data de ITCH.
+     * El canal candle sigue siendo el que aporta la serie historica (ids "hist:"), que se
+     * arma desde Mongo; si algun dia corren las dos fuentes a la vez no hay conflicto,
+     * porque StadisticsController.add() es last-write-wins.
+     */
     private void onBolsaStats(MarketDataMessage.BolsaStats stats) {
-        // Las estadisticas de mercado se toman exclusivamente del canal candle.
+        if (stats == null) return;
+        Repository.setStats(stats);
+        Repository.addBolsaStatsHistory(stats);
+        if (Repository.getStatsController() != null) {
+            Repository.getStatsController().add(stats);
+        }
     }
 
     private void onSnapshotSimultaneas(BlotterMessage.SnapshotSimultaneas snapshotSimultaneas) {
         Repository.getPositionSimultaneasController().addSnapshot(snapshotSimultaneas);
-    }
-
-    private void onMultibook(BlotterMessage.Multibook multibook) {
-        Repository.setMultibook(multibook);
     }
 
     private void onUser(BlotterMessage.User user) {
@@ -144,6 +150,10 @@ public class ClientActor extends AbstractActor {
                 strtate.addAll(user.getRoles().getStrategyList());
                 strtate.add(RoutingMessage.StrategyOrder.NONE_STRATEGY);
                 Repository.getPrincipalController().getLanzadorController().getStrategOrder().setItems(strtate);
+                // Por defecto sin estrategia: enviar una orden con estrategia heredada del
+                // combo sin haberla elegido es un riesgo operativo.
+                Repository.getPrincipalController().getLanzadorController().getStrategOrder()
+                        .getSelectionModel().select(RoutingMessage.StrategyOrder.NONE_STRATEGY);
 
 
                 ObservableList<RoutingMessage.ExecBroker> broker = FXCollections.observableArrayList();
@@ -180,7 +190,10 @@ public class ClientActor extends AbstractActor {
 
                 // Security Exchange del usuario
                 ObservableList<RoutingMessage.SecurityExchangeRouting> securityExchangeUser = FXCollections.observableArrayList();
-                securityExchangeUser.addAll(user.getRoles().getDestinoRoutingList());
+                // NUAM excluido del lanzador a peticion del negocio.
+                user.getRoles().getDestinoRoutingList().stream()
+                        .filter(destino -> destino != RoutingMessage.SecurityExchangeRouting.NUAM)
+                        .forEach(securityExchangeUser::add);
 
                 Repository.getPrincipalController().getLanzadorController().getSecExchOrder().setItems(securityExchangeUser);
 
@@ -670,8 +683,7 @@ public class ClientActor extends AbstractActor {
 
     private void onPortfolioResponse(BlotterMessage.PortfolioResponse response) {
 
-        Repository.setPortfolioResponse(response);
-        Repository.getPrincipalController().addDatosDeMercado();
+        Repository.getPrincipalController().addDatosDeMercado(response);
 
 
     }

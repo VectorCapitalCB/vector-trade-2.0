@@ -1,0 +1,15 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "vt2-chat",
+      "runtimeExecutable": "java",
+      "runtimeArgs": [
+        "-jar",
+        "vector-chat-service/target/vector-chat-service-1.0.0.jar",
+        "C:/Users/victo/AppData/Local/Temp/claude/E--VC-GITHUB-vector-trade-2-0/3be15145-ec7d-4ec9-8ae7-a1fc8efc6f26/scratchpad/e2e.properties"
+      ],
+      "port": 18097
+    }
+  ]
+}

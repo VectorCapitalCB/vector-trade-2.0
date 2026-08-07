@@ -7,7 +7,13 @@
             xmlns="http://javafx.com/javafx/17.0.2-ea"
             fx:controller="cl.vc.blotter.controller.BookVerticalController">
     <children>
-        <SplitPane fx:id="bookSplit" orientation="VERTICAL" dividerPositions="0.5" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+        <!-- Los anchors son obligatorios: el padre es un AnchorPane, donde HBox.hgrow y
+             VBox.vgrow se ignoran. Sin ellos el SplitPane tomaba su tamano preferido y el
+             libro no llegaba al fondo del panel. -->
+        <SplitPane fx:id="bookSplit" orientation="VERTICAL" dividerPositions="0.5"
+                   AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
+                   AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+                   HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
             <items>
 
                 <TableView fx:id="offerViewTable" maxWidth="Infinity" maxHeight="Infinity"

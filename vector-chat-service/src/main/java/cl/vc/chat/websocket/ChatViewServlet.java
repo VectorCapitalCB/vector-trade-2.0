@@ -14,21 +14,25 @@ public class ChatViewServlet extends HttpServlet {
             properties = new Properties();
         }
 
-        String chatHost = properties.getProperty("chat.server.host", "localhost");
         String chatPort = properties.getProperty("chat.websocket.port", "8097");
         String chatPath = properties.getProperty("chat.websocket.path", "/ws/");
 
-        String candleHost = properties.getProperty("candle.external.host", "localhost");
         String candlePort = properties.getProperty("candle.external.port", "8098");
         String candlePath = properties.getProperty("candle.external.path", "/ws/");
 
+        // El host se toma del request: la vista funciona igual en localhost o en el server QA.
+        String scheme = req.isSecure() ? "wss" : "ws";
+        String requestHost = requestHost(req);
+        String chatHost = properties.getProperty("chat.external.host", requestHost);
+        String candleHost = properties.getProperty("candle.external.host", requestHost);
+
         String defaultChatWs = properties.getProperty(
                 "view.default.chat.ws.url",
-                "ws://" + chatHost + ":" + chatPort + normalizePath(chatPath)
+                scheme + "://" + chatHost + ":" + chatPort + normalizePath(chatPath)
         );
         String defaultCandleWs = properties.getProperty(
                 "view.default.candle.ws.url",
-                "ws://" + candleHost + ":" + candlePort + normalizePath(candlePath)
+                scheme + "://" + candleHost + ":" + candlePort + normalizePath(candlePath)
         );
         String defaultSymbol = properties.getProperty("view.default.candle.symbol", "SQM");
         String defaultTimeframe = properties.getProperty("view.default.candle.timeframe", "1m");
@@ -295,6 +299,14 @@ public class ChatViewServlet extends HttpServlet {
                 .replace("__SYMBOL__", escapeHtml(defaultSymbol))
                 .replace("__TIMEFRAME__", escapeHtml(defaultTimeframe))
         );
+    }
+
+    private static String requestHost(HttpServletRequest req) {
+        String host = req.getServerName();
+        if (host == null || host.trim().isEmpty() || "0.0.0.0".equals(host)) {
+            return "localhost";
+        }
+        return host.trim();
     }
 
     private static String normalizePath(String path) {

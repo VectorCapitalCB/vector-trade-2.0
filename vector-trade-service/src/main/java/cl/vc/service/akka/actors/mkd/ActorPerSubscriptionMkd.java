@@ -10,6 +10,7 @@ import cl.vc.module.protocolbuff.notification.NotificationMessage;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.MongoCloseRepository;
 import com.google.protobuf.Timestamp;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,16 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
     private final MarketDataMessage.Subscribe subscribe;
     private final ActorRef actorRef;
     private String id;
+    /**
+     * Cierre del dia habil anterior (Mongo). Base para calcular la variacion %. 0 = sin dato.
+     */
+    private double previousDayClose = 0d;
+    private boolean varPctOkLogged = false;
+    private boolean varPctFallbackLogged = false;
+    /**
+     * true solo si el destino es BCS: unico exchange cuya var% calculamos desde Mongo.
+     */
+    private boolean isBcs = false;
     private MarketDataMessage.Statistic.Builder statistics;
     private MarketDataMessage.Trade.Builder trade;
     private static final int MAX_ENTRIES = 40;
@@ -43,6 +54,8 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
         try {
 
             id = TopicGenerator.getTopicMKD(subscribe);
+            isBcs = subscribe.getSecurityExchange() == MarketDataMessage.SecurityExchangeMarketData.BCS;
+
             MainApp.getMessageEventBus().subscribe(getSelf(), id);
 
             statistics = MarketDataMessage.Statistic.newBuilder();
@@ -72,6 +85,7 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
                 }
             }
 
+            // Suscripcion / entrega de snapshot PRIMERO: es el camino critico del feed, no debe esperar a Mongo.
             if (MainApp.getSnapshotHashMap().containsKey(id)) {
                 BookSnapshot snapshot1 = MainApp.getSnapshotHashMap().get(id);
 
@@ -79,6 +93,12 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
 
             } else {
                 MainApp.subscribeSymbol(subscribe, id);
+            }
+
+            // Cierre de AYER (Mongo) para la variacion %, SOLO BCS. Va DESPUES de suscribir para no demorar
+            // el feed. getPreviousClose es O(1) (cache precargada en bloque); si aun no esta, onStatistic reintenta.
+            if (isBcs) {
+                previousDayClose = MongoCloseRepository.getPreviousClose(subscribe.getSymbol());
             }
 
         } catch (Exception e) {
@@ -93,7 +113,7 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
                     .setTitle("Not connected")
                     .setTypeState(NotificationMessage.TypeState.DISCONNECTION)
                     .build();
-            MainApp.putConnectionNotification(notification);
+            MainApp.getNotificationConectionMap().put(notification.getSecurityExchange(), notification);
             MainApp.getNotificationMap().add(notification);
             this.actorRef.tell(notification, ActorRef.noSender());
 
@@ -145,6 +165,27 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
         }
     }
 
+    /**
+     * Pisa la variacion % de una Statistic CRUDA del feed (viene con un cierre de ayer viejo) usando el
+     * cierre de Mongo. Se aplica a la Statistic que va dentro del Snapshot: si no, el cliente recibe el
+     * valor malo del feed y, si el simbolo no vuelve a tickear, se queda pegado con ese valor.
+     * Solo BCS; si no hay cierre o precio, devuelve la original sin copiar.
+     */
+    private MarketDataMessage.Statistic fixVarPct(MarketDataMessage.Statistic raw) {
+        if (raw == null || !isBcs) return raw;
+        if (previousDayClose <= 0d) {
+            previousDayClose = MongoCloseRepository.getPreviousClose(subscribe.getSymbol());
+        }
+        if (previousDayClose <= 0d) return raw;
+        double px = raw.getLast();
+        if (px <= 0d) px = raw.getOhlcv().getClose();
+        if (px <= 0d) return raw;
+        return raw.toBuilder()
+                .setPreviusClose(previousDayClose)
+                .setImbalance((px - previousDayClose) / previousDayClose * 100d)
+                .build();
+    }
+
     private void onSubscribe(MarketDataMessage.Subscribe conn) {
         try {
 
@@ -159,7 +200,7 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
 
                 MarketDataMessage.Snapshot snapshot2 = MarketDataMessage.Snapshot.newBuilder()
                         .setId(subscribe.getId())
-                        .setStatistic(snapshot1.getStatistic())
+                        .setStatistic(fixVarPct(snapshot1.getStatistic()))
                         .addAllBids(snapshot1.getBid())
                         .addAllAsks(snapshot1.getAsk())
                         .addAllTrades(snapshot1.getTradesList())
@@ -209,7 +250,7 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
 
             //MarketDataMessage.Trade tradeLast = bookSnapshot.getTradesList().getLast();
             this.trade.setIdGenerico(trade.getIdGenerico());
-            if(trade.getIdGenerico().isEmpty()){
+            if (trade.getIdGenerico().isEmpty()) {
                 this.trade.setIdGenerico(IDGenerator.getID());
             }
 
@@ -245,39 +286,71 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
             String id = TopicGenerator.getTopicMKD(statistic);
             BookSnapshot bookSnapshot;
 
-            if(MainApp.getSnapshotHashMap().containsKey(statistic.getId())){
+            if (MainApp.getSnapshotHashMap().containsKey(statistic.getId())) {
                 bookSnapshot = MainApp.getSnapshotHashMap().get(statistic.getId());
-            } else if(MainApp.getSnapshotHashMap().containsKey(id)) {
+            } else if (MainApp.getSnapshotHashMap().containsKey(id)) {
                 bookSnapshot = MainApp.getSnapshotHashMap().get(id);
             } else {
                 return;
             }
 
-            this.statistics.setImbalance(bookSnapshot.getStatistic().getImbalance());
-            this.statistics.setAmount(bookSnapshot.getStatistic().getAmount());
+              this.statistics.setAmount(bookSnapshot.getStatistic().getAmount());
             this.statistics.setBidQty(bookSnapshot.getStatistic().getBidQty());
             this.statistics.setBidPx(bookSnapshot.getStatistic().getBidPx());
             this.statistics.setAskQty(bookSnapshot.getStatistic().getAskQty());
             this.statistics.setAskPx(bookSnapshot.getStatistic().getAskPx());
             this.statistics.setTradeVolume(bookSnapshot.getStatistic().getTradeVolume());
+            this.statistics.setOhlcv(bookSnapshot.getStatistic().getOhlcv());
             this.statistics.setAmountTheoric(bookSnapshot.getStatistic().getAmountTheoric());
             this.statistics.setPriceTheoric(bookSnapshot.getStatistic().getPriceTheoric());
-            this.statistics.setPreviusClose(bookSnapshot.getStatistic().getPreviusClose());
-            this.statistics.setDelta(bookSnapshot.getStatistic().getDelta());
+            // this.statistics.setPreviusClose(bookSnapshot.getStatistic().getPreviusClose());
+            // this.statistics.setDelta(bookSnapshot.getStatistic().getDelta());
             this.statistics.setRatio(bookSnapshot.getStatistic().getRatio());
             this.statistics.setLast(bookSnapshot.getStatistic().getLast());
+            this.statistics.setClose(bookSnapshot.getStatistic().getClose());
             this.statistics.setMedio((bookSnapshot.getStatistic().getBidPx() + bookSnapshot.getStatistic().getAskPx()) / 2);
             this.statistics.setDesbalTheoric(bookSnapshot.getStatistic().getDesbalTheoric());
             this.statistics.setOwnDemand(bookSnapshot.getStatistic().getOwnDemand());
             this.statistics.setTickDirecion(bookSnapshot.getStatistic().getTickDirecion());
             this.statistics.setReferencialPrice(bookSnapshot.getStatistic().getReferencialPrice());
-            this.statistics.setOpen(bookSnapshot.getStatistic().getOpen());
-            this.statistics.setClose(bookSnapshot.getStatistic().getClose());
-            this.statistics.setLast(bookSnapshot.getStatistic().getLast());
-            this.statistics.setHigh(bookSnapshot.getStatistic().getHigh());
-            this.statistics.setLow(bookSnapshot.getStatistic().getLow());
-            this.statistics.setVolume(bookSnapshot.getStatistic().getVolume());
             this.statistics.setVwap(bookSnapshot.getStatistic().getVwap());
+
+            // Si aun no tenemos el cierre (cache precargando al arrancar), reintenta O(1) desde la cache.
+            if (isBcs && previousDayClose <= 0d) {
+                previousDayClose = MongoCloseRepository.getPreviousClose(subscribe.getSymbol());
+            }
+
+            // Variacion %: SOLO BCS la calculamos y PISAMOS la del feed (trae un cierre de ayer viejo/malo).
+            // Alpaca/otros destinos, o BCS sin cierre en Mongo: se usa la var% del feed tal cual.
+            if (isBcs && previousDayClose > 0d) {
+                // "el que te esta cayendo" = ultimo precio transado (columna Ultimo). Fallback al close del ohlcv.
+                double px = this.statistics.getLast();
+                if (px <= 0d) px = this.statistics.getOhlcv().getClose();
+                if (px > 0d) {
+                    double varPct = (px - previousDayClose) / previousDayClose * 100d;
+                    varPct = Math.round(varPct * 100.0) / 100.0;
+
+                    this.statistics.setPreviusClose(previousDayClose);
+                    this.statistics.setImbalance(varPct);
+                    if (!varPctOkLogged) {
+                        log.info("[VarPct] {} OK var%={} (precio={}, cierreAyer={})",
+                                subscribe.getSymbol(), String.format("%.2f", varPct), px, previousDayClose);
+                        varPctOkLogged = true;
+                    }
+                }
+            } else {
+                this.statistics.setImbalance(bookSnapshot.getStatistic().getImbalance());
+                this.statistics.setPreviusClose(bookSnapshot.getStatistic().getPreviusClose());
+                this.statistics.setDelta(bookSnapshot.getStatistic().getDelta());
+                // Deja constancia (1 vez por simbolo) de POR QUE no se calculo: leyendo Mongo vs sin dato.
+                if (isBcs && !varPctFallbackLogged) {
+                    log.warn("[VarPct] {} usa var% del FEED: {}", subscribe.getSymbol(),
+                            MongoCloseRepository.isReading() ? "leyendo cierres de Mongo (precarga en curso)"
+                                    : MongoCloseRepository.isWarmed() ? "sin cierre de ayer en Mongo para este simbolo"
+                                    : "Mongo no cargo (revisar mongo.isconnected/conexion)");
+                    varPctFallbackLogged = true;
+                }
+            }
 
             actorRef.tell(statistics.build(), ActorRef.noSender());
 
@@ -294,10 +367,9 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
                 return;
             }
 
-            if(!MainApp.getSnapshotHashMap().containsKey(msg.getId())) {
+            if (!MainApp.getSnapshotHashMap().containsKey(msg.getId())) {
                 return;
             }
-
 
 
             BookSnapshot bookSnapshot = MainApp.getSnapshotHashMap().get(msg.getId());
@@ -309,10 +381,6 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
             incremental.setSecurityExchange(subscribe.getSecurityExchange());
             incremental.setSettlType(subscribe.getSettlType());
 
-
-            if(bookSnapshot.getBid().isEmpty() &&  bookSnapshot.getAsk().isEmpty()){
-                return;
-            }
 
             if (subscribe.getDepth().equals(MarketDataMessage.Depth.FULL_BOOK)) {
 
@@ -326,11 +394,11 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
 
             } else {
 
-                if(!bookSnapshot.getBid().isEmpty()) {
+                if (!bookSnapshot.getBid().isEmpty()) {
                     incremental.addBids(bookSnapshot.getBid().get(0));
                 }
 
-                if(!bookSnapshot.getAsk().isEmpty()) {
+                if (!bookSnapshot.getAsk().isEmpty()) {
                     incremental.addAsks(bookSnapshot.getAsk().get(0));
                 }
 
@@ -363,7 +431,7 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
 
             MarketDataMessage.Snapshot snapshot2 = MarketDataMessage.Snapshot.newBuilder()
                     .setId(subscribe.getId())
-                    .setStatistic(snapshot1.getStatistic())
+                    .setStatistic(fixVarPct(snapshot1.getStatistic()))
                     .addAllBids(bid)
                     .addAllAsks(ask)
                     .addAllTrades(snapshot1.getTradesList())

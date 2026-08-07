@@ -12,7 +12,9 @@ import javafx.fxml.FXMLLoader;
 import javafx.scene.control.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.input.*;
 import javafx.scene.layout.FlowPane;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
@@ -83,6 +85,8 @@ public class StadisticsController {
     private final ObservableList<MarketDataMessage.RankinSymbol> tableItems = FXCollections.observableArrayList();
     private volatile MarketDataMessage.BolsaStats lastStats;
     private volatile LocalDate selectedStatsDate;
+    /** Historico indexado por fecha, para pintar el calendario sin recorrer la lista por celda. */
+    private volatile Map<LocalDate, MarketDataMessage.BolsaStats> statsPorDia = java.util.Collections.emptyMap();
 
 
     private final DecimalFormat dfPrice  = new DecimalFormat("#,##0.########");
@@ -90,6 +94,10 @@ public class StadisticsController {
     private final DecimalFormat dfNumber = new DecimalFormat("#,##0.##");
     private final DecimalFormat dfInt    = new DecimalFormat("#,##0");
     private final DecimalFormat dfRatio  = new DecimalFormat("#,##0.####");
+
+    private static final KeyCodeCombination COPIAR = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
+    private final Map<String, Label> kpiPorNombre = new java.util.LinkedHashMap<>();
+    private final Tooltip avisoCopia = new Tooltip("Copiado");
 
     public void initialize() {
         DecimalFormatSymbols symbols = DecimalFormatSymbols.getInstance();
@@ -140,6 +148,7 @@ public class StadisticsController {
         }
         if (dpStatsDate != null) {
             dpStatsDate.setValue(LocalDate.now(ZoneId.of("America/Santiago")));
+            setupStatsDateCalendar();
         }
 
         // Combo mercado
@@ -185,9 +194,10 @@ public class StadisticsController {
                 setText(empty ? null : value);
                 getStyleClass().removeAll("positive", "negative");
                 if (!empty) {
-                    String raw = value.replace("%","").replace(".","").replace(",",".");
+                    // Parsear con el mismo DecimalFormat que formateo el texto: manipular los
+                    // separadores a mano depende del locale por defecto de la JVM.
                     try {
-                        double v = Double.parseDouble(raw);
+                        double v = dfPct.parse(value).doubleValue();
                         if (v > 0) getStyleClass().add("positive");
                         else if (v < 0) getStyleClass().add("negative");
                     } catch (Exception ignore) {}
@@ -197,6 +207,7 @@ public class StadisticsController {
 
         rankinSymbolTable.setItems(tableItems);
         rankinSymbolTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY_ALL_COLUMNS);
+        configurarCopia();
     }
 
     public void add(MarketDataMessage.BolsaStats stats) {
@@ -296,10 +307,15 @@ public class StadisticsController {
                 .collect(Collectors.toList());
     }
 
+    /**
+     * La key incluye la liquidacion: el servidor ya manda una fila por (symbol, exchange, settlType),
+     * asi que colapsar solo por symbol borraba de la tabla el mismo papel en CASH o NEXT_DAY cuando
+     * el filtro "Liquidacion" esta en "Todas".
+     */
     private List<MarketDataMessage.RankinSymbol> dedupeBySymbol(List<MarketDataMessage.RankinSymbol> source) {
         return source.stream()
                 .collect(Collectors.toMap(
-                        rs -> normalizeSymbol(rs.getSymbol()),
+                        rs -> normalizeSymbol(rs.getSymbol()) + "|" + rs.getSettlType().name(),
                         rs -> rs,
                         (a, b) -> a,
                         java.util.LinkedHashMap::new
@@ -480,6 +496,93 @@ public class StadisticsController {
         }
     }
 
+    /**
+     * Pinta bajo el numero de cada dia la cantidad de trades que hay para esa fecha, para
+     * poder ver de un vistazo que dias tienen data antes de seleccionarlos.
+     *
+     * La fuente es Repository.getBolsaStatsHistory(), que el candle-service llena con hasta
+     * mongo.market.history.days de historico. No se deshabilitan los dias sin data: al
+     * seleccionar una fecha se pide igual al servidor (requestHistoricalStatsForDate), asi
+     * que bloquearlos impediria consultar un dia que el front todavia no tiene cacheado.
+     */
+    private void setupStatsDateCalendar() {
+        ObservableList<MarketDataMessage.BolsaStats> historial = Repository.getBolsaStatsHistory();
+        reindexarHistorial(historial);
+
+        dpStatsDate.setDayCellFactory(picker -> new DateCell() {
+            @Override
+            public void updateItem(LocalDate item, boolean empty) {
+                super.updateItem(item, empty);
+                getStyleClass().remove("stats-day-con-data");
+                if (empty || item == null) {
+                    setGraphic(null);
+                    setTooltip(null);
+                    return;
+                }
+                MarketDataMessage.BolsaStats stats = statsPorDia.get(item);
+                if (stats == null) {
+                    setGraphic(null);
+                    setTooltip(null);
+                    return;
+                }
+                getStyleClass().add("stats-day-con-data");
+                setContentDisplay(ContentDisplay.BOTTOM);
+                setGraphicTextGap(0);
+
+                // Hay dias con volumen y monto reales pero sin conteo de trades (llegaron por la
+                // estadistica diaria, no por trades individuales). Marcarlos con un punto en vez de
+                // dejar la celda en blanco: si no, un dia con 140 mil millones transados se ve vacio.
+                boolean conTrades = stats.getNumeroTotalTrades() > 0;
+                Label marca = new Label(conTrades ? compacto(stats.getNumeroTotalTrades()) : "·");
+                marca.getStyleClass().add("stats-day-dato");
+                setGraphic(marca);
+
+                setTooltip(new Tooltip(
+                        (conTrades
+                                ? "Trades: " + dfInt.format(stats.getNumeroTotalTrades())
+                                : "Trades: sin conteo (estadistica diaria)")
+                                + "\nMonto: " + dfNumber.format(stats.getMontoTotal())
+                                + "\nVolumen: " + dfNumber.format(stats.getTotalVolumen())));
+            }
+
+        });
+
+        // El historico llega por WebSocket despues de abrir la ventana: hay que repintar.
+        historial.addListener((javafx.collections.ListChangeListener<MarketDataMessage.BolsaStats>) c -> {
+            reindexarHistorial(historial);
+            Platform.runLater(this::repintarCalendario);
+        });
+    }
+
+    /**
+     * Indexa el historico por fecha una sola vez por cambio, en vez de recorrer la lista
+     * dentro de cada celda: son ~42 celdas por repintado contra hasta 2000 entradas.
+     * Se queda con el ultimo stats de cada dia, que es el mas completo.
+     */
+    private void reindexarHistorial(List<MarketDataMessage.BolsaStats> historial) {
+        Map<LocalDate, MarketDataMessage.BolsaStats> indice = new java.util.HashMap<>();
+        for (MarketDataMessage.BolsaStats s : historial) {
+            indice.put(resolveStatsDate(s), s);
+        }
+        statsPorDia = indice;
+    }
+
+    /** Fuerza a DatePicker a reconstruir las celdas reaplicando el factory. */
+    private void repintarCalendario() {
+        if (dpStatsDate == null) return;
+        javafx.util.Callback<DatePicker, DateCell> factory = dpStatsDate.getDayCellFactory();
+        dpStatsDate.setDayCellFactory(null);
+        dpStatsDate.setDayCellFactory(factory);
+    }
+
+    /** 12400 -> "12,4K". Cabe en la celda del calendario. */
+    private String compacto(long valor) {
+        if (valor <= 0) return "";
+        if (valor >= 1_000_000) return dfNumber.format(valor / 1_000_000d) + "M";
+        if (valor >= 1_000)     return dfNumber.format(valor / 1_000d) + "K";
+        return String.valueOf(valor);
+    }
+
     private LocalDate resolveStatsDate(MarketDataMessage.BolsaStats stats) {
         Instant ts = resolveStatsInstant(stats);
         return ts.atZone(ZoneId.of("America/Santiago")).toLocalDate();
@@ -507,7 +610,10 @@ public class StadisticsController {
             } catch (Exception ignored) {
             }
         }
-        return Instant.EPOCH;
+        // Sin marca de tiempo son estadisticas en vivo: valen para hoy. Devolver EPOCH las
+        // fechaba en 31-12-1969 (EPOCH en America/Santiago) y arrastraba esa fecha al
+        // DatePicker, al calendario y al eje del grafico historico.
+        return Instant.now();
     }
 
     private void refreshTopVolumeChart(List<MarketDataMessage.RankinSymbol> source) {
@@ -566,6 +672,127 @@ public class StadisticsController {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    /**
+     * Los valores del panel se validan fuera de la app (planillas, scripts contra Mongo), asi que
+     * tienen que poder copiarse en vez de transcribirse a mano: click en un KPI copia su valor,
+     * Ctrl+click copia "etiqueta<TAB>valor", Ctrl+C copia las filas seleccionadas de la tabla y
+     * "Copiar Datos" copia el panel completo en TSV.
+     */
+    private void configurarCopia() {
+        registrarKpi("Volumen Total", totalVolume);
+        registrarKpi("Monto Total", montoTotal);
+        registrarKpi("Capitalizacion Total", totalMarketCap);
+        registrarKpi("Tendencia General", marketTrendLabel);
+        registrarKpi("Volatilidad Promedio", avgVolatilityLabel);
+        registrarKpi("Sentimiento Positivo", positiveSentimentLabel);
+        registrarKpi("Sentimiento Negativo", negativeSentimentLabel);
+        registrarKpi("Rango Promedio", lblRangoPromedio);
+        registrarKpi("Indice Promedio", lblIndicePromedio);
+        registrarKpi("Indice Maximo", lblIndiceMaximo);
+        registrarKpi("Indice Minimo", lblIndiceMinimo);
+        registrarKpi("Liquidez Media", lblLiquidezMedia);
+        registrarKpi("N Total Trades", lblNumeroTotalTrades);
+        registrarKpi("Cap. Promedio", lblCapitalizacionPromedio);
+        registrarKpi("Precio Prom. Acum.", lblPrecioPromedioAcumulado);
+        registrarKpi("Precio Max. Acum.", lblPrecioMaximoAcumulado);
+        registrarKpi("Tendencia Promedio", lblTendenciaPromedio);
+
+        kpiPorNombre.forEach((nombre, valor) -> {
+            valor.setCursor(javafx.scene.Cursor.HAND);
+            Tooltip.install(valor, new Tooltip("Click: copia el valor\nCtrl+click: copia etiqueta y valor"));
+            valor.setOnMouseClicked(e ->
+                    copiar(e.isShortcutDown() ? nombre + "\t" + valor.getText() : valor.getText(), valor));
+        });
+
+        if (rankinSymbolTable == null) {
+            return;
+        }
+        rankinSymbolTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+
+        MenuItem copiarSeleccion = new MenuItem("Copiar seleccion");
+        copiarSeleccion.setOnAction(e -> copiar(tablaComoTsv(true), rankinSymbolTable));
+        MenuItem copiarTabla = new MenuItem("Copiar tabla completa");
+        copiarTabla.setOnAction(e -> copiar(tablaComoTsv(false), rankinSymbolTable));
+        MenuItem copiarPanel = new MenuItem("Copiar todo el panel");
+        copiarPanel.setOnAction(e -> copiarTodo());
+        rankinSymbolTable.setContextMenu(new ContextMenu(copiarSeleccion, copiarTabla, copiarPanel));
+
+        rankinSymbolTable.setOnKeyPressed(e -> {
+            if (COPIAR.match(e)) {
+                copiar(tablaComoTsv(true), rankinSymbolTable);
+                e.consume();
+            }
+        });
+    }
+
+    private void registrarKpi(String nombre, Label valor) {
+        if (valor != null) {
+            kpiPorNombre.put(nombre, valor);
+        }
+    }
+
+    /** Copia el panel entero: contexto del filtro + KPIs + tabla, en TSV pegable en una planilla. */
+    @FXML
+    private void copiarTodo() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Fecha Stats\t").append(dpStatsDate != null && dpStatsDate.getValue() != null ? dpStatsDate.getValue() : "").append('\n');
+        sb.append("Indicador\t").append(filterCombo != null && filterCombo.getValue() != null ? filterCombo.getValue() : "").append('\n');
+        sb.append("Liquidacion\t").append(cmbSettlType != null && cmbSettlType.getValue() != null ? cmbSettlType.getValue().name() : "Todas").append('\n');
+        if (lastStats != null) {
+            sb.append("Id\t").append(lastStats.getId()).append('\n');
+            sb.append("Hora Inicio\t").append(lastStats.getHoraInicio()).append('\n');
+            sb.append("Hora Fin\t").append(lastStats.getHoraFin()).append('\n');
+        }
+        sb.append('\n');
+        kpiPorNombre.forEach((nombre, valor) -> sb.append(nombre).append('\t').append(valor.getText()).append('\n'));
+        sb.append('\n').append(tablaComoTsv(false));
+        copiar(sb.toString(), kpiWrap != null ? kpiWrap : rankinSymbolTable);
+    }
+
+    /** Toma el texto de las columnas, no el modelo: lo que se copia es exactamente lo que se ve. */
+    private String tablaComoTsv(boolean soloSeleccion) {
+        List<MarketDataMessage.RankinSymbol> filas =
+                soloSeleccion && !rankinSymbolTable.getSelectionModel().getSelectedItems().isEmpty()
+                        ? new ArrayList<>(rankinSymbolTable.getSelectionModel().getSelectedItems())
+                        : new ArrayList<>(tableItems);
+
+        StringBuilder sb = new StringBuilder("Instrumento\tPrecio\t24h %\tVolumen\tMonto\tLiquidacion\n");
+        for (MarketDataMessage.RankinSymbol fila : filas) {
+            sb.append(colSymbol.getCellData(fila)).append('\t')
+              .append(colPrecioUltimo.getCellData(fila)).append('\t')
+              .append(colVariacionPct.getCellData(fila)).append('\t')
+              .append(colVolumen.getCellData(fila)).append('\t')
+              .append(colMonto.getCellData(fila)).append('\t')
+              .append(colLiquid.getCellData(fila)).append('\n');
+        }
+        return sb.toString();
+    }
+
+    private void copiar(String texto, Node ancla) {
+        if (texto == null || texto.isBlank()) {
+            return;
+        }
+        ClipboardContent contenido = new ClipboardContent();
+        contenido.putString(texto);
+        Clipboard.getSystemClipboard().setContent(contenido);
+        avisarCopiado(ancla);
+    }
+
+    /** Sin este aviso no hay forma de saber si el click copio algo. */
+    private void avisarCopiado(Node ancla) {
+        if (ancla == null || ancla.getScene() == null || ancla.getScene().getWindow() == null) {
+            return;
+        }
+        javafx.geometry.Bounds bounds = ancla.localToScreen(ancla.getBoundsInLocal());
+        if (bounds == null) {
+            return;
+        }
+        avisoCopia.show(ancla, bounds.getMinX(), bounds.getMaxY());
+        javafx.animation.PauseTransition cierre = new javafx.animation.PauseTransition(javafx.util.Duration.millis(700));
+        cierre.setOnFinished(e -> avisoCopia.hide());
+        cierre.play();
     }
 
     private String normalizeSymbol(String symbol) {

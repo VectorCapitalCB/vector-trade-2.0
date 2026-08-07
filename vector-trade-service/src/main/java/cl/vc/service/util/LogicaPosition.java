@@ -17,7 +17,6 @@ public class LogicaPosition {
     private ActorRef self;
     private BlotterMessage.Balance.Builder balance;
     private HashMap<String, BlotterMessage.PositionHistory.Builder> snapshotPositionHistoryMaps;
-    private HashMap<String, RoutingMessage.OrderReplaceRequest> replaceAux = new HashMap<>();
     private HashMap<String, RoutingMessage.Order> orderAux = new HashMap<>();
     private HashMap<String, RoutingMessage.Order> tradesAux = new HashMap<>();
     private HashMap<String, BlotterMessage.Simultaneas> simultaneasHashMap;
@@ -34,7 +33,7 @@ public class LogicaPosition {
 
     public boolean calculateBalanceReplace(RoutingMessage.NewOrderRequest orders) {
 
-        if (margin == -1) {
+        if (margin == -1 || orders.getOrder().getOperator().toLowerCase().contains("voultech")) {
             return true; //quiere decir que no tiene limites
         }
 
@@ -59,7 +58,7 @@ public class LogicaPosition {
             }
 
 
-            if (balance.getSaldoDisponible() > amount) {
+            if (balance.getSaldoDisponible() > amount || orders.getOrder().getOperator().toLowerCase().contains("voultech")) {
                 return true;
 
             } else {
@@ -114,22 +113,21 @@ public class LogicaPosition {
 
     public boolean calculateBalanceReplace(RoutingMessage.OrderReplaceRequest msg, RoutingMessage.Order orders) {
 
-        replaceAux.put(msg.getId(), msg);
-
-        if (margin == -1) {
+        if (margin == -1 || orders.getOperator().toLowerCase().contains("voultech")) {
             return true;
         }
 
         if (orders.getSide().equals(RoutingMessage.Side.BUY)) {
 
-            Double amountOld = orders.getPrice() * orders.getOrderQty();
-            Double amountNew = msg.getPrice() * msg.getQuantity();
-
-            Double balanceAuxMayor = balance.getSaldoDisponible() + (amountOld - amountNew);
+            double oldActiveQty = activeQuantity(orders);
+            double newActiveQty = Math.max(0d, msg.getQuantity() - orders.getCumQty());
+            double amountOld = orders.getPrice() * oldActiveQty;
+            double amountNew = msg.getPrice() * newActiveQty;
+            double balanceAfterReplace = balance.getSaldoDisponible() + amountOld - amountNew;
 
             if (amountOld > amountNew) {
                 return true;
-            } else if (balance.getSaldoDisponible() + balanceAuxMayor >= 0 && balance.getSaldoDisponible() >= 0) {
+            } else if (balanceAfterReplace >= 0d && balance.getSaldoDisponible() >= 0d) {
                 return true;
             } else {
                 RoutingMessage.OrderCancelReject.Builder orderRejected = RoutingMessage.OrderCancelReject.newBuilder();
@@ -147,12 +145,15 @@ public class LogicaPosition {
 
                 BlotterMessage.PositionHistory.Builder accion = snapshotPositionHistoryMaps.get(orders.getSymbol());
 
-                if (orders.getOrderQty() == msg.getQuantity()) {
+                double oldActiveQty = activeQuantity(orders);
+                double newActiveQty = Math.max(0d, msg.getQuantity() - orders.getCumQty());
+
+                if (Double.compare(oldActiveQty, newActiveQty) == 0) {
                     return true;
-                } else if (msg.getQuantity() < orders.getOrderQty()) {
+                } else if (newActiveQty < oldActiveQty) {
                     return true;
 
-                } else if (accion.getAvailableQuantity() >= (msg.getQuantity() - orders.getOrderQty())) {
+                } else if (accion.getAvailableQuantity() >= (newActiveQty - oldActiveQty)) {
                     return true;
 
                 } else {
@@ -179,10 +180,10 @@ public class LogicaPosition {
         return true;
     }
 
-    public void orderUpdate(RoutingMessage.Order order, RoutingMessage.Order orderOld) {
+    public boolean orderUpdate(RoutingMessage.Order order, RoutingMessage.Order orderOld) {
 
-        if (margin == -1) {
-            return;
+        if (margin == -1 || order.getOperator().toLowerCase().contains("voultech")) {
+            return false;
         }
 
         orderAux.put(order.getId(), order);
@@ -194,24 +195,20 @@ public class LogicaPosition {
         orderAux.values().forEach(s -> {
 
             if (s.getOrdStatus().equals(RoutingMessage.OrderStatus.NEW)
-                    || s.getOrdStatus().equals(RoutingMessage.OrderStatus.REPLACED)) {
+                    || s.getOrdStatus().equals(RoutingMessage.OrderStatus.REPLACED)
+                    || s.getOrdStatus().equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED)) {
 
-                if (s.getSide().equals(RoutingMessage.Side.BUY)) {
-                    Double aux = balance.getOrdenesActivasCompras() + (order.getPrice() * order.getOrderQty());
-                    balance.setOrdenesActivasCompras(aux);
-                } else if (s.getSide().equals(RoutingMessage.Side.SELL)) {
-                    Double aux = balance.getOrdenesActivasVentas() + (order.getPrice() * order.getOrderQty());
-                    balance.setOrdenesActivasVentas(aux);
+                double activeQty = activeQuantity(s);
+                if (activeQty <= 0d) {
+                    return;
                 }
-
-            } else if (s.getOrdStatus().equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED)
-            || s.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)) {
+                double activeNotional = s.getPrice() * activeQty;
 
                 if (s.getSide().equals(RoutingMessage.Side.BUY)) {
-                    Double aux = balance.getOrdenesActivasCompras() + (order.getPrice() * order.getLeaves());
+                    Double aux = balance.getOrdenesActivasCompras() + activeNotional;
                     balance.setOrdenesActivasCompras(aux);
                 } else if (s.getSide().equals(RoutingMessage.Side.SELL)) {
-                    Double aux = balance.getOrdenesActivasVentas() + (order.getPrice() * order.getLeaves());
+                    Double aux = balance.getOrdenesActivasVentas() + activeNotional;
                     balance.setOrdenesActivasVentas(aux);
                 }
             }
@@ -257,34 +254,33 @@ public class LogicaPosition {
 
             if (order.getSide().equals(RoutingMessage.Side.BUY)) {
 
-                RoutingMessage.OrderReplaceRequest replace = replaceAux.get(order.getId());
-
-                Double amountOld = orderOld.getPrice() * orderOld.getOrderQty();
-                Double amountnew = order.getPrice() * order.getOrderQty();
+                double amountOld = orderOld.getPrice() * activeQuantity(orderOld);
+                double amountnew = order.getPrice() * activeQuantity(order);
 
                 Double balancs = balance.getSaldoDisponible() + amountOld - amountnew;
                 balance.setSaldoDisponible(balancs);
 
             } else if (order.getSide().equals(RoutingMessage.Side.SELL)) {
 
-                RoutingMessage.OrderReplaceRequest replace = replaceAux.get(order.getId());
+                double oldActiveQty = activeQuantity(orderOld);
+                double newActiveQty = activeQuantity(order);
 
-                if (orderOld.getOrderQty() == replace.getQuantity()) {
+                if (Double.compare(oldActiveQty, newActiveQty) == 0) {
                     //no se hace nada
 
-                } else if (orderOld.getOrderQty() < order.getOrderQty()) {
+                } else if (oldActiveQty < newActiveQty) {
 
                     BlotterMessage.PositionHistory.Builder positionHIstory = snapshotPositionHistoryMaps.get(order.getSymbol());
-                    Double aux = positionHIstory.getAvailableQuantity() - (order.getOrderQty() - orderOld.getOrderQty());
+                    Double aux = positionHIstory.getAvailableQuantity() - (newActiveQty - oldActiveQty);
                     positionHIstory.setAvailableQuantity(aux);
                     snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
 
 
-                } else if (orderOld.getOrderQty() > order.getOrderQty()) {
+                } else if (oldActiveQty > newActiveQty) {
                     //aumentar la diferencia
 
                     BlotterMessage.PositionHistory.Builder positionHIstory = snapshotPositionHistoryMaps.get(order.getSymbol());
-                    Double aux = positionHIstory.getAvailableQuantity() + (orderOld.getOrderQty() - order.getOrderQty());
+                    Double aux = positionHIstory.getAvailableQuantity() + (oldActiveQty - newActiveQty);
                     positionHIstory.setAvailableQuantity(aux);
                     snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
                 }
@@ -301,10 +297,10 @@ public class LogicaPosition {
 
             tradesAux.values().forEach(s -> {
                 if (s.getSide().equals(RoutingMessage.Side.BUY)) {
-                    Double aux = balance.getOrdenesCalzadasCompras() + (order.getLastPx() * order.getLastQty());
+                    Double aux = balance.getOrdenesCalzadasCompras() + (s.getLastPx() * s.getLastQty());
                     balance.setOrdenesCalzadasCompras(aux);
                 } else if (s.getSide().equals(RoutingMessage.Side.SELL)) {
-                    Double aux = balance.getOrdenesCalzadasVentas() + (order.getLastPx() * order.getLastQty());
+                    Double aux = balance.getOrdenesCalzadasVentas() + (s.getLastPx() * s.getLastQty());
                     balance.setOrdenesCalzadasVentas(aux);
                 }
             });
@@ -344,18 +340,19 @@ public class LogicaPosition {
 
                 String id = order.getSymbol() + IDGenerator.conversorExdestination(order.getSecurityExchange()).name();
                 Double amount = 0d;
+                double canceledQty = activeQuantity(order);
 
                 if (MainApp.getSecurityExchangeSymbolsMaps().containsKey(id)) {
                     if (MainApp.getSecurityExchangeSymbolsMaps().get(id).getCurrency().equals(RoutingMessage.Currency.USD.name())) {
                         String dolar = "USD/CLP" + "DATATEC_XBCL" + "T2" + "CS";
                         BookSnapshot snapshot = MainApp.getSnapshotHashMap().get(dolar);
-                        amount = order.getPrice() * (order.getOrderQty() - order.getCumQty()) * snapshot.getStatistic().getAskPx();
+                        amount = order.getPrice() * canceledQty * snapshot.getStatistic().getAskPx();
 
                     } else {
-                        amount = order.getPrice() * (order.getOrderQty() - order.getCumQty());
+                        amount = order.getPrice() * canceledQty;
                     }
                 } else {
-                    amount = order.getPrice() * order.getOrderQty();
+                    amount = order.getPrice() * canceledQty;
                 }
 
                 balance.setSaldoDisponible(balance.getSaldoDisponible() + amount);
@@ -363,7 +360,7 @@ public class LogicaPosition {
             } else if (order.getSide().equals(RoutingMessage.Side.SELL)) {
 
                 BlotterMessage.PositionHistory.Builder positionHIstory = snapshotPositionHistoryMaps.get(order.getSymbol());
-                double qtyPositions = positionHIstory.getAvailableQuantity() + order.getOrderQty() - order.getCumQty();
+                double qtyPositions = positionHIstory.getAvailableQuantity() + activeQuantity(order);
                 positionHIstory.setAvailableQuantity(qtyPositions);
                 snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
 
@@ -373,11 +370,22 @@ public class LogicaPosition {
         }
 
 
-        BlotterMessage.SnapshotPositionHistory.Builder snapshotPositionHistory = BlotterMessage.SnapshotPositionHistory.newBuilder();
-        snapshotPositionHistoryMaps.values().forEach(s -> snapshotPositionHistory.addPositionsHistory(s));
-        self.tell(snapshotPositionHistory.build(), ActorRef.noSender());
-        self.tell(balance.build(), ActorRef.noSender());
+        return true;
 
     }
-}
 
+    private double activeQuantity(RoutingMessage.Order order) {
+        if (order.getLeaves() > 0d) {
+            return order.getLeaves();
+        }
+        double remaining = order.getOrderQty() - order.getCumQty();
+        if (remaining > 0d) {
+            return remaining;
+        }
+        if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.NEW)
+                || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REPLACED)) {
+            return order.getOrderQty();
+        }
+        return 0d;
+    }
+}

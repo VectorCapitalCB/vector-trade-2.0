@@ -112,7 +112,12 @@ public class BookVerticalController {
                     return;
                 }
 
-                if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
+                // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
+                // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
+                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
+                           + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
+                } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-border-color: #14e8cf; -fx-text-fill: #ffffff; -fx-background-color: #056774;");
                 } else if (Repository.getUser() != null && Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
@@ -147,7 +152,12 @@ public class BookVerticalController {
                     return;
                 }
 
-                if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
+                // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
+                // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
+                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
+                           + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
+                } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-border-color: #14e8cf; -fx-text-fill: #ffffff; -fx-background-color: #056774;");
                 } else if (Repository.getUser() != null && Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
@@ -191,7 +201,12 @@ public class BookVerticalController {
                         setText(item);
                         setScaleY(-1);
 
-                        if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
+                        // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
+                // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
+                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
+                           + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
+                } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
                             setStyle(STRING1);
                         } else if (Repository.getUser()!= null && Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
                             setStyle(STRING);
@@ -240,7 +255,12 @@ public class BookVerticalController {
                         setText(item);
                         setScaleY(-1);
 
-                        if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
+                        // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
+                // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
+                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                    setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
+                           + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
+                } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
                             setStyle(y);
                         } else if (Repository.getUser() != null &&  Repository.getUser().getAccountList().contains(data.getAccount())
                                 && !data.getAccount().isEmpty()) {

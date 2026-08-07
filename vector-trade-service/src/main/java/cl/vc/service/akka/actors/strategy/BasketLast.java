@@ -37,16 +37,16 @@ public class BasketLast implements StrategyI {
 
         this.order = order;
 
-        if (order.getMaxFloor() <= 0d) {
-            maxfloor = order.getOrderQty();
-        } else {
-            maxfloor = order.getMaxFloor();
-        }
+        maxfloor = order.getMaxFloor();
 
         this.actorStrategy = actorStrategy;
         icebergperc = order.getIcebergPercentage();
         this.log = fileLog;
         this.actorGroupPerOrder = actorGroupPerOrder;
+    }
+
+    private double replaceMaxFloor() {
+        return StrategyReplaceSupport.maxFloorForReplace(maxfloor, order);
     }
 
 
@@ -81,9 +81,7 @@ public class BasketLast implements StrategyI {
         limit = orderReplaceRequest.getLimit();
         icebergperc = orderReplaceRequest.getIcebergPercentage();
 
-        if (orderReplaceRequest.getMaxFloor() <= 0d) {
-            maxfloor = orderReplaceRequest.getQuantity();
-        } else {
+        if (orderReplaceRequest.getMaxFloor() > 0d) {
             maxfloor = orderReplaceRequest.getMaxFloor();
         }
 
@@ -258,7 +256,7 @@ public class BasketLast implements StrategyI {
                             .setId(order.getId())
                             .setPrice(px)
                             .setLimit(order.getLimit())
-                            .setMaxFloor(maxfloor)
+                            .setMaxFloor(replaceMaxFloor())
                             .setQuantity(order.getOrderQty())
                             .build();
                     MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(orderReplaceRequest);
@@ -318,7 +316,7 @@ public class BasketLast implements StrategyI {
                             .setPrice(px)
                             .setLimit(order.getLimit())
                             .setIcebergPercentage(icebergperc)
-                            .setMaxFloor(maxfloor)
+                            .setMaxFloor(replaceMaxFloor())
                             .setQuantity(order.getOrderQty())
                             .build();
                     MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(replace);
@@ -335,7 +333,6 @@ public class BasketLast implements StrategyI {
     }
 
 }
-
 
 
 

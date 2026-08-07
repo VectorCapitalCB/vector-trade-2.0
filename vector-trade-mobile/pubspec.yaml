@@ -1,0 +1,31 @@
+name: vector_trade_mobile
+description: "Vector Trade 2.0 - cliente movil (Android / iOS) del OMS."
+publish_to: 'none'
+
+version: 3.1.7+1
+
+environment:
+  sdk: ^3.11.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  cupertino_icons: ^1.0.8
+  web_socket_channel: ^3.0.3
+  protobuf: ^6.0.0
+  fixnum: ^1.1.1
+  encrypt: ^5.0.3
+  flutter_secure_storage: ^10.3.1
+  intl: ^0.20.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/

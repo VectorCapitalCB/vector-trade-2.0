@@ -20,6 +20,9 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+
+import java.util.HashMap;
+import java.util.Map;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
@@ -175,6 +178,10 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
         }
         if ("news".equals(channelName)) {
             handleNewsMessage(message);
+            return;
+        }
+        if ("candle".equals(channelName)) {
+            handleCandleMessage(message);
             return;
         }
         log.info("Received STRING [{}]: {}", channelName, message);
@@ -606,6 +613,45 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
             }
         } catch (Exception e) {
             log.warn("No se pudo solicitar snapshot de news: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Canal candle. Hoy solo interesa "intraday_series": la serie del dia por instrumento
+     * que calcula el backend, para que el mini grafico de Datos del Mercado se vea al toque
+     * en vez de esperar a acumular ticks en el cliente.
+     *
+     * Los null del JSON (antes del primer trade del papel) se guardan como Double.NaN y el
+     * dibujo los salta; asi se distingue "sin dato" de "precio cero".
+     */
+    private void handleCandleMessage(String raw) {
+        try {
+            JSONObject json = new JSONObject(raw);
+            if (!"intraday_series".equals(json.optString("type"))) {
+                return;
+            }
+            var series = json.optJSONArray("series");
+            if (series == null) return;
+
+            Map<String, double[]> acumulado = new HashMap<>();
+            for (int i = 0; i < series.length(); i++) {
+                JSONObject s = series.getJSONObject(i);
+                String key = s.optString("key", "");
+                var puntos = s.optJSONArray("points");
+                if (key.isEmpty() || puntos == null || puntos.length() == 0) continue;
+
+                double[] serie = new double[puntos.length()];
+                for (int p = 0; p < puntos.length(); p++) {
+                    serie[p] = puntos.isNull(p) ? Double.NaN : puntos.getDouble(p);
+                }
+                acumulado.put(key, serie);
+            }
+            if (!acumulado.isEmpty()) {
+                Platform.runLater(() -> Repository.setSeriesIntradia(acumulado));
+                log.info("[Tendencia] series intradia recibidas: {}", acumulado.size());
+            }
+        } catch (Exception e) {
+            log.error("No se pudo procesar el mensaje del canal candle", e);
         }
     }
 

@@ -23,6 +23,11 @@ import java.util.HashMap;
 @Slf4j
 public class ActorStrategy extends AbstractActor {
 
+    /** Mensaje interno: chequear si la estrategia sigue SIN market data tras el timeout. */
+    private static final class MkdTimeoutCheck {
+        static final MkdTimeoutCheck INSTANCE = new MkdTimeoutCheck();
+    }
+
     private static final Object lock = new Object();
     private final RoutingMessage.Order order;
     private final ActorRef actorGroupPerOrder;
@@ -58,6 +63,8 @@ public class ActorStrategy extends AbstractActor {
     @Override
     public void preStart() {
         try {
+
+            MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order));
 
 
             synchronized (lock) {
@@ -105,8 +112,23 @@ public class ActorStrategy extends AbstractActor {
                     .setSecurityType(order.getSecurityType())
                     .build();
 
-            MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order));
+
             subscribcion();
+
+            // Si tras N segundos la estrategia sigue SIN un libro usable (sin market data),
+            // se rechaza la orden hacia el front: jamás dejarla en PENDING_NEW invisible.
+            int mkdRejectSeconds = 20;
+            try {
+                mkdRejectSeconds = Integer.parseInt(
+                        MainApp.getProperties().getProperty("strategy.mkd.reject.seconds", "20").trim());
+            } catch (Exception ignore) {
+            }
+            if (mkdRejectSeconds > 0) {
+                getContext().getSystem().scheduler().scheduleOnce(
+                        java.time.Duration.ofSeconds(mkdRejectSeconds),
+                        getSelf(), MkdTimeoutCheck.INSTANCE,
+                        getContext().getDispatcher(), ActorRef.noSender());
+            }
 
         } catch (Exception e) {
             fileLog.error(e.getMessage(), e);
@@ -125,16 +147,26 @@ public class ActorStrategy extends AbstractActor {
         MainApp.getMessageEventBus().subscribe(getSelf(), order.getId());
 
 
-        if (MainApp.getSnapshotHashMap().containsKey(idSubscribe)) {
-            BookSnapshot snapshot = MainApp.getSnapshotHashMap().get(idSubscribe);
+        BookSnapshot snapshot = MainApp.getSnapshotHashMap().get(idSubscribe);
+        if (snapshot != null) {
             getSelf().tell(snapshot, ActorRef.noSender());
-        } else {
-            subscribe =  subscribe.toBuilder().setId(idSubscribe).build();
+        }
+
+        // Trades o estadisticas pueden crear un snapshot sin profundidad. En ese caso
+        // el snapshot no reemplaza la suscripcion al libro que necesita la estrategia.
+        if (!hasBookDepth(snapshot)) {
+            log.warn("[MKD/Strategy] Snapshot sin profundidad para {} ({}); solicitando FULL_BOOK.",
+                    order.getSymbol(), idSubscribe);
+            subscribe = subscribe.toBuilder().setId(idSubscribe).build();
             MainApp.subscribeSymbol(subscribe, idSubscribe);
-            MainApp.getConnections_mkd().get(subscribe.getSecurityExchange()).sendMessage(subscribe);
         }
 
 
+    }
+
+    static boolean hasBookDepth(BookSnapshot snapshot) {
+        return snapshot != null
+                && ((!snapshot.getBid().isEmpty()) || (!snapshot.getAsk().isEmpty()));
     }
 
 
@@ -162,11 +194,29 @@ public class ActorStrategy extends AbstractActor {
                 .match(RoutingMessage.OrderCancelReject.class, this::onRejected)
                 .match(SessionsMessage.Disconnect.class, this::onDisconect)
                 .match(SessionsMessage.Connect.class, this::onConect)
+                .match(MkdTimeoutCheck.class, this::onMkdTimeoutCheck)
                 .build();
     }
 
     public void onDisconect(SessionsMessage.Disconnect disconnect) {
 
+    }
+
+    /** Timeout sin market data: si la estrategia sigue esperando el primer libro usable,
+     *  rechaza la orden hacia el front (no dejarla en el limbo PENDING_NEW). */
+    private void onMkdTimeoutCheck(MkdTimeoutCheck check) {
+        try {
+            if (strategy != null && strategy.awaitingFirstMarketData()) {
+                log.warn("orden {} {} SIN market data tras timeout -> se rechaza hacia el front",
+                        order.getSymbol(), order.getId());
+                if (fileLog != null) {
+                    fileLog.warn("TIMEOUT sin market data ({}) -> REJECT hacia el front", idSubscribe);
+                }
+                strategy.rejectNoMarketData();
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
     }
 
     public void onConect(SessionsMessage.Connect onconect) {

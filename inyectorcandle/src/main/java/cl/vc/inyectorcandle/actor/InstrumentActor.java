@@ -1,6 +1,7 @@
 package cl.vc.inyectorcandle.actor;
 
 import cl.vc.inyectorcandle.model.Candle;
+import cl.vc.inyectorcandle.model.InstrumentDailyStats;
 import cl.vc.inyectorcandle.model.InstrumentKey;
 import cl.vc.inyectorcandle.model.InstrumentStats;
 import cl.vc.inyectorcandle.model.MarketDataEvent;
@@ -39,6 +40,11 @@ public class InstrumentActor {
     private final CandleService candleService;
     private final BlockingQueue<InstrumentCommand> mailbox = new LinkedBlockingQueue<>();
     private final Thread worker;
+    private final long statsThrottleNs;
+    private final long openCandleFlushNs;
+
+    private long lastStatsAtNs;
+    private long lastOpenCandleAtNs;
 
     private volatile boolean running = true;
 
@@ -69,15 +75,25 @@ public class InstrumentActor {
     private BigDecimal rsiSeedLoss = BigDecimal.ZERO;
     private int rsiSeedCount;
     private LocalDate currentTradingDay;
+    private long dayStartEpochMs;
+    private long dayEndEpochMs;
+    private long flushedTrades = -1;
     private BigDecimal previousClose;
     private BigDecimal intradayVolume = BigDecimal.ZERO;
     private BigDecimal intradayTurnover = BigDecimal.ZERO;
+    private BigDecimal dayOpen;
+    private BigDecimal dayHigh;
+    private BigDecimal dayLow;
+    private long dayTrades;
     private final Map<String, TradeEvent> activeTrades = new HashMap<>();
 
-    public InstrumentActor(InstrumentKey key, List<Duration> timeframes, MongoMarketRepository repository) {
+    public InstrumentActor(InstrumentKey key, List<Duration> timeframes, MongoMarketRepository repository,
+                           long statsThrottleMs, long openCandleFlushMs) {
         this.key = key;
         this.repository = repository;
         this.candleService = new CandleService(key, timeframes);
+        this.statsThrottleNs = Math.max(0L, statsThrottleMs) * 1_000_000L;
+        this.openCandleFlushNs = Math.max(0L, openCandleFlushMs) * 1_000_000L;
         this.worker = new Thread(this::runLoop, "actor-" + key.id());
         this.worker.start();
     }
@@ -109,6 +125,21 @@ public class InstrumentActor {
         );
     }
 
+    /**
+     * Estado del dia en curso con la misma forma que deja el inyector de logs, para que el front
+     * vea "hoy" igual que cualquier dia historico. Null si el instrumento aun no opero.
+     */
+    public InstrumentDailyStats dailySnapshot(String market, String fallbackCurrency) {
+        if (currentTradingDay == null || dayOpen == null) {
+            return null;
+        }
+        String currency = key.currency() == null || key.currency().startsWith("UNKNOWN")
+                ? fallbackCurrency : key.currency();
+        return new InstrumentDailyStats(market, key.symbol(), null, currency, currentTradingDay,
+                dayOpen, dayHigh, dayLow, lastPrice, lastPrice, previousClose,
+                intradayVolume, intradayTurnover, null, null, null, null, 0L, dayTrades, Instant.now());
+    }
+
     public void stop() {
         tell(new InstrumentCommand.Stop());
         try {
@@ -129,6 +160,8 @@ public class InstrumentActor {
                     onMarketData(onMarketData.event());
                 } else if (cmd instanceof InstrumentCommand.OnTrade onTrade) {
                     onTrade(onTrade.event());
+                } else if (cmd instanceof InstrumentCommand.Flush) {
+                    onFlush();
                 } else if (cmd instanceof InstrumentCommand.Stop) {
                     onStop();
                 }
@@ -148,10 +181,12 @@ public class InstrumentActor {
             bestAsk = event.price();
         }
 
-        repository.upsertInstrumentStats(snapshot());
+        publishStats(false);
     }
 
     private void onTrade(TradeEvent trade) {
+        rollDayIfNeeded(trade.eventTime());
+
         if (trade.mdEntryId() == null || trade.mdEntryId().isBlank()) {
             applyNewTrade(trade);
             return;
@@ -183,16 +218,12 @@ public class InstrumentActor {
 
         if (trade.price() != null) {
             lastPrice = trade.price();
-            updateDailyMetrics(trade.eventTime(), trade.price(), trade.quantity(), amount);
+            updateDailyMetrics(trade.price(), trade.quantity(), amount);
             updateIndicators(trade.price());
         }
 
-        List<Candle> finalized = candleService.onTrade(trade.eventTime(), trade.price(), trade.quantity(), amount);
-        for (Candle candle : finalized) {
-            repository.upsertCandle(candle);
-        }
-
-        repository.upsertInstrumentStats(snapshot());
+        persistCandles(candleService.onTrade(trade.eventTime(), trade.price(), trade.quantity(), amount));
+        publishStats(false);
     }
 
     private void applyUpsertTrade(TradeEvent trade) {
@@ -219,7 +250,7 @@ public class InstrumentActor {
         repository.insertTrade(trade);
         applyTradeDelta(previous, false);
         applyTradeDelta(trade, true);
-        repository.upsertInstrumentStats(snapshot());
+        publishStats(false);
     }
 
     private void applyDeleteTrade(TradeEvent trade) {
@@ -231,7 +262,7 @@ public class InstrumentActor {
         }
 
         applyTradeDelta(previous, false);
-        repository.upsertInstrumentStats(snapshot());
+        publishStats(false);
     }
 
     private void applyTradeDelta(TradeEvent trade, boolean add) {
@@ -257,21 +288,57 @@ public class InstrumentActor {
 
         if (trade.price() != null) {
             lastPrice = trade.price();
-            updateDailyMetrics(trade.eventTime(), trade.price(), trade.quantity(), amount);
+            updateDailyMetrics(trade.price(), trade.quantity(), amount);
             updateIndicators(trade.price());
         }
 
-        List<Candle> finalized = candleService.onTrade(trade.eventTime(), trade.price(), trade.quantity(), amount);
-        for (Candle candle : finalized) {
-            repository.upsertCandle(candle);
-        }
+        persistCandles(candleService.onTrade(trade.eventTime(), trade.price(), trade.quantity(), amount));
+        publishStats(false);
+    }
 
-        repository.upsertInstrumentStats(snapshot());
+    /**
+     * Barrido periodico: el throttle deja congelado el ultimo tramo de cada rafaga hasta el tick
+     * siguiente, y un instrumento que despues no vuelve a operar nunca lo persiste. El chequeo
+     * contra {@code flushedTrades} evita reescribir a los instrumentos quietos.
+     */
+    private void onFlush() {
+        if (flushedTrades == totalTrades) {
+            return;
+        }
+        flushedTrades = totalTrades;
+        lastOpenCandleAtNs = System.nanoTime();
+        candleService.flushAll().forEach(repository::upsertCandle);
+        publishStats(true);
     }
 
     private void onStop() {
         running = false;
         candleService.flushAll().forEach(repository::upsertCandle);
+        publishStats(true);
+    }
+
+    /**
+     * Persiste las velas cerradas siempre, y las abiertas con throttle: escribir la vela en curso
+     * en cada tick multiplicaria por N (timeframes) la escritura sin aportar informacion nueva.
+     */
+    private void persistCandles(List<Candle> finalized) {
+        for (Candle candle : finalized) {
+            repository.upsertCandle(candle);
+        }
+
+        long now = System.nanoTime();
+        if (!finalized.isEmpty() || now - lastOpenCandleAtNs >= openCandleFlushNs) {
+            lastOpenCandleAtNs = now;
+            candleService.flushAll().forEach(repository::upsertCandle);
+        }
+    }
+
+    private void publishStats(boolean force) {
+        long now = System.nanoTime();
+        if (!force && now - lastStatsAtNs < statsThrottleNs) {
+            return;
+        }
+        lastStatsAtNs = now;
         repository.upsertInstrumentStats(snapshot());
     }
 
@@ -292,20 +359,86 @@ public class InstrumentActor {
         prevTradePrice = price;
     }
 
-    private void updateDailyMetrics(Instant eventTime, BigDecimal price, BigDecimal qty, BigDecimal amount) {
+    /**
+     * Cambio de jornada. Los contadores que publica {@code instrument_stats} son del dia, no del
+     * proceso: sin este corte arrastran la sesion anterior, y sin la recuperacion desde Mongo un
+     * reinicio a media rueda deja la pestana de estadisticas con solo el tramo posterior al arranque.
+     * <p>
+     * La comparacion es contra los limites del dia en epoch-millis para no pagar un
+     * {@code atZone().toLocalDate()} por tick.
+     */
+    private void rollDayIfNeeded(Instant eventTime) {
+        long eventMs = eventTime.toEpochMilli();
+        if (eventMs >= dayStartEpochMs && eventMs < dayEndEpochMs) {
+            return;
+        }
+
         LocalDate tradingDay = eventTime.atZone(MARKET_ZONE).toLocalDate();
-        if (currentTradingDay == null || !currentTradingDay.equals(tradingDay)) {
-            currentTradingDay = tradingDay;
-            intradayVolume = BigDecimal.ZERO;
-            intradayTurnover = BigDecimal.ZERO;
-            vwapIntraday = null;
-            try {
-                previousClose = repository.findPreviousClose(key, tradingDay, MARKET_ZONE);
-            } catch (Exception e) {
-                LOG.warn("Cannot load previous close for {}", key.id(), e);
-                previousClose = null;
+        currentTradingDay = tradingDay;
+        dayStartEpochMs = tradingDay.atStartOfDay(MARKET_ZONE).toInstant().toEpochMilli();
+        dayEndEpochMs = tradingDay.plusDays(1).atStartOfDay(MARKET_ZONE).toInstant().toEpochMilli();
+
+        totalTrades = 0;
+        totalVolume = BigDecimal.ZERO;
+        totalTurnover = BigDecimal.ZERO;
+        intradayVolume = BigDecimal.ZERO;
+        intradayTurnover = BigDecimal.ZERO;
+        vwapIntraday = null;
+        dayOpen = null;
+        dayHigh = null;
+        dayLow = null;
+        dayTrades = 0;
+
+        try {
+            previousClose = repository.findPreviousClose(key, tradingDay, MARKET_ZONE);
+        } catch (Exception e) {
+            LOG.warn("Cannot load previous close for {}", key.id(), e);
+            previousClose = null;
+        }
+        try {
+            // El trade en curso todavia no se inserto, asi que lo recuperado es exactamente lo que
+            // dejaron corridas anteriores del proceso.
+            restoreDay(repository.loadDayTotals(key, tradingDay, MARKET_ZONE));
+        } catch (Exception e) {
+            LOG.warn("Cannot restore day {} for {}", tradingDay, key.id(), e);
+        }
+    }
+
+    private void restoreDay(MongoMarketRepository.DayTotals totals) {
+        if (totals == null || totals.trades() == 0) {
+            return;
+        }
+        totalTrades = totals.trades();
+        totalVolume = totals.volume();
+        totalTurnover = totals.turnover();
+        dayTrades = totals.trades();
+        intradayVolume = totals.volume();
+        intradayTurnover = totals.turnover();
+        dayOpen = totals.open();
+        dayHigh = totals.high();
+        dayLow = totals.low();
+        lastPrice = totals.last();
+        if (intradayVolume.signum() > 0) {
+            vwapIntraday = intradayTurnover.divide(intradayVolume, 6, RoundingMode.HALF_UP);
+        }
+        LOG.info("Estado del dia recuperado instrument={} trades={} volumen={} monto={}",
+                key.id(), totalTrades, totalVolume, totalTurnover);
+    }
+
+    private void updateDailyMetrics(BigDecimal price, BigDecimal qty, BigDecimal amount) {
+        if (dayOpen == null) {
+            dayOpen = price;
+            dayHigh = price;
+            dayLow = price;
+        } else {
+            if (price.compareTo(dayHigh) > 0) {
+                dayHigh = price;
+            }
+            if (price.compareTo(dayLow) < 0) {
+                dayLow = price;
             }
         }
+        dayTrades++;
 
         if (qty != null && qty.compareTo(BigDecimal.ZERO) > 0) {
             intradayVolume = intradayVolume.add(qty, MC);

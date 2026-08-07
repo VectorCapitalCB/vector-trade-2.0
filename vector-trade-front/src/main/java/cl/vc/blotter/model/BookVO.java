@@ -4,6 +4,7 @@ import cl.vc.blotter.Repository;
 import cl.vc.module.protocolbuff.generator.NumberGenerator;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
+import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleStringProperty;
@@ -223,6 +224,12 @@ public class BookVO {
                             ask.getOperator(),
                             ask.getSecurityExchange()));
                 });
+
+                // El lado no viene en la entrada: se deduce de la lista a la que pertenece.
+                // Lo necesita el libro para marcar los niveles donde el usuario tiene una
+                // orden viva (Repository.tieneOrdenVivaEn).
+                bidBook.forEach(e -> e.setSide(RoutingMessage.Side.BUY));
+                askBook.forEach(e -> e.setSide(RoutingMessage.Side.SELL));
             };
 
             if (Platform.isFxApplicationThread()) {

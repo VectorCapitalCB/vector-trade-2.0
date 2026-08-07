@@ -56,6 +56,10 @@ public class ChatMongoRepository {
                 new IndexOptions().name("idx_conversation_timestamp").background(true));
         collection.createIndex(Indexes.ascending("timestamp"),
                 new IndexOptions().name("idx_timestamp").background(true));
+        collection.createIndex(Indexes.ascending("fromUsernameNorm", "timestamp"),
+                new IndexOptions().name("idx_from_timestamp").background(true));
+        collection.createIndex(Indexes.ascending("toUsernameNorm", "timestamp"),
+                new IndexOptions().name("idx_to_timestamp").background(true));
 
         usersCollection.createIndex(Indexes.ascending("usernameNorm"),
                 new IndexOptions().name("idx_username_norm_unique").background(true).unique(true));
@@ -83,7 +87,29 @@ public class ChatMongoRepository {
         String conversationId = conversationId(username, withUsername);
 
         FindIterable<Document> cursor = collection.find(Filters.eq("conversationId", conversationId))
-                .sort(Sorts.descending("_id"))
+                .sort(Sorts.orderBy(Sorts.descending("timestamp"), Sorts.descending("_id")))
+                .limit(safeLimit);
+
+        List<Document> rows = new ArrayList<>();
+        for (Document d : cursor) {
+            rows.add(d);
+        }
+        Collections.reverse(rows);
+        return rows;
+    }
+
+    public static List<Document> snapshotMessages(String username, int limit) {
+        String normalized = normalize(username);
+        if (normalized.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        int safeLimit = Math.max(1, Math.min(limit > 0 ? limit : historyLimit, 5000));
+        FindIterable<Document> cursor = collection.find(Filters.or(
+                        Filters.eq("fromUsernameNorm", normalized),
+                        Filters.eq("toUsernameNorm", normalized)
+                ))
+                .sort(Sorts.orderBy(Sorts.descending("timestamp"), Sorts.descending("_id")))
                 .limit(safeLimit);
 
         List<Document> rows = new ArrayList<>();
@@ -122,21 +148,25 @@ public class ChatMongoRepository {
             }
         }
 
-        for (String from : collection.distinct("fromUsername", String.class)) {
-            if (from != null && !from.trim().isEmpty()) {
-                merged.add(from.trim());
-            }
-            if (merged.size() >= safeLimit) {
-                break;
-            }
-        }
-        if (merged.size() < safeLimit) {
-            for (String to : collection.distinct("toUsername", String.class)) {
-                if (to != null && !to.trim().isEmpty()) {
-                    merged.add(to.trim());
+        // Fallback de migración: solo si chat_users está vacía, porque el distinct recorre
+        // toda la colección de mensajes y no usa índice.
+        if (merged.isEmpty()) {
+            for (String from : collection.distinct("fromUsername", String.class)) {
+                if (from != null && !from.trim().isEmpty()) {
+                    merged.add(from.trim());
                 }
                 if (merged.size() >= safeLimit) {
                     break;
+                }
+            }
+            if (merged.size() < safeLimit) {
+                for (String to : collection.distinct("toUsername", String.class)) {
+                    if (to != null && !to.trim().isEmpty()) {
+                        merged.add(to.trim());
+                    }
+                    if (merged.size() >= safeLimit) {
+                        break;
+                    }
                 }
             }
         }

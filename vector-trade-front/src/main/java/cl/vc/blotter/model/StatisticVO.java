@@ -22,6 +22,17 @@ import java.util.Locale;
 @Slf4j
 public class StatisticVO {
 
+    /**
+     * Serie intradia del ultimo precio, para el mini grafico de la columna Tendencia.
+     * Buffer circular de tamano fijo: se escribe en cada tick de market data, asi que no
+     * puede asignar memoria ni crecer. Con 90 puntos alcanza para ver la forma del dia
+     * sin gastar nada (720 bytes por instrumento).
+     */
+    private static final int PUNTOS_INTRADIA = 90;
+    private final double[] historialPrecio = new double[PUNTOS_INTRADIA];
+    private int histIdx = 0;
+    private int histLen = 0;
+
     private MarketDataMessage.Statistic statistic;
     private BigDecimal tick = BigDecimal.ZERO;
     private DecimalFormat decimalFormat;
@@ -184,6 +195,49 @@ public class StatisticVO {
 
     // ==================== Actualizaciones ====================
 
+    /**
+     * Agrega un punto a la serie intradia.
+     *
+     * Guarda si el precio cambio, o si pasaron MUESTREO_MS desde la ultima muestra aunque
+     * siga igual. La segunda condicion importa: filtrando solo por cambio de precio, un
+     * papel quieto no dibujaba NADA y la columna se veia vacia durante minutos. Con el
+     * muestreo temporal la linea aparece enseguida, plana si no se movio, que tambien
+     * es informacion.
+     */
+    private static final long MUESTREO_MS = 5_000;
+    private long ultimaMuestraMs = 0L;
+
+    private void registrarPrecioIntradia(double precio) {
+        if (precio <= 0d) return;
+        long ahora = System.currentTimeMillis();
+        boolean mismoPrecio = histLen > 0
+                && historialPrecio[(histIdx - 1 + PUNTOS_INTRADIA) % PUNTOS_INTRADIA] == precio;
+        if (mismoPrecio && (ahora - ultimaMuestraMs) < MUESTREO_MS) return;
+
+        historialPrecio[histIdx] = precio;
+        histIdx = (histIdx + 1) % PUNTOS_INTRADIA;
+        if (histLen < PUNTOS_INTRADIA) histLen++;
+        ultimaMuestraMs = ahora;
+
+        // Traza unica por instrumento: confirma que el acumulador recibe datos. Si esta
+        // linea no aparece para un papel, el problema esta en el camino de actualizacion,
+        // no en el dibujo de la celda.
+        if (histLen == 2) {
+            log.info("[Tendencia] serie iniciada symbol={} precio={}", getSymbol(), precio);
+        }
+    }
+
+    /** Copia la serie en orden cronologico. Devuelve array vacio si aun no hay 2 puntos. */
+    public double[] getSerieIntradia() {
+        if (histLen < 2) return new double[0];
+        double[] out = new double[histLen];
+        int inicio = (histIdx - histLen + PUNTOS_INTRADIA) % PUNTOS_INTRADIA;
+        for (int i = 0; i < histLen; i++) {
+            out[i] = historialPrecio[(inicio + i) % PUNTOS_INTRADIA];
+        }
+        return out;
+    }
+
     public void update(MarketDataMessage.Statistic statistic) {
 
         this.statistic = statistic;
@@ -268,6 +322,7 @@ public class StatisticVO {
 
             try {
                 this.close.set(resolveLastPrice(statistic));
+                registrarPrecioIntradia(this.close.get());
                 this.open.set(resolveOpenPrice(statistic));
                 this.high.set(resolveHighPrice(statistic));
                 this.low.set(resolveLowPrice(statistic));

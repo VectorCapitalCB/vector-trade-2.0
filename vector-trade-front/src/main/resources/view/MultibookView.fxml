@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<AnchorPane xmlns:fx="http://javafx.com/fxml"
+            xmlns="http://javafx.com/javafx"
+            fx:controller="cl.vc.blotter.controller.MultibookController"
+            AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+            AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+    <children>
+        <VBox AnchorPane.topAnchor="0.0" AnchorPane.leftAnchor="0.0"
+              AnchorPane.rightAnchor="0.0" AnchorPane.bottomAnchor="0.0">
+            <children>
+                <HBox fx:id="configBar" alignment="CENTER_LEFT" styleClass="multibook-page-bar">
+                    <children>
+                        <Label text="Configuración:" styleClass="bold-label"/>
+                        <ComboBox fx:id="configs" prefWidth="200"/>
+                        <Button text="Nueva" styleClass="button" onAction="#newLayout"/>
+                        <Button text="Guardar" styleClass="button" onAction="#saveLayout"/>
+                        <Button text="Duplicar" styleClass="button" onAction="#saveLayoutAs"/>
+                        <Button text="Renombrar" styleClass="button" onAction="#renameLayout"/>
+                        <Button text="Eliminar" styleClass="button" onAction="#deleteLayout"/>
+                        <Button text="Exportar" styleClass="button" onAction="#exportLayout"/>
+                        <Button text="Importar" styleClass="button" onAction="#importLayout"/>
+                    </children>
+                </HBox>
+                <HBox fx:id="pageBar" alignment="CENTER_LEFT" styleClass="multibook-page-bar"/>
+                <StackPane fx:id="content" VBox.vgrow="ALWAYS"/>
+            </children>
+        </VBox>
+    </children>
+</AnchorPane>

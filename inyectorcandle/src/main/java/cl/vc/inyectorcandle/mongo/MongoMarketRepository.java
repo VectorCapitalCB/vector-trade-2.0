@@ -1,19 +1,29 @@
 package cl.vc.inyectorcandle.mongo;
 
 import cl.vc.inyectorcandle.model.*;
+import com.mongodb.WriteConcern;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.result.DeleteResult;
 import com.mongodb.client.model.Filters;
+import com.mongodb.client.model.IndexOptions;
+import com.mongodb.client.model.Indexes;
+import com.mongodb.client.model.InsertOneModel;
+import com.mongodb.client.model.ReplaceOneModel;
 import com.mongodb.client.model.ReplaceOptions;
+import com.mongodb.client.model.UpdateOneModel;
+import com.mongodb.client.model.UpdateOptions;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
+import org.bson.conversions.Bson;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -31,8 +41,13 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MongoMarketRepository implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(MongoMarketRepository.class);
     private static final long PROGRESS_LOG_EVERY = 1_000L;
+    private static final ReplaceOptions UPSERT = new ReplaceOptions().upsert(true);
 
+    private static final BigDecimal HUNDRED = new BigDecimal("100");
+
+    private final String marketName;
     private final MongoClient client;
+    private final MongoWriteQueue writeQueue;
     private final MongoCollection<Document> securitiesCollection;
     private final MongoCollection<Document> marketDataCollection;
     private final MongoCollection<Document> tradesCollection;
@@ -40,16 +55,25 @@ public class MongoMarketRepository implements AutoCloseable {
     private final MongoCollection<Document> instrumentStatsCollection;
     private final MongoCollection<Document> rankingsCollection;
     private final MongoCollection<Document> bolsaStatsHistoryCollection;
+    private final MongoCollection<Document> instrumentDailyCollection;
+    private final MongoCollection<Document> brokerDailyCollection;
     private final AtomicLong insertedMarketData = new AtomicLong();
     private final AtomicLong insertedTrades = new AtomicLong();
     private final AtomicLong upsertedCandles = new AtomicLong();
     private final AtomicLong upsertedSecurities = new AtomicLong();
     private final AtomicLong upsertedStats = new AtomicLong();
     private final AtomicLong upsertedRankings = new AtomicLong();
+    private final AtomicLong upsertedDaily = new AtomicLong();
+    private final AtomicLong upsertedHistory = new AtomicLong();
+    private final AtomicLong upsertedBrokers = new AtomicLong();
+    private static final UpdateOptions UPSERT_UPDATE = new UpdateOptions().upsert(true);
 
-    public MongoMarketRepository(String uri, String databaseName) {
+    public MongoMarketRepository(String uri, String databaseName, int writeQueueSize, int writeBatchSize,
+                                 long writeFlushMs, String marketName) {
+        this.marketName = marketName;
         this.client = MongoClients.create(uri);
-        MongoDatabase database = client.getDatabase(databaseName);
+        // W1 sin journal: la durabilidad la da el feed, no vale frenar el hot path por fsync.
+        MongoDatabase database = client.getDatabase(databaseName).withWriteConcern(WriteConcern.W1.withJournal(false));
         this.securitiesCollection = database.getCollection("securities");
         this.marketDataCollection = database.getCollection("md_events");
         this.tradesCollection = database.getCollection("trades");
@@ -57,7 +81,41 @@ public class MongoMarketRepository implements AutoCloseable {
         this.instrumentStatsCollection = database.getCollection("instrument_stats");
         this.rankingsCollection = database.getCollection("market_rankings");
         this.bolsaStatsHistoryCollection = database.getCollection("bolsa_stats_history");
+        this.instrumentDailyCollection = database.getCollection("instrument_daily");
+        this.brokerDailyCollection = database.getCollection("broker_daily");
+        this.writeQueue = new MongoWriteQueue(writeQueueSize, writeBatchSize, writeFlushMs);
+        ensureIndexes();
         LOG.info("MongoMarketRepository conectado. database={}", databaseName);
+    }
+
+    /**
+     * Sin estos indices las consultas de vector-candle-service (por symbol+timeframe, por dia)
+     * hacen collection scan contra el mismo Mongo que esta recibiendo la escritura del feed.
+     */
+    private void ensureIndexes() {
+        createIndex(candlesCollection, Indexes.compoundIndex(
+                Indexes.ascending("instrumentId", "timeframe"), Indexes.descending("bucketStart")));
+        createIndex(candlesCollection, Indexes.ascending("symbol", "timeframe", "_id"));
+        createIndex(candlesCollection, Indexes.ascending("bucketStart"));
+        createIndex(tradesCollection, Indexes.compoundIndex(
+                Indexes.ascending("instrumentId"), Indexes.descending("eventTime")));
+        createIndex(tradesCollection, Indexes.ascending("eventTime"));
+        createIndex(marketDataCollection, Indexes.ascending("eventTime"));
+        createIndex(bolsaStatsHistoryCollection, Indexes.ascending("snapshotKey"));
+        createIndex(bolsaStatsHistoryCollection, Indexes.ascending("timeframe", "snapshotAt"));
+        createIndex(instrumentDailyCollection, Indexes.compoundIndex(
+                Indexes.ascending("market", "tradingDay"), Indexes.descending("turnover")));
+        createIndex(instrumentDailyCollection, Indexes.ascending("symbol", "tradingDay"));
+        createIndex(brokerDailyCollection, Indexes.compoundIndex(
+                Indexes.ascending("market", "tradingDay"), Indexes.descending("turnover")));
+    }
+
+    private void createIndex(MongoCollection<Document> collection, Bson keys) {
+        try {
+            collection.createIndex(keys, new IndexOptions().background(true));
+        } catch (Exception e) {
+            LOG.warn("No se pudo crear indice en {}: {}", collection.getNamespace(), e.getMessage());
+        }
     }
 
     public void upsertSecurity(SecurityDefinition security) {
@@ -72,7 +130,7 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("bookingRefId", security.bookingRefId())
                 .append("updatedAt", Instant.now().toString());
 
-        securitiesCollection.replaceOne(Filters.eq("_id", security.key().id()), doc, new ReplaceOptions().upsert(true));
+        enqueue(securitiesCollection, security.key().id(), doc, false);
         logProgress("securities.upsert", upsertedSecurities.incrementAndGet());
     }
 
@@ -91,7 +149,8 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("mdReqId", event.mdReqId())
                 .append("sourceMsgType", event.sourceMsgType());
 
-        marketDataCollection.insertOne(doc);
+        // droppable: md_events es traza; si la cola se satura vale mas no frenar el feed.
+        writeQueue.submit(marketDataCollection, new InsertOneModel<>(doc), true);
         logProgress("md_events.insert", insertedMarketData.incrementAndGet());
     }
 
@@ -119,7 +178,7 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("sourceMsgType", trade.sourceMsgType())
                 .append("updatedAt", Instant.now().toString());
 
-        tradesCollection.replaceOne(Filters.eq("_id", id), doc, new ReplaceOptions().upsert(true));
+        enqueue(tradesCollection, id, doc, false);
         logProgress("trades.insert", insertedTrades.incrementAndGet());
     }
 
@@ -144,7 +203,7 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("trades", candle.trades())
                 .append("updatedAt", Instant.now().toString());
 
-        candlesCollection.replaceOne(Filters.eq("_id", id), doc, new ReplaceOptions().upsert(true));
+        enqueue(candlesCollection, id, doc, false);
         logProgress("candles.upsert", upsertedCandles.incrementAndGet());
     }
 
@@ -172,8 +231,193 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("macdHistogram", toDouble(stats.macdHistogram()))
                 .append("updatedAt", Instant.now().toString());
 
-        instrumentStatsCollection.replaceOne(Filters.eq("_id", stats.key().id()), doc, new ReplaceOptions().upsert(true));
+        // droppable: es un snapshot idempotente, el siguiente tick lo vuelve a publicar.
+        enqueue(instrumentStatsCollection, stats.key().id(), doc, true);
         logProgress("instrument_stats.upsert", upsertedStats.incrementAndGet());
+    }
+
+    public void upsertInstrumentDaily(InstrumentDailyStats stats) {
+        upsertInstrumentDaily(stats, "FIX");
+    }
+
+    public void upsertInstrumentDaily(InstrumentDailyStats stats, String source) {
+        Document doc = new Document("_id", stats.id())
+                .append("market", stats.market())
+                .append("symbol", stats.symbol())
+                .append("securityId", stats.securityId())
+                .append("currency", stats.currency())
+                .append("tradingDay", stats.tradingDay().toString())
+                .append("open", toDouble(stats.open()))
+                .append("high", toDouble(stats.high()))
+                .append("low", toDouble(stats.low()))
+                .append("last", toDouble(stats.last()))
+                .append("close", toDouble(stats.close()))
+                .append("previousClose", toDouble(stats.previousClose()))
+                .append("volume", toDouble(stats.volume()))
+                .append("turnover", toDouble(stats.turnover()))
+                .append("vwap", toDouble(stats.vwap()))
+                .append("variationPct", toDouble(stats.variationPct()))
+                .append("auctionPrice", toDouble(stats.auctionPrice()))
+                .append("lowLimit", toDouble(stats.lowLimit()))
+                .append("highLimit", toDouble(stats.highLimit()))
+                .append("referencePrice", toDouble(stats.referencePrice()))
+                .append("updates", stats.updates())
+                .append("tradeCount", stats.tradeCount())
+                .append("source", source)
+                .append("updatedAt", stats.lastUpdate().toString());
+
+        enqueue(instrumentDailyCollection, stats.id(), doc, false);
+        logProgress("instrument_daily.upsert", upsertedDaily.incrementAndGet());
+    }
+
+    /**
+     * Merge no destructivo: el OHLCV oficial del feed FIX manda y no se pisa. ITCH solo aporta
+     * {@code tradeCount} (que el 35=W no publica) y crea el documento cuando el instrumento o el
+     * dia no vinieron por FIX, que es el caso de la enorme mayoria de la plaza.
+     */
+    public void upsertInstrumentDailyFromItch(InstrumentDailyStats stats, long tradeCount) {
+        // Pipeline en vez de $setOnInsert: este ultimo solo actua al crear el documento, y en los
+        // dias en que FIX listo el mercado completo hay instrumentos con doc pero sin OHLCV, que
+        // ITCH sabe que si operaron. Con $ifNull cada campo se rellena solo si FIX no lo trajo.
+        Document fields = new Document("market", stats.market())
+                .append("symbol", stats.symbol())
+                .append("tradingDay", stats.tradingDay().toString())
+                .append("tradeCount", tradeCount)
+                .append("updatedAt", stats.lastUpdate().toString())
+                .append("source", fillIfNull("source", "FIX+ITCH"))
+                .append("securityId", fillIfNull("securityId", stats.securityId()))
+                .append("currency", fillIfNull("currency", stats.currency()))
+                .append("open", fillIfNull("open", toDouble(stats.open())))
+                .append("high", fillIfNull("high", toDouble(stats.high())))
+                .append("low", fillIfNull("low", toDouble(stats.low())))
+                .append("last", fillIfNull("last", toDouble(stats.last())))
+                .append("close", fillIfNull("close", toDouble(stats.close())))
+                .append("volume", fillIfNull("volume", toDouble(stats.volume())))
+                .append("turnover", fillIfNull("turnover", toDouble(stats.turnover())))
+                .append("vwap", fillIfNull("vwap", toDouble(stats.vwap())))
+                .append("variationPct", fillIfNull("variationPct", toDouble(stats.variationPct())))
+                .append("auctionPrice", fillIfNull("auctionPrice", toDouble(stats.auctionPrice())));
+
+        writeQueue.submit(instrumentDailyCollection, new UpdateOneModel<>(
+                Filters.eq("_id", stats.id()),
+                List.of(new Document("$set", fields)),
+                UPSERT_UPDATE), false);
+        logProgress("instrument_daily.itch", upsertedDaily.incrementAndGet());
+    }
+
+    /** {@code $ifNull} contra el valor ya presente: lo oficial de FIX manda, ITCH rellena huecos. */
+    private static Document fillIfNull(String field, Object itchValue) {
+        return new Document("$ifNull", java.util.Arrays.asList("$" + field, itchValue));
+    }
+
+    public void upsertBrokerDaily(BrokerDailyStats stats) {
+        Document doc = new Document("_id", stats.id())
+                .append("market", stats.market())
+                .append("broker", stats.broker())
+                .append("tradingDay", stats.tradingDay().toString())
+                .append("trades", stats.trades())
+                .append("volume", toDouble(stats.volume()))
+                .append("turnover", toDouble(stats.turnover()))
+                .append("buyVolume", toDouble(stats.buyVolume()))
+                .append("sellVolume", toDouble(stats.sellVolume()))
+                .append("buyTurnover", toDouble(stats.buyTurnover()))
+                .append("sellTurnover", toDouble(stats.sellTurnover()))
+                .append("netTurnover", toDouble(stats.netTurnover()))
+                .append("updatedAt", Instant.now().toString());
+
+        enqueue(brokerDailyCollection, stats.id(), doc, false);
+        logProgress("broker_daily.upsert", upsertedBrokers.incrementAndGet());
+    }
+
+    /** Lee lo ya escrito para reconstruir el agregado del dia sobre ambas fuentes juntas. */
+    public List<InstrumentDailyStats> loadInstrumentDaily(String market, LocalDate day) {
+        writeQueue.flush();
+        List<InstrumentDailyStats> out = new ArrayList<>();
+        for (Document d : instrumentDailyCollection.find(Filters.and(
+                Filters.eq("market", market), Filters.eq("tradingDay", day.toString())))) {
+            out.add(new InstrumentDailyStats(
+                    market,
+                    d.getString("symbol"),
+                    d.getString("securityId"),
+                    d.getString("currency"),
+                    day,
+                    toBigDecimal(d.get("open")),
+                    toBigDecimal(d.get("high")),
+                    toBigDecimal(d.get("low")),
+                    toBigDecimal(d.get("last")),
+                    toBigDecimal(d.get("close")),
+                    toBigDecimal(d.get("previousClose")),
+                    toBigDecimal(d.get("volume")),
+                    toBigDecimal(d.get("turnover")),
+                    toBigDecimal(d.get("auctionPrice")),
+                    toBigDecimal(d.get("lowLimit")),
+                    toBigDecimal(d.get("highLimit")),
+                    toBigDecimal(d.get("referencePrice")),
+                    d.get("updates") instanceof Number n ? n.longValue() : 0L,
+                    d.get("tradeCount") instanceof Number t ? t.longValue() : 0L,
+                    Instant.now()));
+        }
+        return out;
+    }
+
+    /**
+     * Escribe el agregado diario con el esquema exacto que espera vector-candle-service en
+     * {@code bolsa_stats_history}. Asi el boton "Aplicar Fecha" del front encuentra el dia
+     * historico sin que nadie tenga que tocar el front ni el candle-service.
+     */
+    public void upsertMarketDayHistory(MarketDaySummary s) {
+        Document doc = new Document("snapshotAt", s.sessionEnd().toString())
+                .append("snapshotKey", s.snapshotKey())
+                .append("timeframe", "1d")
+                .append("exchange", s.market())
+                .append("id", s.snapshotKey())
+                .append("total_volumen", s.totalVolumen())
+                .append("monto_total", s.montoTotal())
+                .append("hora_inicio", s.sessionStart().toString())
+                .append("hora_fin", s.sessionEnd().toString())
+                .append("volatilidad_promedio", s.volatilidadPromedio())
+                .append("rango_promedio", s.rangoPromedio())
+                .append("indice_promedio", s.indicePromedio())
+                .append("indice_maximo", s.indiceMaximo())
+                .append("indice_minimo", s.indiceMinimo())
+                .append("liquidez_media", s.liquidezMedia())
+                .append("numero_total_trades", s.numeroTotalTrades())
+                .append("sentimiento_positivo", s.sentimientoPositivo())
+                .append("sentimiento_negativo", s.sentimientoNegativo())
+                .append("capitalizacion_total", s.capitalizacionTotal())
+                .append("capitalizacion_promedio", s.capitalizacionPromedio())
+                .append("precio_promedio_acumulado", s.precioPromedioAcumulado())
+                .append("precio_maximo_acumulado", s.precioMaximoAcumulado())
+                .append("tendencia_general", s.tendenciaGeneral())
+                .append("tendencia_promedio", s.tendenciaPromedio())
+                .append("mas_tranzado", toRankinDocs(s.masTranzado()))
+                .append("mas_volatil", toRankinDocs(s.masVolatil()))
+                .append("best_rankin", toRankinDocs(s.mejores()))
+                .append("menos_cayo", toRankinDocs(s.mejores()))
+                .append("worse_rankin", toRankinDocs(s.peores()))
+                .append("mas_cayo", toRankinDocs(s.peores()));
+
+        writeQueue.submit(bolsaStatsHistoryCollection,
+                new ReplaceOneModel<>(Filters.eq("snapshotKey", s.snapshotKey()), doc, UPSERT), false);
+        logProgress("bolsa_stats_history.upsert", upsertedHistory.incrementAndGet());
+    }
+
+    private static List<Document> toRankinDocs(List<InstrumentDailyStats> rows) {
+        return rows.stream().map(r -> new Document("id", r.id())
+                        .append("exchange", r.market())
+                        .append("symbol", r.symbol())
+                        // el feed 35=W no tiene dimension de liquidacion; T2 es el default del proto
+                        .append("settl", "T2")
+                        .append("securityType", "CS")
+                        .append("variacion_pct", toDouble(r.variationPct()))
+                        .append("precio_ultimo", toDouble(r.last()))
+                        .append("precio_maximo", toDouble(r.high()))
+                        .append("precio_minimo", toDouble(r.low()))
+                        .append("precio_promedio", toDouble(r.vwap()))
+                        .append("vwap", toDouble(r.vwap()))
+                        .append("volumen", toDouble(r.volume()))
+                        .append("monto", toDouble(r.turnover())))
+                .toList();
     }
 
     public void upsertRanking(MarketRankingSnapshot ranking) {
@@ -186,11 +430,99 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("topGainers", toStatsDocs(ranking.topGainers()))
                 .append("topLosers", toStatsDocs(ranking.topLosers()));
 
-        rankingsCollection.replaceOne(Filters.eq("_id", "latest"), doc, new ReplaceOptions().upsert(true));
+        enqueue(rankingsCollection, "latest", doc, false);
         logProgress("market_rankings.upsert", upsertedRankings.incrementAndGet());
     }
 
+    private void enqueue(MongoCollection<Document> collection, String id, Document doc, boolean droppable) {
+        writeQueue.submit(collection, new ReplaceOneModel<>(Filters.eq("_id", id), doc, UPSERT), droppable);
+    }
+
+    /**
+     * Cierre oficial del ultimo dia habil anterior segun {@code instrument_daily}. Es la referencia
+     * correcta para la variacion del dia y no depende de que existan velas ni trades del dia previo,
+     * que es justo lo que falta cuando el proceso arranca con la base recien poblada.
+     */
+    public BigDecimal findPreviousDailyClose(String market, String symbol, LocalDate tradingDay) {
+        Document doc = instrumentDailyCollection.find(Filters.and(
+                        Filters.eq("market", market),
+                        Filters.eq("symbol", symbol),
+                        Filters.lt("tradingDay", tradingDay.toString()),
+                        Filters.ne("close", null)))
+                .sort(Sorts.descending("tradingDay"))
+                .limit(1)
+                .first();
+        return doc == null ? null : toBigDecimal(doc.get("close"));
+    }
+
+    /**
+     * Encadena los cierres: para cada simbolo recorre sus dias en orden y rellena el
+     * {@code previousClose} que falte con el {@code close} del dia anterior, recalculando la
+     * variacion. No pisa el {@code previousClose} oficial que ya trajo el 269=5 del feed FIX.
+     *
+     * @return cuantos documentos quedaron con cierre previo nuevo
+     */
+    public int fillMissingPreviousClose(String market) {
+        writeQueue.flush();
+        List<Document> docs = new ArrayList<>();
+        instrumentDailyCollection.find(Filters.eq("market", market))
+                .sort(Sorts.ascending("symbol", "tradingDay"))
+                .into(docs);
+
+        String currentSymbol = null;
+        BigDecimal lastClose = null;
+        int filled = 0;
+
+        for (Document doc : docs) {
+            String symbol = doc.getString("symbol");
+            if (!symbol.equals(currentSymbol)) {
+                currentSymbol = symbol;
+                lastClose = null;
+            }
+
+            BigDecimal previous = toBigDecimal(doc.get("previousClose"));
+            if (previous == null && lastClose != null) {
+                previous = lastClose;
+                BigDecimal last = toBigDecimal(doc.get("last"));
+                Document set = new Document("previousClose", toDouble(previous));
+                if (last != null && previous.signum() != 0) {
+                    set.append("variationPct", toDouble(last.subtract(previous, MathContext.DECIMAL64)
+                            .multiply(HUNDRED, MathContext.DECIMAL64)
+                            .divide(previous, 6, RoundingMode.HALF_UP)));
+                }
+                writeQueue.submit(instrumentDailyCollection, new UpdateOneModel<>(
+                        Filters.eq("_id", doc.get("_id")), new Document("$set", set)), false);
+                filled++;
+            }
+
+            BigDecimal close = toBigDecimal(doc.get("close"));
+            if (close != null) {
+                lastClose = close;
+            }
+        }
+
+        writeQueue.flush();
+        LOG.info("Cierres encadenados: {} documentos recibieron previousClose de {} revisados", filled, docs.size());
+        return filled;
+    }
+
+    public List<LocalDate> distinctTradingDays(String market) {
+        List<LocalDate> days = new ArrayList<>();
+        for (String value : instrumentDailyCollection.distinct("tradingDay", Filters.eq("market", market), String.class)) {
+            days.add(LocalDate.parse(value));
+        }
+        days.sort(LocalDate::compareTo);
+        return days;
+    }
+
     public BigDecimal findPreviousClose(InstrumentKey key, LocalDate tradingDay, ZoneId zoneId) {
+        writeQueue.flush();
+
+        BigDecimal officialClose = findPreviousDailyClose(marketName, key.symbol(), tradingDay);
+        if (officialClose != null) {
+            return officialClose;
+        }
+
         // Usar medianoche UTC como límite para candles diarias.
         // Los buckets diarios se almacenan como 2026-03-09T00:00:00Z (medianoche UTC),
         // por lo que comparar contra medianoche Santiago (03:00Z) incluiría la candle
@@ -222,7 +554,62 @@ public class MongoMarketRepository implements AutoCloseable {
         return toBigDecimal(lastTrade == null ? null : lastTrade.get("price"));
     }
 
+    /** Totales del dia ya persistidos en {@code trades} para un instrumento. */
+    public record DayTotals(long trades, BigDecimal volume, BigDecimal turnover,
+                            BigDecimal open, BigDecimal high, BigDecimal low, BigDecimal last) {
+    }
+
+    /**
+     * Reconstruye desde {@code trades} lo que un actor ya inyecto del dia. Sin esto un reinicio a
+     * media rueda arranca los contadores de {@code instrument_stats} / {@code instrument_daily} en
+     * cero y el front pierde toda la sesion previa al arranque.
+     * <p>
+     * Corre una sola vez por instrumento y por dia (en el cambio de jornada del actor) y usa el
+     * indice {@code (instrumentId, eventTime)}, asi que en la apertura -cuando el dia todavia no
+     * tiene trades- el rango esta vacio y no cuesta nada.
+     */
+    public DayTotals loadDayTotals(InstrumentKey key, LocalDate day, ZoneId zoneId) {
+        String from = day.atStartOfDay(zoneId).toInstant().toString();
+        String to = day.plusDays(1).atStartOfDay(zoneId).toInstant().toString();
+
+        Document match = new Document("instrumentId", key.id())
+                .append("eventTime", new Document("$gte", from).append("$lt", to))
+                .append("deleted", new Document("$ne", true));
+        Document amount = new Document("$ifNull", List.of("$amount",
+                new Document("$multiply", List.of("$price", "$quantity"))));
+
+        Document row = tradesCollection.aggregate(List.of(
+                        new Document("$match", match),
+                        new Document("$sort", new Document("eventTime", 1)),
+                        new Document("$group", new Document("_id", null)
+                                .append("trades", new Document("$sum", 1))
+                                .append("volume", new Document("$sum", "$quantity"))
+                                .append("turnover", new Document("$sum", amount))
+                                .append("open", new Document("$first", "$price"))
+                                .append("high", new Document("$max", "$price"))
+                                .append("low", new Document("$min", "$price"))
+                                .append("last", new Document("$last", "$price")))))
+                .first();
+
+        if (row == null) {
+            return null;
+        }
+        return new DayTotals(
+                row.get("trades") instanceof Number n ? n.longValue() : 0L,
+                zeroIfNull(toBigDecimal(row.get("volume"))),
+                zeroIfNull(toBigDecimal(row.get("turnover"))),
+                toBigDecimal(row.get("open")),
+                toBigDecimal(row.get("high")),
+                toBigDecimal(row.get("low")),
+                toBigDecimal(row.get("last")));
+    }
+
+    private static BigDecimal zeroIfNull(BigDecimal value) {
+        return value == null ? BigDecimal.ZERO : value;
+    }
+
     public void purgeDay(LocalDate day, ZoneId zoneId) {
+        writeQueue.flush();
         Instant dayStart = day.atStartOfDay(zoneId).toInstant();
         Instant dayEnd = day.plusDays(1).atStartOfDay(zoneId).toInstant();
 
@@ -252,6 +639,7 @@ public class MongoMarketRepository implements AutoCloseable {
     }
 
     public void logInjectionAnalysis(Set<LocalDate> days, ZoneId zoneId, int topN) {
+        writeQueue.flush();
         if (days == null || days.isEmpty()) {
             LOG.info("[INYECCION][ANALISIS] Sin dias para analizar");
             return;
@@ -427,13 +815,15 @@ public class MongoMarketRepository implements AutoCloseable {
 
     @Override
     public void close() {
-        LOG.info("Mongo resumen final: md_events={} trades={} candles={} securities={} instrument_stats={} rankings={}",
+        writeQueue.close();
+        LOG.info("Mongo resumen final: md_events={} trades={} candles={} securities={} instrument_stats={} rankings={} instrument_daily={}",
                 insertedMarketData.get(),
                 insertedTrades.get(),
                 upsertedCandles.get(),
                 upsertedSecurities.get(),
                 upsertedStats.get(),
-                upsertedRankings.get());
+                upsertedRankings.get(),
+                upsertedDaily.get());
         client.close();
     }
 

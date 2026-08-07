@@ -37,11 +37,7 @@ public class BasketAggressive implements StrategyI {
 
         this.order = order;
 
-        if (order.getMaxFloor() <= 0d) {
-            maxfloor = order.getOrderQty();
-        } else {
-            maxfloor = order.getMaxFloor();
-        }
+        maxfloor = order.getMaxFloor();
 
         this.actorStrategy = actorStrategy;
         this.icebergperc = order.getIcebergPercentage();
@@ -50,6 +46,10 @@ public class BasketAggressive implements StrategyI {
 
         this.limit = order.getLimit();
 
+    }
+
+    private double replaceMaxFloor() {
+        return StrategyReplaceSupport.maxFloorForReplace(maxfloor, order);
     }
 
     @Override
@@ -137,7 +137,7 @@ public class BasketAggressive implements StrategyI {
                                 .setId(order.getId())
                                 .setPrice(px)
                                 .setLimit(order.getLimit())
-                                .setMaxFloor(maxfloor)
+                                .setMaxFloor(replaceMaxFloor())
                                 .setQuantity(order.getOrderQty()).build();
                         MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(orderReplaceRequest);
                     }
@@ -160,6 +160,7 @@ public class BasketAggressive implements StrategyI {
                         RoutingMessage.NewOrderRequest newOrderRequest = RoutingMessage.NewOrderRequest.newBuilder().setOrder(order).build();
                         MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(newOrderRequest);
                     }
+
                 } else if (!blockOrders && (order.getOrdStatus().equals(RoutingMessage.OrderStatus.NEW)
                         || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REPLACED)
                         || order.getOrdStatus().equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED))) {
@@ -185,9 +186,10 @@ public class BasketAggressive implements StrategyI {
                                 .setId(order.getId())
                                 .setPrice(px)
                                 .setLimit(order.getLimit())
-                                .setMaxFloor(maxfloor)
+                                .setMaxFloor(replaceMaxFloor())
                                 .setQuantity(order.getOrderQty()).build();
                         MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(orderReplaceRequest);
+
                     }
                 }
             }
@@ -267,9 +269,7 @@ public class BasketAggressive implements StrategyI {
 
         icebergperc = orderReplaceRequest.getIcebergPercentage();
 
-        if (orderReplaceRequest.getMaxFloor() <= 0d) {
-            maxfloor = orderReplaceRequest.getQuantity();
-        } else {
+        if (orderReplaceRequest.getMaxFloor() > 0d) {
             maxfloor = orderReplaceRequest.getMaxFloor();
         }
 

@@ -4,6 +4,7 @@ import cl.vc.blotter.controller.LoginController;
 import cl.vc.blotter.utils.ConfigGenerator;
 import cl.vc.blotter.utils.NativeLibraryLoader;
 import cl.vc.blotter.utils.Notifier;
+import cl.vc.blotter.utils.VelopackUpdater;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
@@ -41,6 +42,8 @@ public class MainApp extends Application {
     private ScheduledExecutorService appShutdownScheduler;
 
     public static void main(String[] args) {
+        // PRIMERA linea: Velopack lanza el exe con --veloapp-* y espera a que salga.
+        VelopackUpdater.handleStartupHooks(args);
         launch(args);
     }
 
@@ -56,10 +59,16 @@ public class MainApp extends Application {
 
                     String appVer  = Repository.getProperties().getProperty("version", "dev");
                     Repository.setAppVersion(appVer);
-                    principal.setTitle(appVer);
+                    principal.setTitle("Vector Trade 2.0  ·  " + appVer);
 
                     NativeLibraryLoader.loadNativeLibraries();
-                    ConfigGenerator.checkForUpdateAndGenerateConfig(principal);
+                    // Migracion gradual: las instalaciones nuevas (Velopack) usan el updater
+                    // nuevo; las viejas siguen con ConfigGenerator hasta que se reinstalen.
+                    if (VelopackUpdater.isInstalled()) {
+                        VelopackUpdater.checkForUpdate(principal);
+                    } else {
+                        ConfigGenerator.checkForUpdateAndGenerateConfig(principal);
+                    }
 
                     String osName = System.getProperty("os.name").toLowerCase();
 

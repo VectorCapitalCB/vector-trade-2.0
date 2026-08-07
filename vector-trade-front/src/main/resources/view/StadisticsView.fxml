@@ -150,7 +150,7 @@
 
                 <VBox alignment="CENTER" spacing="10.0" >
                     <Label styleClass="data-label" text="Temporalidad Stats" />
-                    <Label text="1D (Mongo instrument_stats)" styleClass="data-value"/>
+                    <Label text="1D (Mongo trades + instrument_stats)" styleClass="data-value"/>
                 </VBox>
 
                 <VBox alignment="CENTER" spacing="10.0" >
@@ -181,6 +181,11 @@
                 <VBox alignment="CENTER" spacing="10.0" >
                     <Label styleClass="data-label" text=" " />
                     <Button text="Ver Velas" onAction="#openCandlesForSymbol" prefWidth="220"/>
+                </VBox>
+
+                <VBox alignment="CENTER" spacing="10.0" >
+                    <Label styleClass="data-label" text=" " />
+                    <Button text="Copiar Datos" onAction="#copiarTodo" prefWidth="220"/>
                 </VBox>
 
         </HBox>
@@ -217,7 +222,7 @@
                 <TableColumn fx:id="colPrecioUltimo" prefWidth="160" styleClass="table-column" text="Precio" />
                 <TableColumn fx:id="colVariacionPct" prefWidth="120" styleClass="table-column" text="24h %" />
                 <TableColumn fx:id="colVolumen" prefWidth="160" styleClass="table-column" text="Volumen" />
-                <TableColumn fx:id="colMonto" prefWidth="200" styleClass="table-column" text="Cap. Mercado" />
+                <TableColumn fx:id="colMonto" prefWidth="200" styleClass="table-column" text="Monto" />
                 <TableColumn fx:id="colLiquid" prefWidth="200" styleClass="table-column" text="Liquidación" />
             </columns>
         </TableView>

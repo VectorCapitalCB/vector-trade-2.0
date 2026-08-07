@@ -4,6 +4,7 @@ import cl.vc.algos.bkt.proto.BktStrategyProtos;
 import cl.vc.blotter.Repository;
 import cl.vc.blotter.model.BookVO;
 import cl.vc.blotter.model.OrderBookEntry;
+import cl.vc.blotter.utils.MultibookLayoutStore;
 import cl.vc.blotter.utils.Notifier;
 import cl.vc.blotter.utils.OrdersHelper;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
@@ -649,8 +650,14 @@ public class LanzadorController {
         unlock.getStyleClass().clear();
         unlock.getStyleClass().add("replaceButton");
 
-        currency.getItems().addAll(RoutingMessage.Currency.values());
-        currency.getItems().remove(RoutingMessage.Currency.UNRECOGNIZED);
+        // Solo las monedas operables, en vez de todo el enum (traia CAD, PEN, GBP, USDC,
+        // USDT, BTC, ETH, EUR y NO_CURRENCY). CLP queda preseleccionada por ser la moneda
+        // por defecto del mercado local.
+        currency.getItems().setAll(
+                RoutingMessage.Currency.CLP,
+                RoutingMessage.Currency.USD,
+                RoutingMessage.Currency.COP);
+        currency.getSelectionModel().select(RoutingMessage.Currency.CLP);
 
         sideOrder.getSelectionModel().select(ProtoConverter.routingDecryptStatus(RoutingMessage.Side.BUY.name()));
         sideOrder.getItems().remove(RoutingMessage.Side.ALL_SIDE.name());
@@ -1421,11 +1428,14 @@ public class LanzadorController {
     private void addBook(ActionEvent event) {
         try {
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/MultiLibroEmergente.fxml"));
-            AnchorPane mainPane = loader.load();
-            LibroEmergentePrincipalController controller = loader.getController();
+            int windowIndex = 0;
+            while (Repository.getControllerMultibook().containsKey(windowIndex)) {
+                windowIndex++;
+            }
 
-            Repository.controllerMultibook.put(controller.id, controller);
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/MultibookView.fxml"));
+            AnchorPane mainPane = loader.load();
+            MultibookController controller = loader.getController();
 
             Stage stage = new Stage();
             Scene scene = new Scene(mainPane);
@@ -1438,16 +1448,8 @@ public class LanzadorController {
 
             stage.setScene(scene);
 
-            stage.setMaximized(true);
-
-            stage.setOnCloseRequest(events -> {
-                controller.unsubscribe();
-                Repository.controllerMultibook.remove(controller.id);
-
-                if (Repository.controllerMultibook.isEmpty()) {
-                    Repository.countMultibook = -1;
-                }
-            });
+            Repository.getControllerMultibook().put(windowIndex, controller);
+            controller.open(stage, windowIndex, MultibookLayoutStore.window(windowIndex));
 
             stage.show();
 

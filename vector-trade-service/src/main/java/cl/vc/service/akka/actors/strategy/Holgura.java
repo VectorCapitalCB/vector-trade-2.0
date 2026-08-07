@@ -43,11 +43,7 @@ public class Holgura implements StrategyI {
 
         this.order = orders.toBuilder();
 
-        if (orders.getMaxFloor() <= 0d) {
-            maxfloor = orders.getOrderQty();
-        } else {
-            maxfloor = orders.getMaxFloor();
-        }
+        maxfloor = orders.getMaxFloor();
 
 
         this.precioOriginal = orders.getPrice();
@@ -70,7 +66,7 @@ public class Holgura implements StrategyI {
                         RoutingMessage.OrderReplaceRequest orderReplaceRequest = RoutingMessage.OrderReplaceRequest.newBuilder()
                                 .setId(order.getId())
                                 .setPrice(precioOriginal)
-                                .setMaxFloor(maxfloor)
+                                .setMaxFloor(replaceMaxFloor())
                                 .setSpread(spreadPx)
                                 .setQuantity(order.getOrderQty())
                                 .build();
@@ -90,6 +86,10 @@ public class Holgura implements StrategyI {
 
         riskOrder();
 
+    }
+
+    private double replaceMaxFloor() {
+        return StrategyReplaceSupport.maxFloorForReplace(maxfloor, order.build());
     }
 
     @Override
@@ -118,7 +118,7 @@ public class Holgura implements StrategyI {
                                 .setId(order.getId())
                                 .setPrice(spread)
                                 .setQuantity(order.getOrderQty())
-                                .setMaxFloor(maxfloor)
+                                .setMaxFloor(replaceMaxFloor())
                                 .build();
 
 
@@ -143,6 +143,7 @@ public class Holgura implements StrategyI {
                                 .setId(order.getId())
                                 .setPrice(spread)
                                 .setQuantity(order.getOrderQty())
+                                .setMaxFloor(replaceMaxFloor())
                                 .build();
 
                         MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(orderReplaceRequest);
@@ -241,9 +242,11 @@ public class Holgura implements StrategyI {
 
         try {
 
-            orderPendingReplace = orderReplaceRequest;
+            RoutingMessage.OrderReplaceRequest effectiveReplace =
+                    StrategyReplaceSupport.normalize(order.build(), orderReplaceRequest);
+            orderPendingReplace = effectiveReplace;
 
-            double riskPercentage = (orderReplaceRequest.getSpread() / orderReplaceRequest.getPrice()) * 100;
+            double riskPercentage = (effectiveReplace.getSpread() / effectiveReplace.getPrice()) * 100;
 
             if (riskPercentage > 1) {
                 RoutingMessage.OrderCancelReject orderCancelReject = RoutingMessage.OrderCancelReject.newBuilder()
@@ -256,7 +259,7 @@ public class Holgura implements StrategyI {
             }
 
 
-            if (order.getOrderQty() > orderReplaceRequest.getQuantity() && order.getLeaves() < orderReplaceRequest.getQuantity()) {
+            if (order.getOrderQty() > effectiveReplace.getQuantity() && order.getLeaves() < effectiveReplace.getQuantity()) {
 
                 RoutingMessage.OrderCancelReject orderCancelReject = RoutingMessage.OrderCancelReject.newBuilder()
                         .setId(order.getId())
@@ -268,13 +271,13 @@ public class Holgura implements StrategyI {
             }
 
 
-            if (orderReplaceRequest.getPrice() != order.getPrice() || orderReplaceRequest.getQuantity() != order.getOrderQty() ||
-                    orderReplaceRequest.getSpread() != spreadPx || !orderReplaceRequest.getIcebergPercentage().equals(order.getIcebergPercentage())) {
+            if (effectiveReplace.getPrice() != order.getPrice() || effectiveReplace.getQuantity() != order.getOrderQty() ||
+                    effectiveReplace.getSpread() != spreadPx || !effectiveReplace.getIcebergPercentage().equals(order.getIcebergPercentage())) {
 
-                if (orderReplaceRequest.getMaxFloor() <= 0d) {
-                    maxfloor = orderReplaceRequest.getQuantity();
+                if (effectiveReplace.getMaxFloor() <= 0d) {
+                    maxfloor = 0d;
                 } else {
-                    maxfloor = orderReplaceRequest.getMaxFloor();
+                    maxfloor = effectiveReplace.getMaxFloor();
                 }
 
                 if (blockOrder) {
@@ -283,15 +286,15 @@ public class Holgura implements StrategyI {
                 } else {
                     blockOrder = true;
 
-                    System.out.println("se envia replace spread " + orderReplaceRequest.getSpread());
+                    System.out.println("se envia replace spread " + effectiveReplace.getSpread());
 
-                    MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(orderReplaceRequest);
+                    MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(effectiveReplace);
                 }
 
             } else {
 
-                spreadPx = orderReplaceRequest.getSpread();
-                this.order = this.order.setSpread(orderReplaceRequest.getSpread());
+                spreadPx = effectiveReplace.getSpread();
+                this.order = this.order.setSpread(effectiveReplace.getSpread());
                 MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order.build()));
             }
 

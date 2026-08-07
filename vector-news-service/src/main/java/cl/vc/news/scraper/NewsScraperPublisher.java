@@ -4,6 +4,7 @@ import cl.vc.news.websocket.NewsSessionRegistry;
 import org.eclipse.jetty.websocket.api.Session;
 import org.json.JSONArray;
 import org.json.JSONObject;
+import org.jsoup.Connection;
 import org.jsoup.HttpStatusException;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -29,6 +30,8 @@ import java.util.Locale;
 import java.util.Properties;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.net.URLEncoder;
 import java.net.SocketException;
@@ -46,6 +49,9 @@ public class NewsScraperPublisher extends Thread {
             "fed", "federal reserve", "sec", "dolar", "dólar", "usd", "clp", "usdclp",
             "peso chileno", "treasury", "wall street", "nasdaq", "dow", "s&p",
             "inflation", "rate", "interest", "copper", "cobre");
+    private static final List<String> SPANISH_HINTS = Arrays.asList(
+            " de ", " del ", " la ", " el ", " los ", " las ", " que ", " con ",
+            " para ", " por ", " en ", " se ", " un ", " una ", " su ", " al ");
     private static final List<DateTimeFormatter> ISO_DATE_PARSERS = Arrays.asList(
             DateTimeFormatter.ISO_OFFSET_DATE_TIME,
             DateTimeFormatter.ISO_ZONED_DATE_TIME,
@@ -57,8 +63,18 @@ public class NewsScraperPublisher extends Thread {
     private final ConcurrentHashMap<String, AtomicInteger> errorCountsBySource = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, String> translationCache = new ConcurrentHashMap<>();
     private final ConcurrentHashMap<String, Long> lastSecFallbackLogMs = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> etagBySource = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, String> lastModifiedBySource = new ConcurrentHashMap<>();
     private final Deque<NewsMongoRepository.NewsRow> recentPublished = new LinkedList<>();
+    private final ExecutorService broadcastExecutor = Executors.newSingleThreadExecutor(r -> {
+        Thread t = new Thread(r, "news-broadcast");
+        t.setDaemon(true);
+        return t;
+    });
+    private int sourceCursor = 0;
     private volatile boolean requirePublishedDate = true;
+    private volatile List<String> excludeKeywords = Collections.emptyList();
+    private volatile boolean priorityInTitle = true;
     private volatile int summaryMaxChars = 240;
     private volatile boolean alertsEnabled = true;
     private volatile boolean summaryEnabled = true;
@@ -100,19 +116,30 @@ public class NewsScraperPublisher extends Thread {
         List<String> sources = csv(properties.getProperty("news.scraper.sources", DEFAULT_SOURCES));
         List<String> keywords = csv(properties.getProperty("news.scraper.keywords", DEFAULT_KEYWORDS));
         List<String> priorityKeywords = csv(properties.getProperty("news.scraper.priority.keywords", ""));
+        excludeKeywords = csv(properties.getProperty("news.scraper.exclude.keywords", ""));
+        priorityInTitle = Boolean.parseBoolean(properties.getProperty("news.scraper.priority.in.title", "true"));
 
         log.info("News scraper iniciado pollMs={} sources={} onlyRelevant={}", pollMs, sources.size(), onlyRelevant);
         while (!Thread.currentThread().isInterrupted()) {
             try {
                 AtomicInteger publishedCount = new AtomicInteger(0);
-                for (String source : sources) {
+                int total = sources.size();
+                int visited = 0;
+                // Round-robin: sin esto las fuentes del final nunca se leen cuando
+                // las primeras agotan maxGlobalPerCycle.
+                for (int i = 0; i < total; i++) {
                     if (publishedCount.get() >= Math.max(1, maxGlobalPerCycle)) {
                         break;
                     }
+                    String source = sources.get((sourceCursor + i) % total);
                     scrapeSource(source, keywords, onlyRelevant, timeoutMs, maxPerSource, userAgent,
                             translateEnabled, translateTargetLang, translateTimeoutMs, translateMaxChars, retryCount,
                             priorityKeywords, minRelevanceScore, maxAgeHours, publishedCount, maxGlobalPerCycle,
                             requirePriorityKeyword);
+                    visited++;
+                }
+                if (total > 0) {
+                    sourceCursor = (sourceCursor + Math.max(1, visited)) % total;
                 }
                 maybePublishSummary();
                 cleanupRecentlySeen();
@@ -193,16 +220,43 @@ public class NewsScraperPublisher extends Thread {
                                  int maxGlobalPerCycle,
                                  boolean requirePriorityKeyword) throws Exception {
         try {
-            String raw = Jsoup.connect(sourceUrl)
+            Connection conn = Jsoup.connect(sourceUrl)
                     .ignoreContentType(true)
+                    .ignoreHttpErrors(true)
                     .timeout(Math.max(3000, timeoutMs))
                     .userAgent(userAgent)
                     .referrer("https://www.sec.gov/")
                     .header("Accept", "application/rss+xml, application/xml, text/xml;q=0.9, */*;q=0.8")
-                    .header("Accept-Language", "en-US,en;q=0.9,es;q=0.8")
-                    .execute()
-                    .body();
-            Document doc = Jsoup.parse(raw, "", Parser.xmlParser());
+                    .header("Accept-Language", "en-US,en;q=0.9,es;q=0.8");
+            // Conditional GET: con 22 fuentes cada 15s, el 304 evita descarga y parseo.
+            String etag = etagBySource.get(sourceUrl);
+            if (!isBlank(etag)) {
+                conn.header("If-None-Match", etag);
+            }
+            String lastModified = lastModifiedBySource.get(sourceUrl);
+            if (!isBlank(lastModified)) {
+                conn.header("If-Modified-Since", lastModified);
+            }
+
+            Connection.Response response = conn.execute();
+            int status = response.statusCode();
+            if (status == 304) {
+                errorCountsBySource.remove(sourceUrl);
+                return;
+            }
+            if (status >= 400) {
+                throw new HttpStatusException("HTTP error fetching URL", status, response.url().toString());
+            }
+            String newEtag = response.header("ETag");
+            if (!isBlank(newEtag)) {
+                etagBySource.put(sourceUrl, newEtag);
+            }
+            String newLastModified = response.header("Last-Modified");
+            if (!isBlank(newLastModified)) {
+                lastModifiedBySource.put(sourceUrl, newLastModified);
+            }
+
+            Document doc = Jsoup.parse(response.body(), "", Parser.xmlParser());
             Elements entries = doc.select("item, entry");
             int count = 0;
             for (Element item : entries) {
@@ -265,8 +319,15 @@ public class NewsScraperPublisher extends Thread {
             return false;
         }
 
+        String titleText = candidate.title.toLowerCase(Locale.ROOT);
         String relevanceText = (candidate.title + " " + candidate.summary).toLowerCase(Locale.ROOT);
-        boolean hasPrioritySignal = containsKeyword(relevanceText, priorityKeywords);
+        // Ruido SEO / contenido no financiero que igual matchea keywords ("tragamonedas con ETH").
+        if (containsKeyword(relevanceText, excludeKeywords)) {
+            return false;
+        }
+        // Exigir la senal en el titulo descarta las notas donde el ticker solo aparece
+        // de pasada en la bajada.
+        boolean hasPrioritySignal = containsKeyword(priorityInTitle ? titleText : relevanceText, priorityKeywords);
         if (requirePriorityKeyword && !hasPrioritySignal) {
             return false;
         }
@@ -275,7 +336,9 @@ public class NewsScraperPublisher extends Thread {
             return false;
         }
 
-        String hash = sha256(normalize(candidate.title) + "|" + normalize(candidate.url));
+        // Hash solo por titulo canonico: la misma noticia llega por Google News y por
+        // el feed del medio con URLs distintas, y antes se publicaba dos veces.
+        String hash = sha256(dedupKey(candidate));
         if (hash.isEmpty() || recentlySeen.putIfAbsent(hash, Boolean.TRUE) != null) {
             return false;
         }
@@ -292,12 +355,14 @@ public class NewsScraperPublisher extends Thread {
         row.type = "news";
         String displayTitle = candidate.title;
         String displaySummary = candidate.summary;
-        if (translateEnabled) {
+        // Las fuentes chilenas ya vienen en español: traducirlas son 2 HTTP sincronos
+        // por noticia dentro del hilo del scraper, sin ningun beneficio.
+        if (translateEnabled && !looksSpanish(displayTitle)) {
             String translated = translateTo(displayTitle, translateTargetLang, translateTimeoutMs, translateMaxChars, userAgent);
             if (!isBlank(translated)) {
                 displayTitle = translated;
             }
-            if (!isBlank(displaySummary)) {
+            if (!isBlank(displaySummary) && !looksSpanish(displaySummary)) {
                 String translatedSummary = translateTo(displaySummary, translateTargetLang, translateTimeoutMs, translateMaxChars, userAgent);
                 if (!isBlank(translatedSummary)) {
                     displaySummary = translatedSummary;
@@ -400,15 +465,18 @@ public class NewsScraperPublisher extends Thread {
                 .put("publishedAt", row.publishedAt);
 
         String text = payload.toString();
-        for (Session session : NewsSessionRegistry.sessions()) {
-            try {
-                if (session != null && session.isOpen()) {
-                    session.getRemote().sendString(text);
+        // Fuera del hilo del scraper: un cliente lento no debe frenar el scraping.
+        broadcastExecutor.execute(() -> {
+            for (Session session : NewsSessionRegistry.sessions()) {
+                try {
+                    if (session != null && session.isOpen()) {
+                        session.getRemote().sendString(text);
+                    }
+                } catch (Exception e) {
+                    log.warn("No se pudo enviar news a session={}", session, e);
                 }
-            } catch (Exception e) {
-                log.warn("No se pudo enviar news a session={}", session, e);
             }
-        }
+        });
         log.info("News publicada {}", row.message);
     }
 
@@ -455,9 +523,22 @@ public class NewsScraperPublisher extends Thread {
         ));
 
         Candidate c = new Candidate();
-        c.source = hostLabel(sourceUrl);
-        c.title = title == null ? "" : title.trim();
-        c.summary = summary == null ? "" : summary.trim();
+        String label = hostLabel(sourceUrl);
+        String cleanTitle = stripHtml(title);
+        // Google News agrega " - Medio" al titulo: sirve como fuente real en vez de
+        // etiquetar todo como NEWS.GOOGLE.COM.
+        if (label.startsWith("NEWS.GOOGLE.COM")) {
+            String medio = sourceSuffix(cleanTitle);
+            if (!medio.isEmpty()) {
+                label = medio.toUpperCase(Locale.ROOT);
+                cleanTitle = stripSourceSuffix(cleanTitle);
+            }
+        }
+        c.source = label;
+        c.title = cleanTitle;
+        // El <description> de Google News viene con <a href=...>; sin limpiarlo se traduce
+        // el markup ("<un href=") y se gastan cientos de chars del limite de traduccion.
+        c.summary = stripHtml(summary);
         c.url = url == null ? "" : url.trim();
         c.publishedAt = publishedAt;
         return c;
@@ -477,7 +558,11 @@ public class NewsScraperPublisher extends Thread {
             return base;
         }
         String cleanSummary = summary.replaceAll("\\s+", " ").trim();
-        if (cleanSummary.equalsIgnoreCase(title == null ? "" : title.trim())) {
+        // El <description> de Google News suele ser el titulo + el medio: sin este
+        // prefijo-check el mensaje repite el titulo entero.
+        String normTitle = normalize(stripSourceSuffix(title)).replaceAll("\\s+", " ");
+        String normSummary = normalize(cleanSummary).replaceAll("\\s+", " ");
+        if (!normTitle.isEmpty() && normSummary.startsWith(normTitle)) {
             return base;
         }
         int limit = Math.max(80, maxSummaryChars);
@@ -555,7 +640,9 @@ public class NewsScraperPublisher extends Thread {
         summary.url = "";
         summary.publishedAt = now;
         summary.scrapedAt = now;
-        summary.hash = sha256("summary|" + (now / intervalMs) + "|" + sb);
+        // Solo el bucket de tiempo: con el contenido en el hash, cada reinicio del
+        // servicio reemitia un resumen nuevo dentro del mismo intervalo.
+        summary.hash = sha256("summary|" + (now / intervalMs));
         summary.message = sb.toString();
         summary.impact = "MEDIA";
         summary.type = "news_summary";
@@ -622,11 +709,35 @@ public class NewsScraperPublisher extends Thread {
         }
         String value = text.toLowerCase(Locale.ROOT);
         for (String keyword : keywords) {
-            if (!isBlank(keyword) && value.contains(keyword.toLowerCase(Locale.ROOT))) {
+            if (!isBlank(keyword) && matchesKeyword(value, keyword.toLowerCase(Locale.ROOT))) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Las keywords cortas exigen limite de palabra: por substring, "sec" matcheaba
+     * "subsecretaria" y "secretos", "oro" matcheaba "Concha y Toro", "ine" matcheaba "linea".
+     */
+    private boolean matchesKeyword(String textLower, String keywordLower) {
+        if (keywordLower.length() > 4) {
+            return textLower.contains(keywordLower);
+        }
+        int from = 0;
+        while (true) {
+            int i = textLower.indexOf(keywordLower, from);
+            if (i < 0) {
+                return false;
+            }
+            int end = i + keywordLower.length();
+            boolean leftOk = i == 0 || !Character.isLetterOrDigit(textLower.charAt(i - 1));
+            boolean rightOk = end >= textLower.length() || !Character.isLetterOrDigit(textLower.charAt(end));
+            if (leftOk && rightOk) {
+                return true;
+            }
+            from = i + 1;
+        }
     }
 
     private int relevanceScore(String title,
@@ -643,9 +754,9 @@ public class NewsScraperPublisher extends Thread {
                     continue;
                 }
                 String kw = k.toLowerCase(Locale.ROOT);
-                if (ttl.contains(kw)) {
+                if (matchesKeyword(ttl, kw)) {
                     score += 4;
-                } else if (text.contains(kw)) {
+                } else if (matchesKeyword(text, kw)) {
                     score += 2;
                 }
             }
@@ -656,9 +767,9 @@ public class NewsScraperPublisher extends Thread {
                     continue;
                 }
                 String kw = k.toLowerCase(Locale.ROOT);
-                if (ttl.contains(kw)) {
+                if (matchesKeyword(ttl, kw)) {
                     score += 2;
-                } else if (text.contains(kw)) {
+                } else if (matchesKeyword(text, kw)) {
                     score += 1;
                 }
             }
@@ -701,6 +812,61 @@ public class NewsScraperPublisher extends Thread {
 
     private String normalize(String value) {
         return value == null ? "" : value.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private String stripHtml(String value) {
+        if (isBlank(value)) {
+            return "";
+        }
+        String trimmed = value.trim();
+        if (trimmed.indexOf('<') < 0 && trimmed.indexOf('&') < 0) {
+            return trimmed;
+        }
+        return Jsoup.parse(trimmed).text().trim();
+    }
+
+    private String dedupKey(Candidate candidate) {
+        String title = normalize(stripSourceSuffix(candidate.title)).replaceAll("\\s+", " ");
+        return title.isEmpty() ? normalize(candidate.url) : title;
+    }
+
+    /** Google News agrega " - Medio" al titulo; sin quitarlo la misma noticia no dedupea. */
+    private String stripSourceSuffix(String title) {
+        int i = sourceSuffixIndex(title);
+        return i < 0 ? safe(title).trim() : title.trim().substring(0, i);
+    }
+
+    private String sourceSuffix(String title) {
+        int i = sourceSuffixIndex(title);
+        return i < 0 ? "" : title.trim().substring(i + 3).trim();
+    }
+
+    private int sourceSuffixIndex(String title) {
+        if (isBlank(title)) {
+            return -1;
+        }
+        String value = title.trim();
+        int i = value.lastIndexOf(" - ");
+        return (i > 20 && (value.length() - i - 3) <= 40) ? i : -1;
+    }
+
+    private boolean looksSpanish(String text) {
+        if (isBlank(text)) {
+            return true;
+        }
+        String value = " " + text.toLowerCase(Locale.ROOT) + " ";
+        if (value.indexOf('ñ') >= 0 || value.indexOf('á') >= 0 || value.indexOf('é') >= 0
+                || value.indexOf('í') >= 0 || value.indexOf('ó') >= 0 || value.indexOf('ú') >= 0
+                || value.indexOf('¿') >= 0 || value.indexOf('¡') >= 0) {
+            return true;
+        }
+        int hits = 0;
+        for (String hint : SPANISH_HINTS) {
+            if (value.contains(hint) && ++hits >= 2) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private String safe(String value) {

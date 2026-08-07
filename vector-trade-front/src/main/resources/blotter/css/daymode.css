@@ -487,3 +487,47 @@
 .combo-box-popup .list-view .list-cell {
     -fx-text-fill: #eef3fb;
 }
+
+/* Barra de páginas del multibook */
+.multibook-page-bar {
+    -fx-background-color: #e8ebf0;
+}
+
+.multibook-page {
+    -fx-text-fill: #3d4553;
+}
+
+.multibook-page:selected {
+    -fx-font-weight: bold;
+    -fx-text-fill: #ffffff;
+    -fx-background-color: #2b3178;
+    -fx-border-color: #2b3178;
+}
+
+/* ===== Huincha de papeles (entre el lanzador y Datos del Mercado) ===== */
+.huincha {
+    -fx-background-color: #e8ebf0;
+    -fx-border-color: #c3c8d1;
+    -fx-border-width: 1 0 1 0;
+}
+
+.huincha-item {
+    -fx-padding: 0 14 0 14;
+    -fx-cursor: hand;
+}
+
+.huincha-simbolo {
+    -fx-font-weight: bold;
+    -fx-font-size: 11px;
+    -fx-text-fill: #1f2430;
+}
+
+.huincha-precio {
+    -fx-font-size: 11px;
+    -fx-text-fill: #3d4553;
+}
+
+.huincha-var {
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}

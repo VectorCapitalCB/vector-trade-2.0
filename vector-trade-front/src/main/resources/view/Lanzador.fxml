@@ -15,7 +15,7 @@
                 <HBox spacing="1">
                     <Label fx:id="lblSerach" style="-fx-font-weight: bold;" text="Buscar Instrumento" />
                     <Pane fx:id="pane9" minWidth="435" />
-                    <Label fx:id="labelBroker" style="-fx-font-weight: bold;" text="Bróker" />
+                    <Label fx:id="labelBroker" style="-fx-font-weight: bold;" text="Bróker" visible="false" managed="false" />
                 </HBox>
 
                 <!-- Aquí agregamos margen y espaciado entre los controles -->
@@ -31,7 +31,7 @@
                     <Button fx:id="addpreselect" onAction="#preSelectAction" prefHeight="24.0" prefWidth="108" style="-fx-font-weight: bold;" text="Pre-Digitadas" />
                     <Button fx:id="paste" prefHeight="24.0" prefWidth="100" style="-fx-font-weight: bold;" text="Paste Order" />
                     <Pane fx:id="pane8" minWidth="99" />
-                    <ComboBox fx:id="brokerOrder" prefHeight="25.0" prefWidth="120" promptText="Seleccione" styleClass="white-background" visible="true" />
+                    <ComboBox fx:id="brokerOrder" prefHeight="25.0" prefWidth="120" promptText="Seleccione" styleClass="white-background" visible="false" managed="false" />
                 </HBox>
             </VBox>
 
@@ -91,7 +91,7 @@
 
                 <!-- LINEA 3 -->
 
-                <VBox fx:id="VboxCodOperador" spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="3">
+                <VBox fx:id="VboxCodOperador" spacing="5" visible="false" managed="false" GridPane.columnIndex="4" GridPane.rowIndex="3">
                     <Label fx:id="cOperadorlb" style="-fx-font-weight: bold;" text="Cod. Operador" />
                     <ComboBox fx:id="cOperador" disable="false" prefWidth="120" styleClass="white-background" />
                 </VBox>
@@ -111,7 +111,7 @@
                     <TextField fx:id="limit" disable="true" prefWidth="120" styleClass="white-background" />
                 </VBox>
 
-                <VBox fx:id="VboxSecExc" spacing="5" GridPane.columnIndex="4" GridPane.rowIndex="3">
+                <VBox fx:id="VboxSecExc" spacing="5" GridPane.columnIndex="0" GridPane.rowIndex="3">
                     <Label fx:id="secLb" style="-fx-font-weight: bold;" text="Sec. Exch" />
                     <ComboBox fx:id="secExchOrder" prefWidth="120" styleClass="white-background" />
                 </VBox>

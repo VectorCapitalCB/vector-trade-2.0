@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
 <?import javafx.geometry.Insets?>
+<?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 <AnchorPane xmlns:fx="http://javafx.com/fxml"
@@ -65,6 +66,10 @@
                             <Label fx:id="lowpriceGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
                     </HBox>
+
+                    <!-- Tendencia intradía: la misma serie y el mismo dibujo que la columna
+                         "Tendencia" de Datos del Mercado, para que el papel se vea igual en ambos. -->
+                    <Canvas fx:id="tendencia" width="300" height="18"/>
 
                 </VBox>
 

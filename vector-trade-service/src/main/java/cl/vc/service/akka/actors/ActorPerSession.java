@@ -17,8 +17,7 @@ import cl.vc.module.protocolbuff.ws.vectortrade.MessageUtilVT;
 import cl.vc.service.MainApp;
 import cl.vc.service.akka.actors.mkd.ActorPerSubscriptionMkd;
 import cl.vc.service.akka.actors.routing.ActorGroupPerAccount;
-import cl.vc.service.util.IgpaPortfolioService;
-import cl.vc.service.util.IpsaPortfolioService;
+import cl.vc.service.multibook.Multibook2Repository;
 import com.google.protobuf.Message;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -26,11 +25,13 @@ import lombok.extern.slf4j.Slf4j;
 import org.eclipse.jetty.websocket.api.Session;
 import org.keycloak.representations.idm.UserRepresentation;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
+import java.util.zip.ZipException;
 
 
 @Slf4j
@@ -42,6 +43,16 @@ public class ActorPerSession extends AbstractActor {
     private final ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
     private SessionsMessage.Connect connect = SessionsMessage.Connect.newBuilder().build();
     private String idSession;
+
+    // ── Debounce de onConnect ───────────────────────────────────────────────
+    // Un ActorPerSession = una sesión WebSocket. El primer Connect inicializa todo
+    // (Keycloak, addAccount, snapshots). Si el front reenvía Connect repetidamente
+    // sobre el MISMO socket (loop de reconexión), no hay que rehacer ese trabajo caro:
+    // el cliente ya tiene los datos y se mantiene al día por mensajes en vivo.
+    private boolean connectInitialized = false;
+    private String initializedUsername = null;
+    private int debouncedConnects = 0;
+    private long lastDebounceLogMs = 0L;
 
     private ActorPerSession(Session session) {
         this.session = session;
@@ -83,6 +94,7 @@ public class ActorPerSession extends AbstractActor {
                 .match(SnapshotPositionsAccount.class, this::onPositionsSnapshotPositions)
                 .match(SessionsMessage.Connect.class, this::onConnect)
                 .match(SessionsMessage.Ping.class, this::onPing)
+                .match(HeartbeatTick.class, this::onHeartbeatTick)
                 .match(BlotterMessage.User.class, this::onUser)
                 .match(BlotterMessage.UserList.class, this::onUserList)
                 .match(BlotterMessage.Multibook.class, this::onMultibook)
@@ -103,10 +115,7 @@ public class ActorPerSession extends AbstractActor {
         }
 
         if (session != null) {
-            Runnable task = () -> {
-                SessionsMessage.Ping ping = SessionsMessage.Ping.newBuilder().setId(IDGenerator.getID()).build();
-                sendMessages(ping);
-            };
+            Runnable task = () -> getSelf().tell(HeartbeatTick.INSTANCE, ActorRef.noSender());
             scheduler.scheduleAtFixedRate(task, 1, 30, TimeUnit.SECONDS);
         }
 
@@ -122,6 +131,7 @@ public class ActorPerSession extends AbstractActor {
     public void postStop() {
 
         try {
+            scheduler.shutdownNow();
 
             MainApp.getMessageEventBus().unsubscribe(getSelf(), "news");
             MainApp.getMessageEventBus().unsubscribe(getSelf(), "TradeGeneral");
@@ -145,6 +155,12 @@ public class ActorPerSession extends AbstractActor {
 
             MainApp.getSessionAdminList().remove(getSelf());
 
+            // Limpiar sesión activa del mapa de admin
+            if (connect != null && !connect.getUsername().isEmpty()) {
+                MainApp.getUserActiveSessionsMap().remove(connect.getUsername());
+                MainApp.getUserSessionConnectedAt().remove(connect.getUsername());
+            }
+
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -156,10 +172,38 @@ public class ActorPerSession extends AbstractActor {
             if (session != null && session.isOpen() && message != null) {
                 ByteBuffer messsage = MessageUtilVT.serializeMessageByteBuffer(message);
                 session.getRemote().sendBytes(messsage);
+                if (MainApp.isLogOutboundOrders()) logOutbound(message);
             }
 
+        } catch (ZipException e) {
+            log.error("[WebSocket] Error de compresión enviando mensaje a sesión {}: {}. Se cerrará la sesión.",
+                    this.idSession, e.getMessage(), e);
+
+            try {
+                if (this.session != null && this.session.isOpen()) {
+                    this.session.close(1011, "Error de compresión WebSocket");
+                }
+            } catch (Exception closeEx) {
+                log.warn("[WebSocket] No se pudo cerrar la sesión {} tras ZipException: {}",
+                        this.idSession, closeEx.getMessage());
+            }
+        } catch (ClosedChannelException e) {
+            log.info("[WebSocket] Canal ya cerrado al enviar mensaje a sesión {}.", this.idSession);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    /** Debug (flag log.outbound.orders=true): loguea SOLO Order/OrderCancelReject enviados al cliente,
+     *  en el hilo del actor (orden real de envio). Default off -> sin costo en el hot path. */
+    private void logOutbound(Message message) {
+        if (message instanceof RoutingMessage.Order o) {
+            log.info("[Outbound][Order] sesion={} id={} clOrdId={} sym={} acc={} side={} ordStatus={} execType={} lastQty={} lastPx={} cumQty={} leaves={} price={} execId={}",
+                    idSession, o.getId(), o.getClOrdId(), o.getSymbol(), o.getAccount(), o.getSide(),
+                    o.getOrdStatus(), o.getExecType(), o.getLastQty(), o.getLastPx(), o.getCumQty(),
+                    o.getLeaves(), o.getPrice(), o.getExecId());
+        } else if (message instanceof RoutingMessage.OrderCancelReject r) {
+            log.info("[Outbound][OrderCancelReject] sesion={} id={} text={}", idSession, r.getId(), r.getText());
         }
     }
 
@@ -210,6 +254,11 @@ public class ActorPerSession extends AbstractActor {
         sendMessages(pong);
     }
 
+    private void onHeartbeatTick(HeartbeatTick ignored) {
+        SessionsMessage.Ping ping = SessionsMessage.Ping.newBuilder().setId(IDGenerator.getID()).build();
+        sendMessages(ping);
+    }
+
     public void onMultibook(BlotterMessage.Multibook multiBook) {
 
         try {
@@ -219,20 +268,15 @@ public class ActorPerSession extends AbstractActor {
             }
 
             String username = connect.getUsername();
-
-            LinkedHashMap<Integer, BlotterMessage.SubMultibook> mergedByPosition = new LinkedHashMap<>();
-
-            if (MainApp.getMultiBookMaps().containsKey(username)) {
-                List<BlotterMessage.SubMultibook> existing = MainApp.getMultiBookMaps().get(username);
-                if (existing != null) {
-                    existing.forEach(sub -> mergedByPosition.put(sub.getPositions(), sub));
-                }
+            if (!ensureRedisAvailable("multibook")) {
+                return;
             }
 
-            multiBook.getSubmultibookList().forEach(sub -> mergedByPosition.put(sub.getPositions(), sub));
+            // Compatibilidad con fronts previos a Multibook 2.0: los nuevos guardan por HTTP.
+            List<BlotterMessage.SubMultibook> list =
+                    Multibook2Repository.mergeRows(username, multiBook.getSubmultibookList());
 
-            List<BlotterMessage.SubMultibook> list = new ArrayList<>(mergedByPosition.values());
-            MainApp.getMultiBookMaps().put(username, list);
+            MainApp.registerMultibookTopicsForStartupMkdWatch(username, list);
             BlotterMessage.Multibook.Builder multibook = BlotterMessage.Multibook.newBuilder()
                     .addAllSubmultibook(list)
                     .setUsername(username);
@@ -310,6 +354,9 @@ public class ActorPerSession extends AbstractActor {
     public void onPreselect(BlotterMessage.PreselectRequest request) {
 
         try {
+            if (!ensureRedisAvailable("preselect")) {
+                return;
+            }
 
             BlotterMessage.PreselectResponse.Builder response = BlotterMessage.PreselectResponse.newBuilder();
             response.setUsername(request.getUsername());
@@ -372,13 +419,74 @@ public class ActorPerSession extends AbstractActor {
         }
     }
 
+    /**
+     * Decide si un Connect es un duplicado sobre la MISMA sesión que ya fue inicializada
+     * para el MISMO usuario. En ese caso se ignora el trabajo caro (debounce). Un cambio de
+     * usuario sobre el mismo socket (re-login) NO se considera duplicado y re-inicializa.
+     */
+    static boolean isDuplicateConnect(boolean alreadyInitialized, String initializedUsername, String incomingUsername) {
+        return alreadyInitialized
+                && incomingUsername != null
+                && incomingUsername.equals(initializedUsername);
+    }
+
     public void onConnect(SessionsMessage.Connect onConnect) {
 
         try {
 
             this.connect = onConnect;
             String username = onConnect.getUsername();
+            // Con aislamiento ON: usar la identidad AUTENTICADA (header validado por el filtro),
+            // NO la que manda el cliente -> evita reclamar el username de otro y filtrar su token/cuentas.
+            if (MainApp.isAccountIsolationEnabled()) {
+                String auth = authenticatedUsername();
+                if (auth != null && !auth.isEmpty()) {
+                    username = auth;
+                }
+            }
+
+            // Rechazar usuarios bloqueados por el admin antes de hacer cualquier otra cosa.
+            // (Se mantiene en CADA Connect: si el admin bloquea a media sesión, el próximo
+            //  keepalive/Connect lo expulsa casi en tiempo real. Es barato.)
+            if (!username.isEmpty() && MainApp.isUserBlocked(username)) {
+                log.warn("[Security] Usuario bloqueado intentó conectarse y fue rechazado: {}", username);
+                if (session != null && session.isOpen()) {
+                    try {
+                        session.close(1008, "Acceso bloqueado por administrador");
+                    } catch (Exception e) {
+                        log.warn("[Security] Error cerrando sesión de usuario bloqueado '{}': {}", username, e.getMessage());
+                    }
+                }
+                return;
+            }
+
+            // Registrar sesión activa para gestión desde el admin (idempotente).
+            if (session != null && !username.isEmpty()) {
+                MainApp.getUserActiveSessionsMap().put(username, session);
+            }
+
+            // ── DEBOUNCE ───────────────────────────────────────────────────────
+            // Si ya inicializamos esta sesión para este usuario, NO repetir el trabajo
+            // caro (Keycloak getRolesUserKeycloak + addAccount + reenvío de snapshots).
+            // Esto evita el martilleo cuando el front reenvía Connect cada ~7s sobre el
+            // mismo socket (loop de reconexión) y la contención de escrituras en el WS.
+            if (isDuplicateConnect(connectInitialized, initializedUsername, username)) {
+                debouncedConnects++;
+                long now = System.currentTimeMillis();
+                if (now - lastDebounceLogMs > 60_000L) {   // log throttled: 1 vez/min
+                    log.warn("[Session] Connect repetido sobre el mismo socket ignorado (debounce) usuario={} repeticiones={} " +
+                            "(posible loop de reconexión en el front)", username, debouncedConnects);
+                    lastDebounceLogMs = now;
+                }
+                return;
+            }
+
             log.info("onConnect - procesando usuario: {}", username);
+
+            // Primera inicialización real de esta sesión.
+            if (session != null && !username.isEmpty()) {
+                MainApp.getUserSessionConnectedAt().put(username, System.currentTimeMillis());
+            }
 
             BlotterMessage.User userMsg;
             try {
@@ -410,13 +518,23 @@ public class ActorPerSession extends AbstractActor {
                 return;
             }
 
-            if (MainApp.getMultiBookMaps().containsKey(username)) {
-                List<BlotterMessage.SubMultibook> list = MainApp.getMultiBookMaps().get(username);
+            if (!ensureRedisAvailable("connect-multibook")) {
+                return;
+            }
+
+            List<BlotterMessage.SubMultibook> list = Multibook2Repository.effectiveRows(username);
+            if (!list.isEmpty()) {
+                MainApp.registerMultibookTopicsForStartupMkdWatch(username, list);
                 BlotterMessage.Multibook.Builder multibook = BlotterMessage.Multibook.newBuilder()
                         .addAllSubmultibook(list)
                         .setUsername(username);
                 sendMessages(multibook.build());
             }
+
+            // Inicialización completa: los próximos Connect sobre este mismo socket
+            // se ignorarán (debounce) mientras el usuario no cambie.
+            connectInitialized = true;
+            initializedUsername = username;
 
         } catch (Exception e) {
             log.error("Error general en onConnect: {}", e.getMessage(), e);
@@ -456,6 +574,14 @@ public class ActorPerSession extends AbstractActor {
         try {
             if (user.getStatusUser().equals(BlotterMessage.StatusUser.UPDATE_USER)) {
                 if (!user.getPassword().isEmpty()) {
+                    // IDOR: con aislamiento ON, solo el propio usuario autenticado puede cambiar su clave.
+                    if (MainApp.isAccountIsolationEnabled()) {
+                        String auth = authenticatedUsername();
+                        if (auth == null || !auth.equalsIgnoreCase(user.getUsername())) {
+                            log.warn("[Security] Cambio de clave rechazado: '{}' intentó cambiar la de '{}'", auth, user.getUsername());
+                            return;
+                        }
+                    }
                     MainApp.getKeycloakService().changePassword(user.getUsername(), user.getPassword());
                 }
                 MainApp.getKeycloakService().updateUser(user);
@@ -468,16 +594,22 @@ public class ActorPerSession extends AbstractActor {
     }
 
     private ActorRef addAccount(String account) {
+        boolean created = false;
         ActorRef actorRef;
         if (!MainApp.getAccountGroupUser().containsKey(account)) {
-            actorRef = MainApp.getSystem().actorOf(ActorGroupPerAccount.props(account, 0d, 3.0).withDispatcher("ActorperAccount"));
-
+            Double margin = MainApp.getAccountMarginCache().getOrDefault(account, 0.0);
+            Double leverage = MainApp.getAccountLeverageCache().getOrDefault(account, 3.0);
+            actorRef = MainApp.getSystem().actorOf(ActorGroupPerAccount.props(account, margin, leverage).withDispatcher("ActorperAccount"));
             MainApp.getAccountGroupUser().put(account, actorRef);
+            created = true;
         } else {
             actorRef = MainApp.getAccountGroupUser().get(account);
         }
 
         actorRef.tell(new ActorGroupPerAccount.NewActorSession(getSelf(), idSession), ActorRef.noSender());
+        if (created) {
+            actorRef.tell(ActorGroupPerAccount.Initialize.INSTANCE, ActorRef.noSender());
+        }
 
         return actorRef;
     }
@@ -495,7 +627,31 @@ public class ActorPerSession extends AbstractActor {
 
     public void onNewOrderRequest(RoutingMessage.NewOrderRequest msg) {
         try {
+            // Rate-limit: demasiadas órdenes por segundo desde esta IP → auto-bloquear
+            String clientIp = getClientIp();
+            if (MainApp.recordIpOrderExceeded(clientIp)) {
+                MainApp.blockIp(clientIp);
+                log.warn("[IpSecurity] IP auto-bloqueada por exceso de órdenes: {}", clientIp);
+                try { if (session != null && session.isOpen()) session.close(1008, "IP bloqueada: demasiadas órdenes"); } catch (Exception ignored) {}
+                return;
+            }
+
             final RoutingMessage.Order order = msg.getOrder();
+
+            // Aislamiento de cuentas: el operador solo rutea en SUS cuentas (identidad autenticada, no la del mensaje).
+            if (!isAccountAllowed(order.getAccount())) {
+                log.warn("[Security] Orden rechazada: cuenta {} no autorizada para el usuario autenticado (id={})",
+                        order.getAccount(), order.getId());
+                sendMessages(order.toBuilder()
+                        .setExecType(RoutingMessage.ExecutionType.EXEC_REJECTED)
+                        .setOrdStatus(RoutingMessage.OrderStatus.REJECTED)
+                        .setExecId(IDGenerator.getID())
+                        .setText("Cuenta no autorizada para este usuario")
+                        .setLeaves(0d)
+                        .build());
+                return;
+            }
+
             final String op = java.util.Optional.ofNullable(order.getOperator()).orElse("").toLowerCase(java.util.Locale.ROOT);
 
 
@@ -522,6 +678,49 @@ public class ActorPerSession extends AbstractActor {
         }
     }
 
+    private java.util.Set<String> allowedAccountsCache;
+
+    /** Username autenticado por el filtro (del header Authorization de la sesión), NO el que manda el cliente. */
+    private String authenticatedUsername() {
+        try {
+            if (session == null || session.getUpgradeRequest() == null) return null;
+            String auth = session.getUpgradeRequest().getHeader("Authorization");
+            if (auth == null || !auth.startsWith("Basic ")) return null;
+            String decoded = new String(java.util.Base64.getDecoder().decode(auth.substring(6).trim()),
+                    java.nio.charset.StandardCharsets.UTF_8);
+            int sep = decoded.indexOf(':');
+            if (sep < 0) return null;
+            return cl.vc.module.protocolbuff.crypt.AESEncryption.decrypt(decoded.substring(0, sep));
+        } catch (Exception e) {
+            log.warn("[Security] no se pudo resolver la identidad autenticada: {}", e.toString());
+            return null;
+        }
+    }
+
+    /**
+     * ¿La orden puede rutear en esa cuenta? Con el flag OFF -> siempre true (comportamiento actual).
+     * Con ON -> la cuenta debe estar en las que Keycloak asigna al usuario AUTENTICADO (no al del mensaje).
+     * Fail-closed: si el aislamiento está ON y no hay identidad, rechaza.
+     */
+    private boolean isAccountAllowed(String account) {
+        if (!MainApp.isAccountIsolationEnabled()) return true;
+        if (allowedAccountsCache == null) {
+            String user = authenticatedUsername();
+            if (user == null || user.isEmpty()) {
+                log.warn("[Security] aislamiento ON pero sin identidad autenticada -> rechazo (fail-closed)");
+                return false;
+            }
+            try {
+                BlotterMessage.User u = MainApp.getKeycloakService().getRolesUserKeycloak(user);
+                allowedAccountsCache = new java.util.HashSet<>(u.getAccountList());
+            } catch (Exception e) {
+                log.error("[Security] no se pudieron obtener las cuentas del usuario {}: {}", user, e.toString());
+                return false;
+            }
+        }
+        return allowedAccountsCache.contains(account);
+    }
+
     private void addAccountSitioPrivado(RoutingMessage.NewOrderRequest msg) {
 
         try {
@@ -539,9 +738,22 @@ public class ActorPerSession extends AbstractActor {
 
     public void onReplaceRequest(RoutingMessage.OrderReplaceRequest msg) {
         try {
+            // Rate-limit de órdenes
+            String clientIp = getClientIp();
+            if (MainApp.recordIpOrderExceeded(clientIp)) {
+                MainApp.blockIp(clientIp);
+                log.warn("[IpSecurity] IP auto-bloqueada por exceso de órdenes (replace): {}", clientIp);
+                try { if (session != null && session.isOpen()) session.close(1008, "IP bloqueada: demasiadas órdenes"); } catch (Exception ignored) {}
+                return;
+            }
+
             RoutingMessage.Order base = MainApp.getIdOrders().get(msg.getId());
             if (base == null) {
                 log.warn("Replace sin orden base indexada: {}", msg.getId());
+                return;
+            }
+            if (!isAccountAllowed(base.getAccount())) {
+                log.warn("[Security] Replace rechazado: cuenta {} no autorizada (id={})", base.getAccount(), msg.getId());
                 return;
             }
             String op = java.util.Optional.ofNullable(base.getOperator()).orElse("").toLowerCase();
@@ -563,6 +775,10 @@ public class ActorPerSession extends AbstractActor {
                 log.warn("Cancel sin orden base indexada: {}", msg.getId());
                 return;
             }
+            if (!isAccountAllowed(base.getAccount())) {
+                log.warn("[Security] Cancel rechazado: cuenta {} no autorizada (id={})", base.getAccount(), msg.getId());
+                return;
+            }
             String op = java.util.Optional.ofNullable(base.getOperator()).orElse("").toLowerCase();
 
             if (op.contains("voultech")) {
@@ -575,16 +791,63 @@ public class ActorPerSession extends AbstractActor {
         }
     }
 
+    /** Extrae la IP del cliente de la sesión WebSocket activa. */
+    private String getClientIp() {
+        try {
+            if (session != null && session.getRemoteAddress() != null) {
+                return session.getRemoteAddress().getAddress().getHostAddress();
+            }
+        } catch (Exception ignored) {}
+        return "unknown";
+    }
+
+    private boolean ensureRedisAvailable(String operation) {
+        if (MainApp.ensureRedisReady("websocket-" + operation)) {
+            return true;
+        }
+
+        NotificationMessage.Notification notification = NotificationMessage.Notification.newBuilder()
+                .setTitle("Redis")
+                .setTime(TimeGenerator.getTimeGeneral(MainApp.getZoneId()))
+                .setMessage("Redis no disponible para " + operation + ". Usa Admin > Redis Recovery para reconectar.")
+                .setLevel(NotificationMessage.Level.ERROR)
+                .build();
+        sendMessages(notification);
+        log.error("[Redis] Operación {} rechazada: Redis no disponible ({})", operation, MainApp.getRedisLastError());
+        return false;
+    }
+
     public void onPortfolioRequest(BlotterMessage.PortfolioRequest portfolioRequest) {
 
         try {
-            ensureSystemPortfolios(portfolioRequest.getUsername());
+            if (!ensureRedisAvailable("portfolio")) {
+                return;
+            }
+            // Asegura nodo de usuario con portafolio "Principal"
+            if (!MainApp.getPortfolioMaps().containsKey(portfolioRequest.getUsername())) {
+                BlotterMessage.Portfolio newPortfolio = BlotterMessage.Portfolio.newBuilder()
+                        .setId("Principal")
+                        .setNamePortfolio("Principal")
+                        .setUsername(portfolioRequest.getUsername())
+                        .build();
+
+                HashMap<String, BlotterMessage.Portfolio> portfolios = new HashMap<>();
+                portfolios.put(newPortfolio.getNamePortfolio(), newPortfolio);
+                MainApp.getPortfolioMaps().put(portfolioRequest.getUsername(), portfolios);
+                // Ojo: si aparece seguido para el mismo usuario, la clave con la que se guarda no es
+                // la misma con la que se consulta y los portafolios anteriores quedan huerfanos en Redis.
+                log.warn("[Portfolio] usuario '{}' no existia en Redis: creado desde cero con solo 'Principal'",
+                        portfolioRequest.getUsername());
+            }
 
             if (portfolioRequest.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.SNAPSHOT_PORTFOLIO)) {
 
-                ensureSystemPortfolios(portfolioRequest.getUsername());
                 HashMap<String, BlotterMessage.Portfolio> porfolios =
                         MainApp.getPortfolioMaps().get(portfolioRequest.getUsername());
+                MainApp.registerPortfolioTopicsForStartupMkdWatch(portfolioRequest.getUsername(), porfolios);
+
+                log.info("[Portfolio][SNAPSHOT] usuario='{}' devuelve {} portafolios: {}",
+                        portfolioRequest.getUsername(), porfolios.size(), porfolios.keySet());
 
                 BlotterMessage.PortfolioResponse.Builder portfolioResponse = BlotterMessage.PortfolioResponse.newBuilder()
                         .addAllPostfolio(porfolios.values())
@@ -598,11 +861,6 @@ public class ActorPerSession extends AbstractActor {
                 HashMap<String, BlotterMessage.Portfolio> porfolios =
                         MainApp.getPortfolioMaps().get(portfolioRequest.getUsername());
 
-                if (isProtectedPortfolio(portfolioRequest.getNamePortfolio())) {
-                    sendPortfolioBlockedNotification("No se puede crear un portafolio con nombre " + portfolioRequest.getNamePortfolio());
-                    return;
-                }
-
                 // Crea portafolio nuevo
                 BlotterMessage.Portfolio newPortfolio = BlotterMessage.Portfolio.newBuilder()
                         .setId(IDGenerator.getID())
@@ -612,6 +870,11 @@ public class ActorPerSession extends AbstractActor {
 
                 porfolios.put(newPortfolio.getNamePortfolio(), newPortfolio);
                 MainApp.getPortfolioMaps().put(portfolioRequest.getUsername(), porfolios);
+                MainApp.registerPortfolioTopicsForStartupMkdWatch(portfolioRequest.getUsername(), porfolios);
+
+                log.info("[Portfolio][NEW] usuario='{}' creo '{}'; persistidos ahora: {}",
+                        portfolioRequest.getUsername(), newPortfolio.getNamePortfolio(),
+                        MainApp.getPortfolioMaps().get(portfolioRequest.getUsername()).keySet());
 
                 BlotterMessage.PortfolioResponse portfolioResponse = BlotterMessage.PortfolioResponse.newBuilder()
                         .setStatusPortfolio(BlotterMessage.StatusPortfolio.NEW_PORTFOLIO)
@@ -629,12 +892,6 @@ public class ActorPerSession extends AbstractActor {
                 String namePortfolio = portfolioRequest.getNamePortfolio();
                 String username = portfolioRequest.getUsername();
 
-                if (isSystemManagedPortfolio(namePortfolio)
-                        || (isProtectedPortfolio(namePortfolio) && !isPrincipalPortfolio(namePortfolio))) {
-                    sendPortfolioBlockedNotification("El portafolio " + namePortfolio + " es generado por el sistema");
-                    return;
-                }
-
                 HashMap<String, BlotterMessage.Portfolio> portfolioHashMap =
                         MainApp.getPortfolioMaps().get(username);
 
@@ -646,6 +903,7 @@ public class ActorPerSession extends AbstractActor {
 
                 portfolioHashMap.put(portfolioToBuider.getNamePortfolio(), portfolioToBuider.build());
                 MainApp.getPortfolioMaps().put(username, portfolioHashMap);
+                MainApp.registerPortfolioTopicsForStartupMkdWatch(username, portfolioHashMap);
 
                 BlotterMessage.PortfolioResponse portfolioResponse = BlotterMessage.PortfolioResponse.newBuilder()
                         .setStatusPortfolio(BlotterMessage.StatusPortfolio.ADD_ASSET)
@@ -662,12 +920,6 @@ public class ActorPerSession extends AbstractActor {
                     BlotterMessage.Asset asset = portfolioRequest.getAsset();
                     String namePortfolio = portfolioRequest.getNamePortfolio();
                     String username = portfolioRequest.getUsername();
-
-                    if (isSystemManagedPortfolio(namePortfolio)
-                            || (isProtectedPortfolio(namePortfolio) && !isPrincipalPortfolio(namePortfolio))) {
-                        sendPortfolioBlockedNotification("El portafolio " + namePortfolio + " es generado por el sistema");
-                        return;
-                    }
 
                     HashMap<String, BlotterMessage.Portfolio> portfolioHashMap =
                             MainApp.getPortfolioMaps().get(username);
@@ -695,6 +947,7 @@ public class ActorPerSession extends AbstractActor {
                     portfolioBuild.addAllAsset(listaInmutable);
                     portfolioHashMap.put(namePortfolio, portfolioBuild.build());
                     MainApp.getPortfolioMaps().put(username, portfolioHashMap);
+                    MainApp.registerPortfolioTopicsForStartupMkdWatch(username, portfolioHashMap);
 
                     BlotterMessage.PortfolioResponse portfolioResponse = BlotterMessage.PortfolioResponse.newBuilder()
                             .setStatusPortfolio(BlotterMessage.StatusPortfolio.REMOVE_ASSET)
@@ -728,11 +981,11 @@ public class ActorPerSession extends AbstractActor {
                     String username = portfolioRequest.getUsername();
                     String namePortfolio = portfolioRequest.getNamePortfolio();
 
-                    if (isProtectedPortfolio(namePortfolio)) {
+                    if ("Principal".equalsIgnoreCase(namePortfolio)) {
                         NotificationMessage.Notification notification = NotificationMessage.Notification.newBuilder()
                                 .setTitle("Portfolio")
                                 .setTime(TimeGenerator.getTimeGeneral(MainApp.getZoneId()))
-                                .setMessage("No se puede eliminar el portafolio " + namePortfolio)
+                                .setMessage("No se puede eliminar el portafolio Principal")
                                 .setLevel(NotificationMessage.Level.ERROR)
                                 .build();
                         sendMessages(notification);
@@ -789,76 +1042,16 @@ public class ActorPerSession extends AbstractActor {
         }
     }
 
-    private void ensureSystemPortfolios(String username) {
-        HashMap<String, BlotterMessage.Portfolio> portfolios = MainApp.getPortfolioMaps().get(username);
-        if (portfolios == null) {
-            portfolios = new HashMap<>();
-        } else {
-            portfolios = new HashMap<>(portfolios);
-        }
-
-        portfolios.remove(IpsaPortfolioService.DEFAULT_PRIMARY_PORTFOLIO_NAME);
-
-        String ipsaPortfolioName = IpsaPortfolioService.getPortfolioName(MainApp.getProperties());
-        if (IpsaPortfolioService.isEnabled(MainApp.getProperties())) {
-            BlotterMessage.Portfolio ipsaPortfolio = IpsaPortfolioService.buildPortfolio(
-                    username,
-                    MainApp.getProperties(),
-                    ipsaPortfolioName
-            );
-            portfolios.put(ipsaPortfolioName, ipsaPortfolio);
-        } else {
-            portfolios.remove(ipsaPortfolioName);
-        }
-
-        String igpaPortfolioName = IgpaPortfolioService.getPortfolioName(MainApp.getProperties());
-        if (IgpaPortfolioService.isEnabled(MainApp.getProperties())) {
-            BlotterMessage.Portfolio igpaPortfolio = IgpaPortfolioService.buildPortfolio(
-                    username,
-                    MainApp.getProperties(),
-                    igpaPortfolioName
-            );
-            portfolios.put(igpaPortfolioName, igpaPortfolio);
-        } else {
-            portfolios.remove(igpaPortfolioName);
-        }
-
-        MainApp.getPortfolioMaps().put(username, portfolios);
-    }
-
-    private boolean isPrincipalPortfolio(String namePortfolio) {
-        return namePortfolio != null && "Principal".equalsIgnoreCase(namePortfolio);
-    }
-
-    private boolean isProtectedPortfolio(String namePortfolio) {
-        return namePortfolio != null && (isPrincipalPortfolio(namePortfolio)
-                || IpsaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio)
-                || IgpaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio));
-    }
-
-    private boolean isSystemManagedPortfolio(String namePortfolio) {
-        return namePortfolio != null
-                && (isPrincipalPortfolio(namePortfolio)
-                || (IpsaPortfolioService.isEnabled(MainApp.getProperties())
-                && IpsaPortfolioService.getPortfolioName(MainApp.getProperties()).equalsIgnoreCase(namePortfolio)));
-    }
-
-    private void sendPortfolioBlockedNotification(String message) {
-        NotificationMessage.Notification notification = NotificationMessage.Notification.newBuilder()
-                .setTitle("Portfolio")
-                .setTime(TimeGenerator.getTimeGeneral(MainApp.getZoneId()))
-                .setMessage(message)
-                .setLevel(NotificationMessage.Level.ERROR)
-                .build();
-        sendMessages(notification);
-    }
-
 
     @Data
     @AllArgsConstructor
     public static final class SnapshotPositionsAccount {
         private String account;
         private BlotterMessage.SnapshotPositions snapshotPositions;
+    }
+
+    private enum HeartbeatTick {
+        INSTANCE
     }
 
 }

@@ -1,82 +1,204 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
+<?import javafx.geometry.Insets?>
 <?import javafx.scene.control.*?>
+<?import javafx.scene.image.Image?>
+<?import javafx.scene.image.ImageView?>
 <?import javafx.scene.layout.*?>
-<?import javafx.scene.text.Font?>
+<?import java.lang.Double?>
+<?import javafx.scene.shape.Circle?>
+<?import javafx.scene.shape.Line?>
+<?import javafx.scene.shape.Polygon?>
+<?import javafx.scene.shape.Polyline?>
+<?import javafx.scene.shape.Rectangle?>
 
 <AnchorPane xmlns:fx="http://javafx.com/fxml/1" fx:id="anchorPane"
             minHeight="-Infinity" minWidth="-Infinity" pickOnBounds="false"
-            prefHeight="610.0" prefWidth="580.0" scaleShape="false"
+            prefHeight="580.0" prefWidth="900.0"
             xmlns="http://javafx.com/javafx/17.0.2-ea"
             fx:controller="cl.vc.blotter.controller.LoginController"
-            style="-fx-background-color: linear-gradient(to bottom, #111317, #191d23);">
+            styleClass="login-root">
 
     <children>
-        <VBox alignment="CENTER" prefHeight="610.0" prefWidth="580.0">
+        <HBox prefHeight="580.0" prefWidth="900.0"
+              AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
+              AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0">
             <children>
-                <VBox alignment="TOP_LEFT" maxWidth="360.0" prefWidth="360.0" spacing="14.0"
-                      style="-fx-background-color: rgba(26, 30, 36, 0.97); -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #2e3642; -fx-border-width: 1; -fx-padding: 28 30 24 30;">
+
+                <!-- ============ Panel de marca ============ -->
+                <VBox prefWidth="420.0" minWidth="420.0" maxWidth="420.0"
+                      alignment="TOP_CENTER" spacing="0.0" styleClass="login-brand">
                     <children>
-                        <Label text="Vector Trade 2.0"
-                               style="-fx-font-size: 24px; -fx-font-weight: bold; -fx-text-fill: #e5eaf2;">
-                            <font>
-                                <Font size="24.0"/>
-                            </font>
+
+                        <!--
+                            Todo el bloque va CENTRADO, no alineado a la izquierda: el lockup
+                            es una composicion centrada (isotipo sobre el wordmark en dos
+                            lineas), asi que cada linea tiene un borde izquierdo distinto y
+                            nunca cuadra contra texto alineado a la izquierda. Centrado, el
+                            eje del logo manda y todo queda sobre el mismo eje.
+                            El png lleva alfa para no dejar recuadro negro sobre el azul.
+                        -->
+                        <ImageView fitHeight="82.0" preserveRatio="true">
+                            <VBox.margin><Insets top="54.0"/></VBox.margin>
+                            <image>
+                                <Image url="@../blotter/img/logo-lockup-alpha.png"/>
+                            </image>
+                        </ImageView>
+
+                        <Label text="Vector Trade" styleClass="login-product">
+                            <VBox.margin><Insets top="26.0"/></VBox.margin>
                         </Label>
-                        <Label text="Acceso a Plataforma"
-                               style="-fx-font-size: 12px; -fx-text-fill: #9da7b8;"/>
 
-                        <VBox spacing="6.0">
+                        <Label text="Plataforma de trading y ruteo de ordenes"
+                               wrapText="true" maxWidth="280.0" textAlignment="CENTER"
+                               styleClass="login-tagline">
+                            <VBox.margin><Insets top="7.0"/></VBox.margin>
+                        </Label>
+
+                        <Region VBox.vgrow="ALWAYS"/>
+
+                        <!--
+                            Composicion de terminal, dibujada en orden de profundidad:
+                            reticula al fondo, area con degradado, velas finas y la curva
+                            de precio encima. Todo alineado a x=44, igual que el texto.
+                        -->
+                        <Pane prefHeight="180.0" maxHeight="180.0" styleClass="login-chart">
                             <children>
-                                <Label text="Usuario"
-                                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #b9c2d1;"/>
-                                <TextField fx:id="txtUsername" prefHeight="34.0" prefWidth="300.0"
-                                           promptText="Usuario"
-                                           style="-fx-background-color: #21262f; -fx-text-fill: #f4f7fb; -fx-prompt-text-fill: #788395; -fx-border-color: #343d4b; -fx-border-radius: 5; -fx-background-radius: 5;"/>
+
+                                <!-- reticula -->
+                                <Line startX="0" startY="24" endX="364" endY="24" styleClass="login-grid"/>
+                                <Line startX="0" startY="66" endX="364" endY="66" styleClass="login-grid"/>
+                                <Line startX="0" startY="108" endX="364" endY="108" styleClass="login-grid"/>
+                                <Line startX="0" startY="150" endX="364" endY="150" styleClass="login-grid"/>
+                                <Line startX="91" startY="14" endX="91" endY="158" styleClass="login-grid-v"/>
+                                <Line startX="182" startY="14" endX="182" endY="158" styleClass="login-grid-v"/>
+                                <Line startX="273" startY="14" endX="273" endY="158" styleClass="login-grid-v"/>
+                                <Line startX="0" startY="158" endX="364" endY="158" styleClass="login-axis"/>
+
+                                <Polygon styleClass="login-area">
+                                    <points>
+                                        <Double fx:value="0"/> <Double fx:value="158"/>
+                                        <Double fx:value="0"/> <Double fx:value="126"/>
+                                        <Double fx:value="26"/> <Double fx:value="118"/>
+                                        <Double fx:value="52"/> <Double fx:value="124"/>
+                                        <Double fx:value="78"/> <Double fx:value="106"/>
+                                        <Double fx:value="104"/> <Double fx:value="112"/>
+                                        <Double fx:value="130"/> <Double fx:value="92"/>
+                                        <Double fx:value="156"/> <Double fx:value="98"/>
+                                        <Double fx:value="182"/> <Double fx:value="74"/>
+                                        <Double fx:value="208"/> <Double fx:value="82"/>
+                                        <Double fx:value="234"/> <Double fx:value="58"/>
+                                        <Double fx:value="260"/> <Double fx:value="66"/>
+                                        <Double fx:value="286"/> <Double fx:value="44"/>
+                                        <Double fx:value="312"/> <Double fx:value="50"/>
+                                        <Double fx:value="338"/> <Double fx:value="30"/>
+                                        <Double fx:value="364"/> <Double fx:value="22"/>
+                                        <Double fx:value="364"/> <Double fx:value="158"/>
+                                    </points>
+                                </Polygon>
+
+                                <Line startX="26" startY="104" endX="26" endY="134" styleClass="login-wick"/>
+                                <Rectangle x="23" y="110" width="6" height="17" styleClass="login-candle-down"/>
+                                <Line startX="78" startY="92" endX="78" endY="122" styleClass="login-wick"/>
+                                <Rectangle x="75" y="98" width="6" height="17" styleClass="login-candle-up"/>
+                                <Line startX="130" startY="78" endX="130" endY="108" styleClass="login-wick"/>
+                                <Rectangle x="127" y="84" width="6" height="17" styleClass="login-candle-up"/>
+                                <Line startX="182" startY="60" endX="182" endY="90" styleClass="login-wick"/>
+                                <Rectangle x="179" y="66" width="6" height="17" styleClass="login-candle-up"/>
+                                <Line startX="234" startY="44" endX="234" endY="74" styleClass="login-wick"/>
+                                <Rectangle x="231" y="50" width="6" height="17" styleClass="login-candle-down"/>
+                                <Line startX="286" startY="30" endX="286" endY="60" styleClass="login-wick"/>
+                                <Rectangle x="283" y="36" width="6" height="17" styleClass="login-candle-up"/>
+                                <Line startX="338" startY="16" endX="338" endY="46" styleClass="login-wick"/>
+                                <Rectangle x="335" y="22" width="6" height="17" styleClass="login-candle-up"/>
+
+                                <Polyline styleClass="login-spark">
+                                    <points>
+                                        <Double fx:value="0"/> <Double fx:value="126"/>
+                                        <Double fx:value="26"/> <Double fx:value="118"/>
+                                        <Double fx:value="52"/> <Double fx:value="124"/>
+                                        <Double fx:value="78"/> <Double fx:value="106"/>
+                                        <Double fx:value="104"/> <Double fx:value="112"/>
+                                        <Double fx:value="130"/> <Double fx:value="92"/>
+                                        <Double fx:value="156"/> <Double fx:value="98"/>
+                                        <Double fx:value="182"/> <Double fx:value="74"/>
+                                        <Double fx:value="208"/> <Double fx:value="82"/>
+                                        <Double fx:value="234"/> <Double fx:value="58"/>
+                                        <Double fx:value="260"/> <Double fx:value="66"/>
+                                        <Double fx:value="286"/> <Double fx:value="44"/>
+                                        <Double fx:value="312"/> <Double fx:value="50"/>
+                                        <Double fx:value="338"/> <Double fx:value="30"/>
+                                        <Double fx:value="364"/> <Double fx:value="22"/>
+                                    </points>
+                                </Polyline>
+
+                                <Circle centerX="364" centerY="22" radius="4" styleClass="login-spark-dot"/>
                             </children>
-                        </VBox>
-
-                        <VBox spacing="6.0">
-                            <children>
-                                <Label text="Contrasena"
-                                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #b9c2d1;"/>
-                                <PasswordField fx:id="password" prefHeight="34.0" prefWidth="300.0"
-                                               promptText="Contrasena"
-                                               style="-fx-background-color: #21262f; -fx-text-fill: #f4f7fb; -fx-prompt-text-fill: #788395; -fx-border-color: #343d4b; -fx-border-radius: 5; -fx-background-radius: 5;"/>
-                                <TextField fx:id="txtPassword" managed="false" prefHeight="34.0" prefWidth="300.0"
-                                           promptText="Password" visible="false"/>
-                            </children>
-                        </VBox>
-
-                        <VBox spacing="6.0">
-                            <children>
-                                <Label text="Ambiente"
-                                       style="-fx-font-size: 12px; -fx-font-weight: bold; -fx-text-fill: #b9c2d1;"/>
-                                <ComboBox fx:id="enviroment" id="enviromentLoginCombo" prefHeight="34.0" prefWidth="300.0"
-                                          style="-fx-background-color: #21262f; -fx-control-inner-background: #21262f; -fx-border-color: #343d4b; -fx-border-radius: 5; -fx-background-radius: 5; -fx-text-fill: #eef3fb; -fx-mark-color: #eef3fb;"/>
-                            </children>
-                        </VBox>
-
-                        <CheckBox fx:id="chkGuardarContrasena" text="Guardar usuario y contrasena"
-                                  style="-fx-font-weight: bold; -fx-text-fill: #c7d0df; -fx-font-size: 12px;"/>
-
-                        <Button fx:id="btnIngresar" mnemonicParsing="false" onAction="#login" prefHeight="36.0"
-                                prefWidth="300.0" styleClass="btn-ingresar-style" text="Ingresar"
-                                style="-fx-background-color: linear-gradient(to bottom, #2e4a6d, #22344d); -fx-text-fill: #eaf1fc; -fx-background-radius: 6; -fx-border-radius: 6; -fx-border-color: #4b6280; -fx-border-width: 1;"/>
-
-                        <HBox fx:id="loading" alignment="CENTER_LEFT">
-                            <children>
-                                <Label fx:id="label" prefHeight="18.0" text=""
-                                       style="-fx-font-size: 11px; -fx-text-fill: #9aa5b5;">
-                                    <font>
-                                        <Font size="11.0"/>
-                                    </font>
-                                </Label>
-                            </children>
-                        </HBox>
+                        </Pane>
                     </children>
                 </VBox>
+
+                <!-- ============ Panel de acceso ============ -->
+                <VBox alignment="CENTER" HBox.hgrow="ALWAYS" styleClass="login-panel">
+                    <children>
+                        <VBox maxWidth="316.0" prefWidth="316.0" alignment="TOP_LEFT" spacing="0.0">
+                            <children>
+
+                                <Label text="Iniciar sesion" styleClass="login-title"/>
+                                <Label text="Ingresa tus credenciales para operar" styleClass="login-subtitle">
+                                    <VBox.margin><Insets top="5.0"/></VBox.margin>
+                                </Label>
+
+                                <VBox spacing="6.0">
+                                    <VBox.margin><Insets top="30.0"/></VBox.margin>
+                                    <children>
+                                        <Label text="Usuario" styleClass="login-field-label"/>
+                                        <TextField fx:id="txtUsername" styleClass="login-input"/>
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="6.0">
+                                    <VBox.margin><Insets top="18.0"/></VBox.margin>
+                                    <children>
+                                        <Label text="Contrasena" styleClass="login-field-label"/>
+                                        <PasswordField fx:id="password" styleClass="login-input"/>
+                                    </children>
+                                </VBox>
+
+                                <VBox spacing="6.0">
+                                    <VBox.margin><Insets top="18.0"/></VBox.margin>
+                                    <children>
+                                        <Label text="Ambiente" styleClass="login-field-label"/>
+                                        <ComboBox fx:id="enviroment" id="enviromentLoginCombo"
+                                                  maxWidth="Infinity" styleClass="login-combo"/>
+                                    </children>
+                                </VBox>
+
+                                <CheckBox fx:id="chkGuardarContrasena"
+                                          text="Recordar usuario y contrasena"
+                                          styleClass="login-check">
+                                    <VBox.margin><Insets top="22.0"/></VBox.margin>
+                                </CheckBox>
+
+                                <Button fx:id="btnIngresar" mnemonicParsing="false" onAction="#login"
+                                        maxWidth="Infinity" text="Ingresar"
+                                        styleClass="login-submit">
+                                    <VBox.margin><Insets top="24.0"/></VBox.margin>
+                                </Button>
+
+                                <HBox fx:id="loading" alignment="CENTER_LEFT" minHeight="16.0">
+                                    <VBox.margin><Insets top="14.0"/></VBox.margin>
+                                    <children>
+                                        <Label fx:id="label" text="" styleClass="login-status"/>
+                                    </children>
+                                </HBox>
+
+                            </children>
+                        </VBox>
+                    </children>
+                </VBox>
+
             </children>
-        </VBox>
+        </HBox>
     </children>
 </AnchorPane>

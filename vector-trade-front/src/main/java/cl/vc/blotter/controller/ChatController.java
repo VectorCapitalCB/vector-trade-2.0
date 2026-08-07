@@ -108,7 +108,7 @@ public class ChatController {
     private final Map<String, ObservableList<String>> conversations = new HashMap<>();
     private final Set<String> unreadUsers = new LinkedHashSet<>();
     private String activeUser;
-    private final Set<String> processedMessages = new LinkedHashSet<>();
+    private final Map<String, Integer> pendingEcho = new HashMap<>();
     private String me = "yo";
     private boolean loadingState = false;
     private boolean suppressChatAlerts = false;
@@ -239,6 +239,7 @@ public class ChatController {
 
         String payload = buildChatJson(activeUser, me, msg);
         if (Repository.getChatClientService() != null) {
+            registerPendingEcho(activeUser, msg);
             Repository.getChatClientService().sendMessage(payload);
         } else {
             conversations.get(activeUser).add("SYSTEM: canal chat no conectado");
@@ -393,9 +394,6 @@ public class ChatController {
         if (raw == null || raw.isBlank()) {
             return;
         }
-        if (!processedMessages.add(raw)) {
-            return;
-        }
 
         long messageTimestamp = System.currentTimeMillis();
 
@@ -530,14 +528,16 @@ public class ChatController {
             sender = me;
         }
 
-        // If server echoes my own message, avoid duplicating it in the sender chat window.
+        // El servidor hace eco del mensaje propio, que ya se pintó al enviarlo.
+        if (sender.equalsIgnoreCase(me) && consumePendingEcho(counterpart, body)) {
+            return;
+        }
+
         ObservableList<String> conversation = conversations.get(counterpart);
         String formatted = formatMessageLine(sender, body, messageTimestamp);
-        if (sender.equalsIgnoreCase(me) && !conversation.isEmpty()) {
-            String last = conversation.get(conversation.size() - 1);
-            if (stripTimestamp(last).equals(sender + ": " + body)) {
-                return;
-            }
+        // El mismo mensaje vuelve a llegar dentro del snapshot al reconectar o al reabrir la app.
+        if (conversation.contains(formatted)) {
+            return;
         }
 
         conversation.add(formatted);
@@ -594,17 +594,26 @@ public class ChatController {
         return "[" + timestamp + "] " + sender + ": " + body;
     }
 
-    private String stripTimestamp(String line) {
-        if (line == null) {
-            return "";
+    private void registerPendingEcho(String counterpart, String body) {
+        pendingEcho.merge(echoKey(counterpart, body), 1, Integer::sum);
+    }
+
+    private boolean consumePendingEcho(String counterpart, String body) {
+        String key = echoKey(counterpart, body);
+        Integer pending = pendingEcho.get(key);
+        if (pending == null) {
+            return false;
         }
-        if (line.matches("^\\[(?:[0-9]{2}:[0-9]{2}:[0-9]{2}|[0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2})]\\s+.*$")) {
-            int idx = line.indexOf("] ");
-            if (idx >= 0 && idx + 2 < line.length()) {
-                return line.substring(idx + 2);
-            }
+        if (pending <= 1) {
+            pendingEcho.remove(key);
+        } else {
+            pendingEcho.put(key, pending - 1);
         }
-        return line;
+        return true;
+    }
+
+    private String echoKey(String counterpart, String body) {
+        return counterpart.toLowerCase() + "\t" + body;
     }
 
     private void scrollIfActive(String conversationUser) {

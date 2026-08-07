@@ -14,8 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
-import java.util.Comparator;
 
 @WebSocket
 public class ChatWebSocketEndpoint {
@@ -88,22 +86,10 @@ public class ChatWebSocketEndpoint {
                     }
                 }
 
-                List<Document> conversations = ChatMongoRepository.conversations(username, 200);
-                List<Document> mergedMessages = new ArrayList<>();
-                for (Document c : conversations) {
-                    String withUsername = c.getString("withUsername");
-                    if (withUsername == null || withUsername.trim().isEmpty()) {
-                        continue;
-                    }
-                    mergedMessages.addAll(ChatMongoRepository.history(username, withUsername, 300));
-                }
-                mergedMessages.sort(Comparator.comparingLong(d -> d.getLong("timestamp")));
+                List<Document> mergedMessages = ChatMongoRepository.snapshotMessages(username, 2000);
 
-                int maxMessages = 2000;
-                int fromIndex = Math.max(0, mergedMessages.size() - maxMessages);
                 JSONArray messages = new JSONArray();
-                for (int i = fromIndex; i < mergedMessages.size(); i++) {
-                    Document d = mergedMessages.get(i);
+                for (Document d : mergedMessages) {
                     String from = d.getString("fromUsername");
                     String to = d.getString("toUsername");
                     String message = d.getString("message");
@@ -239,9 +225,11 @@ public class ChatWebSocketEndpoint {
                     receivers.add(session);
                 }
 
+                String payloadText = payload.toString();
                 for (Session receiver : receivers) {
                     if (receiver != null && receiver.isOpen()) {
-                        receiver.getRemote().sendString(payload.toString());
+                        // Envío no bloqueante: un cliente lento no debe frenar al emisor.
+                        receiver.getRemote().sendStringByFuture(payloadText);
                     }
                 }
                 return;

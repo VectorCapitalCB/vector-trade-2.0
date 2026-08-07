@@ -6,12 +6,17 @@ import akka.actor.PoisonPill;
 import akka.actor.Props;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.generator.IDGenerator;
+import cl.vc.module.protocolbuff.generator.TopicGenerator;
+import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.service.MainApp;
 import cl.vc.service.akka.actors.ActorPerSession;
+import cl.vc.service.admin.ManualSaldoOverride;
+import cl.vc.service.admin.OdAttempt;
 import cl.vc.service.util.CalculatePosition;
 import cl.vc.service.util.CalculoCreasys;
 import cl.vc.service.util.LogicaPosition;
+import cl.vc.service.util.MongoHistoryRepository;
 import cl.vc.service.util.ProtoDateProcessor;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -22,25 +27,22 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
-import java.util.EnumSet;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static cl.vc.service.MainApp.requiereCreasys;
+import scala.concurrent.duration.Duration;
 
 
 @Slf4j
 public class ActorGroupPerAccount extends AbstractActor {
+    private static final long BOOK_REFRESH_DELAY_MS = 750L;
 
     private final Object lock = new Object();
     private final Map<String, RoutingMessage.Order> exceIdProcess = new HashMap<>();
-    private final Map<String, String> lastProcessedOrderEventByOrderId = new HashMap<>();
     private final HashMap<String, ActorRef> actorSession = new HashMap<>();
     private final HashMap<String, ActorRef> strategyActors = new HashMap<>();
     private final String account;
@@ -101,6 +103,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                 .match(Initialize.class, this::onInitialize)
                 .match(UpdateMargin.class, this::onUpdateMargin)
                 .match(UpdateLeverage.class, this::onUpdateLeverage)
+                .match(UpdateRiskConfig.class, this::onUpdateRiskConfig)
                 .match(RestorePositions.class, this::onRestorePositions)
                 .match(BlotterMessage.PositionHistory.class, this::onPositionHistorySingle)
                 .match(RestoreTrade.class, this::onRestoreTrade)
@@ -121,6 +124,9 @@ public class ActorGroupPerAccount extends AbstractActor {
                 .match(BlotterMessage.Position.class, this::onPositions)
                 .match(RoutingMessage.OrderCancelReject.class, this::onRejected)
                 .match(BlotterMessage.Simultaneas.class, this::onSimultaneas)
+                .match(RefreshManualSimultaneas.class, this::onRefreshManualSimultaneas)
+                .match(RefreshManualPrestamos.class, this::onRefreshManualPrestamos)
+                .match(RefreshManualSaldo.class, this::onRefreshManualSaldo)
                 .match(CalculatePatriminio.class, this::onCalculatePatriminio)
 
                 .build();
@@ -129,24 +135,34 @@ public class ActorGroupPerAccount extends AbstractActor {
     public void onSimultaneas(BlotterMessage.Simultaneas simultaneas) {
 
         try {
-            if (!isSimultaneaFromToday(simultaneas)) {
+            if (MainApp.hasManualSimultaneasOverride(account)) {
+                reloadSimultaneasFromSources();
+                publishSimultaneasSnapshot();
+                return;
+            }
+
+            if (!isSimultaneaVigente(simultaneas)) {
                 return;
             }
 
             simultaneasHashMap.put(simultaneas.getId(), simultaneas);
-
-            BlotterMessage.SnapshotSimultaneas snapshotSimultaneas = BlotterMessage.SnapshotSimultaneas.newBuilder()
-                    .addAllSimultaneas(simultaneasHashMap.values())
-                    .setAccount(account)
-                    .build();
-
-            persistSnapshotSimultaneas(snapshotSimultaneas);
-
-            actorSession.forEach((key, value) -> value.tell(snapshotSimultaneas, ActorRef.noSender()));
-
+            publishSimultaneasSnapshot();
 
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
+        }
+    }
+
+    private void onRefreshManualSimultaneas(RefreshManualSimultaneas msg) {
+        try {
+            if (msg.isRecalculate() && requiereCreasys) {
+                calculatePatrimonio();
+            } else {
+                reloadSimultaneasFromSources();
+                publishSimultaneasSnapshot();
+            }
+        } catch (Exception e) {
+            log.error("Error refrescando simultáneas manuales para cuenta {}", account, e);
         }
     }
 
@@ -155,14 +171,34 @@ public class ActorGroupPerAccount extends AbstractActor {
 
             if (!requiereCreasys) return;
 
-            String prefixAccount = account.replace("-", "/");
-            snapshotPrestamos = CalculoCreasys.snapshotPrestamos(prefixAccount);
+            snapshotPrestamos = loadPrestamosFromSources();
             BlotterMessage.SnapshotPrestamos msg = snapshotPrestamos.build();
             persistSnapshotPrestamos(msg);
             actorSession.forEach((k, ses) -> ses.tell(msg, ActorRef.noSender()));
 
         } catch (Exception e) {
             log.error("Error calculando/enviando SnapshotPrestamos para {}: {}", account, e.getMessage(), e);
+        }
+    }
+
+    private void onRefreshManualPrestamos(RefreshManualPrestamos msg) {
+        try {
+            calculatePrestamos();
+            if (msg.isRecalculate() && requiereCreasys) {
+                calculatePatrimonio();
+            }
+        } catch (Exception e) {
+            log.error("Error refrescando préstamos manuales para cuenta {}", account, e);
+        }
+    }
+
+    private void onRefreshManualSaldo(RefreshManualSaldo msg) {
+        try {
+            if (msg.isRecalculate() && requiereCreasys) {
+                calculatePatrimonio();
+            }
+        } catch (Exception e) {
+            log.error("Error refrescando saldo manual para cuenta {}", account, e);
         }
     }
 
@@ -178,15 +214,12 @@ public class ActorGroupPerAccount extends AbstractActor {
 
             String prefixAccount = account.replace("-", "/");
 
-            simultaneasHashMap.clear();
-            MainApp.getAllSimultaneas().forEach(s -> {
-                String account = s.getNumCuenta();
-                if (this.account.equals(account) && isSimultaneaFromToday(s)) {
-                    simultaneasHashMap.put(s.getId(), s);
-                }
-            });
+            reloadSimultaneasFromSources();
+            publishSimultaneasSnapshot();
 
             patrimonioMaps = CalculoCreasys.saldoCaja(prefixAccount);
+            applyManualSaldoOverrideToPatrimonio();
+            applyManualPrestamosOverrideToPatrimonio();
 
             if (!patrimonioMaps.containsKey(RoutingMessage.Currency.CLP)) {
                 patrimonioMaps.put(RoutingMessage.Currency.CLP, BlotterMessage.Patrimonio.newBuilder()
@@ -197,8 +230,9 @@ public class ActorGroupPerAccount extends AbstractActor {
                 );
             }
 
-            snapshotPositionHistory = CalculoCreasys.cierreCarteraResumida(prefixAccount, patrimonioMaps, simultaneasHashMap);
-            snapshotPositionHistory.getPositionsHistoryBuilderList().forEach(s -> snapshotPositionHistoryMaps.put(s.getInstrument(), s));
+            BlotterMessage.SnapshotPositionHistory.Builder sqlSnapshotPositionHistory =
+                    CalculoCreasys.cierreCarteraResumida(prefixAccount, patrimonioMaps, simultaneasHashMap);
+            snapshotPositionHistory = loadSqlSnapshotState(sqlSnapshotPositionHistory);
 
             long durMs = System.currentTimeMillis() - t0;
             log.info("✅ [DONE] Patrimonio cuenta {} en {} ms", account, durMs);
@@ -287,7 +321,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                 BlotterMessage.ValuesPatrimonio.Builder activos = BlotterMessage.ValuesPatrimonio.newBuilder()
                         .setDescription("Activos")
                         .setValues(activosAux)
-                        .setPorcentage(100d);
+                        .setPorcentage(activosAux == 0d ? 0d : 100d);
 
                 /*
                  * 🔄  **FIX**:  usamos "carteraActual" (aux.get()) en vez de balance.getCartera(),
@@ -303,24 +337,24 @@ public class ActorGroupPerAccount extends AbstractActor {
                 }
 
                 /* ========== porcentajes individuales ========== */
-                caja.setPorcentage(caja.getValues() / activosAux * 100);
-                cuentaTransitoriasPorCobrarPagar.setPorcentage(cuentaTransitoriasPorCobrarPagar.getValues() / activosAux * 100);
-                garantiaEfectivo.setPorcentage(garantiaEfectivo.getValues() / activosAux * 100);
-                liquidez.setPorcentage(liquidez.getValues() / activosAux * 100);
-                prestamos.setPorcentage(prestamos.getValues() / activosAux * 100);
-                rentaFija.setPorcentage(rentaFija.getValues() / activosAux * 100);
-                fondosMutuos.setPorcentage(fondosMutuos.getValues() / activosAux * 100);
-                fondoInversionRentaVariable.setPorcentage(fondoInversionRentaVariable.getValues() / activosAux * 100);
-                activosInmobiliarios.setPorcentage(activosInmobiliarios.getValues() / activosAux * 100);
-                eftsRentaVariable.setPorcentage(eftsRentaVariable.getValues() / activosAux * 100);
-                inversionesAlternativas.setPorcentage(inversionesAlternativas.getValues() / activosAux * 100);
-                derivados.setPorcentage(derivados.getValues() / activosAux * 100);
-                rvNacional.setPorcentage(rvNacional.getValues() / activosAux * 100);
-                rvExtranjeros.setPorcentage(rvExtranjeros.getValues() / activosAux * 100);
-                accionesExtranjeras.setPorcentage(accionesExtranjeras.getValues() / activosAux * 100);
-                simultaneas.setPorcentage(simultaneas.getValues() / activosAux * 100);
-                accionesNacionales.setPorcentage(accionesNacionales.getValues() / activosAux * 100);
-                rentaVariable.setPorcentage(rentaVariable.getValues() / activosAux * 100);
+                caja.setPorcentage(safePercentage(caja.getValues(), activosAux));
+                cuentaTransitoriasPorCobrarPagar.setPorcentage(safePercentage(cuentaTransitoriasPorCobrarPagar.getValues(), activosAux));
+                garantiaEfectivo.setPorcentage(safePercentage(garantiaEfectivo.getValues(), activosAux));
+                liquidez.setPorcentage(safePercentage(liquidez.getValues(), activosAux));
+                prestamos.setPorcentage(safePercentage(prestamos.getValues(), activosAux));
+                rentaFija.setPorcentage(safePercentage(rentaFija.getValues(), activosAux));
+                fondosMutuos.setPorcentage(safePercentage(fondosMutuos.getValues(), activosAux));
+                fondoInversionRentaVariable.setPorcentage(safePercentage(fondoInversionRentaVariable.getValues(), activosAux));
+                activosInmobiliarios.setPorcentage(safePercentage(activosInmobiliarios.getValues(), activosAux));
+                eftsRentaVariable.setPorcentage(safePercentage(eftsRentaVariable.getValues(), activosAux));
+                inversionesAlternativas.setPorcentage(safePercentage(inversionesAlternativas.getValues(), activosAux));
+                derivados.setPorcentage(safePercentage(derivados.getValues(), activosAux));
+                rvNacional.setPorcentage(safePercentage(rvNacional.getValues(), activosAux));
+                rvExtranjeros.setPorcentage(safePercentage(rvExtranjeros.getValues(), activosAux));
+                accionesExtranjeras.setPorcentage(safePercentage(accionesExtranjeras.getValues(), activosAux));
+                simultaneas.setPorcentage(safePercentage(simultaneas.getValues(), activosAux));
+                accionesNacionales.setPorcentage(safePercentage(accionesNacionales.getValues(), activosAux));
+                rentaVariable.setPorcentage(safePercentage(rentaVariable.getValues(), activosAux));
 
                 /* ======================= OBJETO PATRIMONIO ======================= */
                 patrimonio = BlotterMessage.Patrimonio.newBuilder();
@@ -356,19 +390,19 @@ public class ActorGroupPerAccount extends AbstractActor {
 
                 if (saldoDisponible < 0) saldoDisponible = 0;
                 balance.setSaldoDisponible(saldoDisponible);
+                applyManualSaldoOverrideToBalance();
 
             } else {
                 /* cuenta sin posiciones ni caja */
                 ProtoDateProcessor.setDateProcesorIfMissing(balance);
                 balance.setCuenta(account).setCartera(0d).setCupo(marginaccount).setSaldoDisponible(marginaccount > 0 ? marginaccount : 0d);
+                applyManualSaldoOverrideToBalance();
             }
 
+            reconcileIntradayStateFromOrdersAndTrades();
+
             /* ========== Actualizar lógica de posiciones y notificar sesiones ========== */
-            logicaPosition = new LogicaPosition(marginaccount,
-                    getSelf(),
-                    balance,
-                    snapshotPositionHistoryMaps,
-                    simultaneasHashMap);
+            rebuildLogicaPosition("PATRIMONIO");
 
             actorSession.values().forEach(ses -> {
                 ses.tell(patrimonio.build(), ActorRef.noSender());
@@ -379,20 +413,416 @@ public class ActorGroupPerAccount extends AbstractActor {
             persistPatrimonio(patrimonio.build());
             persistSnapshotPositionHistory(snapshotPositionHistory.build());
             persistBalance(balance.build());
+            logIntradayPublishSummary("POST_RECALC");
 
             calculatePrestamos();
 
 
 
         } catch (Exception e) {
-            log.error("❌ Error en calculatePatrimonio cuenta " + account + "{}", e);
+            log.error("❌ Error en calculatePatrimonio cuenta {}", account, e);
         }
+    }
+
+    private BlotterMessage.SnapshotPositionHistory.Builder loadSqlSnapshotState(
+            BlotterMessage.SnapshotPositionHistory.Builder sqlSnapshotPositionHistory) {
+
+        snapshotPositionHistoryMaps.clear();
+        sqlSnapshotPositionHistory.getPositionsHistoryBuilderList()
+                .forEach(positionFromSql -> snapshotPositionHistoryMaps.put(positionFromSql.getInstrument(), positionFromSql.clone()));
+
+        return rebuildSnapshotPositionHistory();
+    }
+
+    private void reconcileIntradayStateFromOrdersAndTrades() {
+        try {
+            double baseSaldoDisponible = balance.getSaldoDisponible();
+            double saldoDelta = 0d;
+            double ordenesActivasCompras = 0d;
+            double ordenesActivasVentas = 0d;
+            double ordenesCalzadasCompras = 0d;
+            double ordenesCalzadasVentas = 0d;
+            int tradesSeen = 0;
+            int tradesApplied = 0;
+            int tradesSkippedByDate = 0;
+            int tradesSkippedByType = 0;
+            int ordersSeen = 0;
+            int activeOrdersApplied = 0;
+            int ordersSkippedByDate = 0;
+            int ordersSkippedInactive = 0;
+            HashMap<String, Double> openSellLeavesBySymbol = new HashMap<>();
+            HashMap<String, Double> baseQtyBySymbol = snapshotPositionHistoryMaps.values().stream()
+                    .collect(Collectors.toMap(
+                            BlotterMessage.PositionHistory.Builder::getInstrument,
+                            BlotterMessage.PositionHistory.Builder::getAvailableQuantity,
+                            (left, right) -> right,
+                            HashMap::new));
+            HashMap<String, Double> tradeQtyDeltaBySymbol = new HashMap<>();
+
+            for (RoutingMessage.Order trade : tradesMap.values()) {
+                tradesSeen++;
+
+                if (!MainApp.isOrderFromToday(trade)) {
+                    tradesSkippedByDate++;
+                    continue;
+                }
+
+                if (!trade.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE)) {
+                    tradesSkippedByType++;
+                    continue;
+                }
+
+                tradesApplied++;
+                double notional = calculateNotional(trade.getSymbol(),
+                        trade.getSecurityExchange(),
+                        trade.getLastPx(),
+                        trade.getLastQty());
+
+                if (trade.getSide().equals(RoutingMessage.Side.BUY)) {
+                    ordenesCalzadasCompras += notional;
+                    saldoDelta -= notional;
+                    tradeQtyDeltaBySymbol.merge(trade.getSymbol(), trade.getLastQty(), Double::sum);
+                    applyTradeDeltaToPosition(trade, trade.getLastQty());
+                } else if (trade.getSide().equals(RoutingMessage.Side.SELL)) {
+                    ordenesCalzadasVentas += notional;
+                    saldoDelta += notional;
+                    tradeQtyDeltaBySymbol.merge(trade.getSymbol(), -trade.getLastQty(), Double::sum);
+                    applyTradeDeltaToPosition(trade, -trade.getLastQty());
+                }
+            }
+
+            for (RoutingMessage.Order order : ordersMap.values()) {
+                ordersSeen++;
+
+                if (!MainApp.isOrderFromToday(order)) {
+                    ordersSkippedByDate++;
+                    continue;
+                }
+
+                boolean activeOrder = order.getOrdStatus().equals(RoutingMessage.OrderStatus.NEW)
+                        || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REPLACED)
+                        || order.getOrdStatus().equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED);
+
+                if (!activeOrder || order.getLeaves() <= 0d) {
+                    ordersSkippedInactive++;
+                    continue;
+                }
+
+                activeOrdersApplied++;
+                double reserveNotional = calculateNotional(order.getSymbol(),
+                        order.getSecurityExchange(),
+                        order.getPrice(),
+                        order.getLeaves());
+
+                if (order.getSide().equals(RoutingMessage.Side.BUY)) {
+                    ordenesActivasCompras += reserveNotional;
+                    saldoDelta -= reserveNotional;
+                } else if (order.getSide().equals(RoutingMessage.Side.SELL)) {
+                    ordenesActivasVentas += reserveNotional;
+                    openSellLeavesBySymbol.merge(order.getSymbol(), order.getLeaves(), Double::sum);
+                }
+            }
+
+            openSellLeavesBySymbol.forEach((symbol, reservedQty) -> {
+                BlotterMessage.PositionHistory.Builder position = getOrCreatePositionHistory(symbol, 0d);
+                position.setAvailableQuantity(position.getAvailableQuantity() - reservedQty);
+                snapshotPositionHistoryMaps.put(symbol, position);
+            });
+
+            balance.setOrdenesActivasCompras(ordenesActivasCompras);
+            balance.setOrdenesActivasVentas(ordenesActivasVentas);
+            balance.setOrdenesCalzadasCompras(ordenesCalzadasCompras);
+            balance.setOrdenesCalzadasVentas(ordenesCalzadasVentas);
+            balance.setSaldoDisponible(Math.max(0d, baseSaldoDisponible + saldoDelta));
+
+            snapshotPositionHistory = rebuildSnapshotPositionHistory();
+            logIntradayPositionRebuild(baseQtyBySymbol, tradeQtyDeltaBySymbol, openSellLeavesBySymbol);
+
+            if (tradesSeen > 0
+                    || ordersSeen > 0
+                    || Double.compare(ordenesCalzadasCompras, 0d) != 0
+                    || Double.compare(ordenesCalzadasVentas, 0d) != 0
+                    || Double.compare(ordenesActivasCompras, 0d) != 0
+                    || Double.compare(ordenesActivasVentas, 0d) != 0) {
+                log.info("[IntradayRebuild] cuenta {} key={} tradesSeen={} tradesApplied={} tradesSkipDate={} tradesSkipType={} ordersSeen={} activeOrdersApplied={} ordersSkipDate={} ordersSkipInactive={} saldoBase={} saldoFinal={} calzCompras={} calzVentas={} actCompras={} actVentas={} snapshotPositions={}",
+                        account,
+                        getDailyRedisKey(),
+                        tradesSeen,
+                        tradesApplied,
+                        tradesSkippedByDate,
+                        tradesSkippedByType,
+                        ordersSeen,
+                        activeOrdersApplied,
+                        ordersSkippedByDate,
+                        ordersSkippedInactive,
+                        baseSaldoDisponible,
+                        balance.getSaldoDisponible(),
+                        ordenesCalzadasCompras,
+                        ordenesCalzadasVentas,
+                        ordenesActivasCompras,
+                        ordenesActivasVentas,
+                        snapshotPositionHistoryMaps.size());
+            }
+
+            if (balance.getSaldoDisponible() == 0d
+                    && (Double.compare(ordenesCalzadasCompras, 0d) > 0
+                    || Double.compare(ordenesActivasCompras, 0d) > 0)) {
+                log.warn("[IntradayRebuild][SALDO_CERO] cuenta {} key={} saldoBase={} saldoDelta={} calzCompras={} actCompras={} cupo={}",
+                        account,
+                        getDailyRedisKey(),
+                        baseSaldoDisponible,
+                        saldoDelta,
+                        ordenesCalzadasCompras,
+                        ordenesActivasCompras,
+                        balance.getCupo());
+            }
+        } catch (Exception e) {
+            log.error("Error reconciliando estado intradía para cuenta {}", account, e);
+        }
+    }
+
+    private void applyTradeDeltaToPosition(RoutingMessage.Order order, double qtyDelta) {
+        boolean createdFromIntradayTrade = !snapshotPositionHistoryMaps.containsKey(order.getSymbol());
+        BlotterMessage.PositionHistory.Builder position = getOrCreatePositionHistory(order.getSymbol(), order.getLastPx());
+        double qtyBefore = position.getAvailableQuantity();
+        position.setAvailableQuantity(position.getAvailableQuantity() + qtyDelta);
+
+        if (position.getPurchaseAmount() == 0d && order.getLastPx() > 0d && position.getAvailableQuantity() > 0d) {
+            position.setPurchaseAmount(order.getLastPx() * position.getAvailableQuantity());
+        }
+
+        snapshotPositionHistoryMaps.put(order.getSymbol(), position);
+
+        if (createdFromIntradayTrade) {
+            log.info("[IntradayRebuild][NEW_HISTORY] cuenta {} symbol={} side={} execId={} qtyDelta={} lastPx={} finalQty={}",
+                    account,
+                    order.getSymbol(),
+                    order.getSide(),
+                    order.getExecId(),
+                    qtyDelta,
+                    order.getLastPx(),
+                    position.getAvailableQuantity());
+        }
+
+        if (position.getAvailableQuantity() < 0d) {
+            log.warn("[IntradayRebuild][NEGATIVE_QTY] cuenta {} symbol={} side={} execId={} qtyBefore={} qtyDelta={} finalQty={}",
+                    account,
+                    order.getSymbol(),
+                    order.getSide(),
+                    order.getExecId(),
+                    qtyBefore,
+                    qtyDelta,
+                    position.getAvailableQuantity());
+        }
+    }
+
+    private BlotterMessage.PositionHistory.Builder getOrCreatePositionHistory(String symbol, double fallbackMarketPrice) {
+        BlotterMessage.PositionHistory.Builder position = snapshotPositionHistoryMaps.get(symbol);
+        if (position != null) {
+            return position;
+        }
+
+        position = BlotterMessage.PositionHistory.newBuilder();
+        ProtoDateProcessor.setDateProcesorIfMissing(position);
+        position.setAccount(account);
+        position.setInstrument(symbol);
+        if (fallbackMarketPrice > 0d) {
+            position.setMarketPrice(fallbackMarketPrice);
+        }
+        snapshotPositionHistoryMaps.put(symbol, position);
+        return position;
+    }
+
+    private void logIntradayPositionRebuild(HashMap<String, Double> baseQtyBySymbol,
+                                            HashMap<String, Double> tradeQtyDeltaBySymbol,
+                                            HashMap<String, Double> openSellLeavesBySymbol) {
+        HashSet<String> symbols = new HashSet<>();
+        symbols.addAll(tradeQtyDeltaBySymbol.keySet());
+        symbols.addAll(openSellLeavesBySymbol.keySet());
+
+        symbols.forEach(symbol -> {
+            BlotterMessage.PositionHistory.Builder finalPosition = snapshotPositionHistoryMaps.get(symbol);
+            log.info("[IntradayRebuild] cuenta {} instrumento {} baseQty={} tradeDelta={} reservedSell={} finalQty={}",
+                    account,
+                    symbol,
+                    baseQtyBySymbol.getOrDefault(symbol, 0d),
+                    tradeQtyDeltaBySymbol.getOrDefault(symbol, 0d),
+                    openSellLeavesBySymbol.getOrDefault(symbol, 0d),
+                    finalPosition != null ? finalPosition.getAvailableQuantity() : 0d);
+
+            if (finalPosition != null && finalPosition.getAvailableQuantity() < 0d) {
+                log.warn("[IntradayRebuild][NEGATIVE_FINAL_QTY] cuenta {} instrumento {} baseQty={} tradeDelta={} reservedSell={} finalQty={}",
+                        account,
+                        symbol,
+                        baseQtyBySymbol.getOrDefault(symbol, 0d),
+                        tradeQtyDeltaBySymbol.getOrDefault(symbol, 0d),
+                        openSellLeavesBySymbol.getOrDefault(symbol, 0d),
+                        finalPosition.getAvailableQuantity());
+            }
+        });
+    }
+
+    private BlotterMessage.SnapshotPositionHistory.Builder rebuildSnapshotPositionHistory() {
+        BlotterMessage.SnapshotPositionHistory.Builder rebuiltSnapshot = BlotterMessage.SnapshotPositionHistory.newBuilder();
+        snapshotPositionHistoryMaps.values().forEach(rebuiltSnapshot::addPositionsHistory);
+        return rebuiltSnapshot;
+    }
+
+    private double calculateNotional(String symbol,
+                                     RoutingMessage.SecurityExchangeRouting exchange,
+                                     double price,
+                                     double quantity) {
+        if (price <= 0d || quantity <= 0d) {
+            return 0d;
+        }
+
+        String id = symbol + IDGenerator.conversorExdestination(exchange).name();
+
+        if (MainApp.getSecurityExchangeSymbolsMaps().containsKey(id)
+                && MainApp.getSecurityExchangeSymbolsMaps().get(id).getCurrency().equals(RoutingMessage.Currency.USD.name())) {
+            String dolar = "USD/CLP" + "DATATEC_XBCL" + "T2" + "CS";
+            cl.vc.service.util.BookSnapshot snapshot = MainApp.getSnapshotHashMap().get(dolar);
+            if (snapshot != null && snapshot.getStatistic() != null && snapshot.getStatistic().getAskPx() > 0d) {
+                return price * quantity * snapshot.getStatistic().getAskPx();
+            }
+        }
+
+        return price * quantity;
+    }
+
+    private void logIntradayTradeIn(RoutingMessage.Order order,
+                                    RoutingMessage.Order oldOrder,
+                                    boolean duplicateExecId) {
+        double notional = calculateNotional(order.getSymbol(),
+                order.getSecurityExchange(),
+                order.getLastPx(),
+                order.getLastQty());
+
+        log.info("[IntradayTrade][IN] cuenta {} key={} orderId={} execId={} symbol={} side={} status={} execType={} lastQty={} lastPx={} cumQty={} leaves={} notional={} duplicateExecId={} oldStatus={} oldExecType={} histQtyBefore={} saldoBefore={} tradesStored={} ordersStored={}",
+                account,
+                getDailyRedisKey(),
+                order.getId(),
+                order.getExecId(),
+                order.getSymbol(),
+                order.getSide(),
+                order.getOrdStatus(),
+                order.getExecType(),
+                order.getLastQty(),
+                order.getLastPx(),
+                order.getCumQty(),
+                order.getLeaves(),
+                notional,
+                duplicateExecId,
+                oldOrder != null ? oldOrder.getOrdStatus() : "-",
+                oldOrder != null ? oldOrder.getExecType() : "-",
+                getPositionHistoryAvailableQuantity(order.getSymbol()),
+                balance.getSaldoDisponible(),
+                tradesMap.size(),
+                ordersMap.size());
+    }
+
+    private void logIntradayTradeAfterLive(RoutingMessage.Order order, boolean duplicateExecId) {
+        log.info("[IntradayTrade][LIVE_AFTER] cuenta {} key={} orderId={} execId={} symbol={} side={} histQtyAfter={} saldoAfter={} actCompras={} actVentas={} calzCompras={} calzVentas={} snapshotMapSize={} tradesStored={} ordersStored={} duplicateExecId={}",
+                account,
+                getDailyRedisKey(),
+                order.getId(),
+                order.getExecId(),
+                order.getSymbol(),
+                order.getSide(),
+                getPositionHistoryAvailableQuantity(order.getSymbol()),
+                balance.getSaldoDisponible(),
+                balance.getOrdenesActivasCompras(),
+                balance.getOrdenesActivasVentas(),
+                balance.getOrdenesCalzadasCompras(),
+                balance.getOrdenesCalzadasVentas(),
+                snapshotPositionHistoryMaps.size(),
+                tradesMap.size(),
+                ordersMap.size(),
+                duplicateExecId);
+    }
+
+    private double getPositionHistoryAvailableQuantity(String symbol) {
+        BlotterMessage.PositionHistory.Builder position = snapshotPositionHistoryMaps.get(symbol);
+        return position != null ? position.getAvailableQuantity() : 0d;
+    }
+
+    private boolean hasTodayIntradayActivity() {
+        return tradesMap.values().stream()
+                .anyMatch(order -> MainApp.isOrderFromToday(order)
+                        && order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE))
+                || ordersMap.values().stream().anyMatch(MainApp::isOrderFromToday);
+    }
+
+    private long countTodayTrades() {
+        return tradesMap.values().stream()
+                .filter(order -> MainApp.isOrderFromToday(order)
+                        && order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE))
+                .count();
+    }
+
+    private long countTodayOrders() {
+        return ordersMap.values().stream()
+                .filter(MainApp::isOrderFromToday)
+                .count();
+    }
+
+    static String tradeExecutionKey(RoutingMessage.Order order) {
+        String orderId = order.getId() == null ? "" : order.getId();
+        String execId = order.getExecId() == null ? "" : order.getExecId();
+        String cumulativeQuantity = BigDecimal.valueOf(order.getCumQty())
+                .stripTrailingZeros()
+                .toPlainString();
+        return orderId + "|" + execId + "|" + cumulativeQuantity;
+    }
+
+    private long countNegativeHistoryPositions() {
+        return snapshotPositionHistoryMaps.values().stream()
+                .filter(position -> position.getAvailableQuantity() < 0d)
+                .count();
+    }
+
+    private boolean isRedisPersistenceEnabled() {
+        return Boolean.parseBoolean(MainApp.getProperties().getProperty("redis.enable.persistencia"));
+    }
+
+    private void logIntradayPublishSummary(String phase) {
+        if (!hasTodayIntradayActivity()) {
+            return;
+        }
+
+        log.info("[IntradayPublish] phase={} cuenta {} key={} sessions={} snapshotPositions={} negativePositions={} saldoDisponible={} cupo={} cartera={} actCompras={} actVentas={} calzCompras={} calzVentas={} tradesHoy={} ordersHoy={} redisPersistence={}",
+                phase,
+                account,
+                getDailyRedisKey(),
+                actorSession.size(),
+                snapshotPositionHistoryMaps.size(),
+                countNegativeHistoryPositions(),
+                balance.getSaldoDisponible(),
+                balance.getCupo(),
+                balance.getCartera(),
+                balance.getOrdenesActivasCompras(),
+                balance.getOrdenesActivasVentas(),
+                balance.getOrdenesCalzadasCompras(),
+                balance.getOrdenesCalzadasVentas(),
+                countTodayTrades(),
+                countTodayOrders(),
+                isRedisPersistenceEnabled());
     }
 
     public void onPositionHistory(BlotterMessage.SnapshotPositionHistory msg) {
 
         snapshotPositionHistory = msg.toBuilder();
         persistSnapshotPositionHistory(msg);
+
+        if (hasTodayIntradayActivity()) {
+            log.info("[IntradaySnapshot] cuenta {} key={} snapshotPositions={} mapPositions={} sessions={} negativePositions={}",
+                    account,
+                    getDailyRedisKey(),
+                    msg.getPositionsHistoryCount(),
+                    snapshotPositionHistoryMaps.size(),
+                    actorSession.size(),
+                    countNegativeHistoryPositions());
+        }
 
         actorSession.forEach((key, value) -> value.tell(msg, ActorRef.noSender()));
     }
@@ -423,6 +853,19 @@ public class ActorGroupPerAccount extends AbstractActor {
         balance.clear();
         balance.mergeFrom(msg);
         persistBalance(msg);
+        if (hasTodayIntradayActivity()) {
+            log.info("[IntradayBalance] cuenta {} key={} saldoDisponible={} cupo={} cartera={} actCompras={} actVentas={} calzCompras={} calzVentas={} sessions={}",
+                    account,
+                    getDailyRedisKey(),
+                    balance.getSaldoDisponible(),
+                    balance.getCupo(),
+                    balance.getCartera(),
+                    balance.getOrdenesActivasCompras(),
+                    balance.getOrdenesActivasVentas(),
+                    balance.getOrdenesCalzadasCompras(),
+                    balance.getOrdenesCalzadasVentas(),
+                    actorSession.size());
+        }
         actorSession.forEach((key, value) -> value.tell(msg, ActorRef.noSender()));
     }
 
@@ -460,8 +903,68 @@ public class ActorGroupPerAccount extends AbstractActor {
         try {
 
             RoutingMessage.Order order = ordersMap.get(msg.getId());
+            if (order == null) {
+                log.warn("Replace sin orden base en actor cuenta: {} id: {}", account, msg.getId());
+                return;
+            }
 
-            if (logicaPosition != null && !logicaPosition.calculateBalanceReplace(msg, order)) {
+            RoutingMessage.OrderReplaceRequest effectiveMsg = normalizeNoneStrategyReplace(order, msg);
+            if (effectiveMsg.getMaxFloor() != msg.getMaxFloor()) {
+                double targetQuantity = effectiveMsg.getQuantity() > 0d
+                        ? effectiveMsg.getQuantity()
+                        : order.getOrderQty();
+                double leavesQuantity = Math.max(0d, targetQuantity - order.getCumQty());
+                log.info("[Replace/NONE_STRATEGY] maxFloor ajustado {} -> {} cuenta={} id={} cumQty={} leaves={}",
+                        msg.getMaxFloor(), effectiveMsg.getMaxFloor(), account, msg.getId(),
+                        order.getCumQty(), leavesQuantity);
+            }
+
+            // Validar monto nominal del replace (nuevo precio × nueva cantidad)
+            Optional<String> notionalRejection =
+                    MainApp.checkNotionalLimit(order.getSecurityExchange(), effectiveMsg.getPrice(), effectiveMsg.getQuantity());
+            if (notionalRejection.isPresent()) {
+                log.warn("⛔ [Risk] {} — replace cuenta: {} id: {}", notionalRejection.get(), account, msg.getId());
+
+
+                RoutingMessage.OrderCancelReject orderCancelReject = RoutingMessage.OrderCancelReject.newBuilder()
+                        .setId(order.getId())
+                        .setText(notionalRejection.get())
+                        .build();
+
+                getSelf().tell(orderCancelReject, ActorRef.noSender());
+                return;
+            }
+
+            RoutingMessage.Order replaceCandidate = buildReplaceCandidate(order, effectiveMsg);
+            Optional<RoutingMessage.Order> odConflict = MainApp.isOdProtectionEnabled()
+                    ? findOdConflict(replaceCandidate)
+                    : Optional.empty();
+            if (odConflict.isPresent()) {
+                RoutingMessage.Order conflictingOrder = odConflict.get();
+                String reason = String.format(
+                        "Replace rechazado OD: cuenta %s cruzaría contra punta %s propia en %s",
+                        account, conflictingOrder.getSide().name(), replaceCandidate.getSymbol());
+                MainApp.recordOdAttempt(buildOdAttempt(replaceCandidate, conflictingOrder, reason));
+                log.warn("⛔ [OD] {} usuario={} replace={} {}@{} contra={} {}@{}",
+                        reason,
+                        replaceCandidate.getOperator(),
+                        replaceCandidate.getSide(),
+                        replaceCandidate.getOrderQty(),
+                        replaceCandidate.getPrice(),
+                        conflictingOrder.getId(),
+                        conflictingOrder.getOrderQty(),
+                        conflictingOrder.getPrice());
+                RoutingMessage.OrderCancelReject orderCancelReject = RoutingMessage.OrderCancelReject.newBuilder()
+                        .setId(order.getId())
+                        .setExecId(IDGenerator.getID())
+                        .setText(reason)
+                        .build();
+                getSelf().tell(orderCancelReject, ActorRef.noSender());
+                return;
+            }
+
+            ensureLogicaPosition("REPLACE_REQUEST");
+            if (!logicaPosition.calculateBalanceReplace(effectiveMsg, order)) {
                 return;
             }
 
@@ -473,13 +976,13 @@ public class ActorGroupPerAccount extends AbstractActor {
                     order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_PASSIVE) ||
                     order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.OCO)) {
 
-                strategyActors.get(msg.getId()).tell(msg, ActorRef.noSender());
+                strategyActors.get(effectiveMsg.getId()).tell(effectiveMsg, ActorRef.noSender());
 
             } else if (order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET)) {
-                MainApp.getConnections().get(RoutingMessage.SecurityExchangeRouting.BASKETS).sendMessage(msg);
+                MainApp.getConnections().get(RoutingMessage.SecurityExchangeRouting.BASKETS).sendMessage(effectiveMsg);
 
             } else {
-                MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(msg);
+                MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(effectiveMsg);
             }
 
 
@@ -508,7 +1011,63 @@ public class ActorGroupPerAccount extends AbstractActor {
 
     private void onNewOrderRequest(RoutingMessage.NewOrderRequest orders) {
 
-        if (logicaPosition != null && !logicaPosition.calculateBalanceReplace(orders)) {
+        RoutingMessage.Order order = orders.getOrder();
+
+        if (MainApp.getBlockedSymbols().contains(order.getSymbol())) {
+            log.warn("⛔ [Risk] Orden rechazada por riesgo — símbolo bloqueado: {} cuenta: {} id: {}",
+                    order.getSymbol(), account, order.getId());
+            RoutingMessage.Order rejected = order.toBuilder()
+                    .setOrdStatus(RoutingMessage.OrderStatus.REJECTED)
+                    .setExecType(RoutingMessage.ExecutionType.EXEC_REJECTED)
+                    .setExecId(cl.vc.module.protocolbuff.generator.IDGenerator.getID())
+                    .setText("Orden rechazada por riesgo")
+                    .build();
+            getSelf().tell(rejected, ActorRef.noSender());
+            return;
+        }
+
+        Optional<String> notionalRejection =
+                MainApp.checkNotionalLimit(order.getSecurityExchange(), order.getPrice(), order.getOrderQty());
+        if (notionalRejection.isPresent()) {
+            log.warn("⛔ [Risk] {} — cuenta: {} id: {}", notionalRejection.get(), account, order.getId());
+            getSelf().tell(order.toBuilder()
+                    .setOrdStatus(RoutingMessage.OrderStatus.REJECTED)
+                    .setExecType(RoutingMessage.ExecutionType.EXEC_REJECTED)
+                    .setExecId(IDGenerator.getID())
+                    .setText(notionalRejection.get())
+                    .build(), ActorRef.noSender());
+            return;
+        }
+
+        Optional<RoutingMessage.Order> odConflict = MainApp.isOdProtectionEnabled()
+                ? findOdConflict(order)
+                : Optional.empty();
+        if (odConflict.isPresent()) {
+            RoutingMessage.Order conflictingOrder = odConflict.get();
+            String reason = String.format(
+                    "Orden rechazada OD: cuenta %s ya tiene punta %s activa en %s",
+                    account, conflictingOrder.getSide().name(), order.getSymbol());
+            MainApp.recordOdAttempt(buildOdAttempt(order, conflictingOrder, reason));
+            log.warn("⛔ [OD] {} usuario={} nueva={} {}@{} contra={} {}@{}",
+                    reason,
+                    order.getOperator(),
+                    order.getSide(),
+                    order.getOrderQty(),
+                    order.getPrice(),
+                    conflictingOrder.getId(),
+                    conflictingOrder.getOrderQty(),
+                    conflictingOrder.getPrice());
+            getSelf().tell(order.toBuilder()
+                    .setOrdStatus(RoutingMessage.OrderStatus.REJECTED)
+                    .setExecType(RoutingMessage.ExecutionType.EXEC_REJECTED)
+                    .setExecId(IDGenerator.getID())
+                    .setText(reason)
+                    .build(), ActorRef.noSender());
+            return;
+        }
+
+        ensureLogicaPosition("NEW_ORDER_REQUEST");
+        if (!logicaPosition.calculateBalanceReplace(orders)) {
             log.info("⚠️ Retornamos por orden sin custodia, ID: {} symbol: {} account: {}", orders.getOrder().getId(), orders.getOrder().getSymbol(), orders.getOrder().getAccount());
             return;
         }
@@ -558,32 +1117,116 @@ public class ActorGroupPerAccount extends AbstractActor {
 
     }
 
-    private void onOrders(RoutingMessage.Order order) {
+    /**
+     * Calcula el AvgPx (precio promedio ponderado, tag 6 FIX) cuando la bolsa deja de mandarlo.
+     * Sólo actúa en fills (EXEC_TRADE) que llegan con avgPrice=0. Es el VWAP de TODOS los fills de
+     * esa misma orden: Σ(lastPx·lastQty) / cumQty, tomando los fills previos de tradesMap + el actual.
+     * No modifica la orden si la bolsa ya trae el avgPrice, ni si no es un trade.
+     */
+    private RoutingMessage.Order enrichAvgPx(RoutingMessage.Order order) {
+        try {
+            if (order == null
+                    || !order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE)
+                    || order.getAvgPrice() > 0d) {
+                return order;   // no es fill, o la bolsa ya lo mandó
+            }
+
+            double value = order.getLastPx() * order.getLastQty();   // fill actual
+            double qty = order.getLastQty();
+
+            // Sumar los fills PREVIOS de la misma orden (tradesMap aún no tiene el actual).
+            for (RoutingMessage.Order f : tradesMap.values()) {
+                if (f.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE)
+                        && f.getId().equals(order.getId())
+                        && !tradeExecutionKey(f).equals(tradeExecutionKey(order))) {
+                    value += f.getLastPx() * f.getLastQty();
+                    qty += f.getLastQty();
+                }
+            }
+
+            double denom = order.getCumQty() > 0d ? order.getCumQty() : qty;
+            double avg = denom > 0d ? value / denom : order.getLastPx();
+
+            if (avg > 0d) {
+                return order.toBuilder().setAvgPrice(avg).build();
+            }
+        } catch (Exception e) {
+            log.error("enrichAvgPx error id={} execId={}", order != null ? order.getId() : null,
+                    order != null ? order.getExecId() : null, e);
+        }
+        return order;
+    }
+
+    private void onOrders(RoutingMessage.Order rawOrder) {
 
         try {
-            if (isDuplicatedOrderEvent(order)) {
+
+            // La bolsa dejó de mandar el AvgPx (tag 6 FIX). Si en un fill llega en 0, lo calculamos
+            // como VWAP de los fills de esa orden. No pisa el valor si la bolsa sí lo manda.
+            RoutingMessage.Order incomingOrder = normalizeInconsistentFilledState(enrichAvgPx(rawOrder));
+
+            if (incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_REPLACE)) {
                 return;
             }
 
-            if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_REPLACE)) {
-                return;
-            }
-
-            if (order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET)) {
+            if (incomingOrder.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET)) {
 
 
 
             } else {
 
+                RoutingMessage.Order orderold = ordersMap.get(incomingOrder.getId());
+                boolean tradeExecution = incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE);
+                String tradeExecutionKey = tradeExecution ? tradeExecutionKey(incomingOrder) : "";
+                boolean duplicateExecId = tradeExecution && exceIdProcess.containsKey(tradeExecutionKey);
+
+                if (duplicateExecId) {
+                    log.warn("[OrderState][DUPLICATE_TRADE_IGNORED] cuenta={} orderId={} execId={} symbol={} side={} lastQty={} lastPx={} status={}",
+                            account,
+                            incomingOrder.getId(),
+                            incomingOrder.getExecId(),
+                            incomingOrder.getSymbol(),
+                            incomingOrder.getSide(),
+                            incomingOrder.getLastQty(),
+                            incomingOrder.getLastPx(),
+                            incomingOrder.getOrdStatus());
+                    return;
+                }
+
+                if (shouldIgnoreStaleOrderUpdate(orderold, incomingOrder)) {
+                    log.warn("[OrderState][STALE_UPDATE_IGNORED] cuenta={} orderId={} previousStatus={} previousCumQty={} incomingStatus={} incomingExecType={} incomingCumQty={} incomingExecId={}",
+                            account,
+                            incomingOrder.getId(),
+                            orderold.getOrdStatus(),
+                            orderold.getCumQty(),
+                            incomingOrder.getOrdStatus(),
+                            incomingOrder.getExecType(),
+                            incomingOrder.getCumQty(),
+                            incomingOrder.getExecId());
+                    return;
+                }
+
+                RoutingMessage.Order order = preserveFinalStateForLateTrade(orderold, incomingOrder);
+
                 actorSession.forEach((key, value) -> value.tell(order, ActorRef.noSender()));
 
-                RoutingMessage.Order orderold = ordersMap.get(order.getId());
+                if (tradeExecution) {
+                    logIntradayTradeIn(order, orderold, duplicateExecId);
+                }
+
                 ordersMap.put(order.getId(), order);
                 MainApp.getIdOrders().put(order.getId(), order);
+
+                if (shouldForceBookRefresh(orderold, order)) {
+                    forceBookRefresh(order);
+                }
 
                 if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)
                         || order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)
                         || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED)) {
+
+                    // Historico multi-dia: solo el estado terminal. Encola, no toca la red.
+                    MongoHistoryRepository.recordOrderTerminal(order);
 
                     if (strategyActors.containsKey(order.getId()) && !order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.VWAP)) {
                         strategyActors.get(order.getId()).tell(PoisonPill.getInstance(), ActorRef.noSender());
@@ -591,24 +1234,22 @@ public class ActorGroupPerAccount extends AbstractActor {
                     }
                 }
 
-                if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE) && !exceIdProcess.containsKey(order.getExecId())) {
+                if (tradeExecution) {
 
-                    exceIdProcess.put(order.getExecId(), order);
-                    tradesMap.put(order.getExecId(), order);
+                    exceIdProcess.put(tradeExecutionKey, order);
+                    tradesMap.put(tradeExecutionKey, order);
                     MainApp.getTradesMapAll().put(account, tradesMap);
 
+                    MongoHistoryRepository.recordExecution(order);
 
-                    ExecutorService executortrde = Executors.newSingleThreadExecutor();
-                    CompletableFuture<Void> futuretrade = CompletableFuture.runAsync(() -> MainApp.getTradesMapReddis().put(account, tradesMap), executortrde);
 
-                    try {
-                        futuretrade.get(5, TimeUnit.SECONDS);
-                    } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                        futuretrade.cancel(true);
-                        log.error("Operation timed out");
-                    } finally {
-                        executortrde.shutdown();
-                    }
+                    // Copia defensiva: el writer serializa en otro hilo mientras el actor sigue mutando tradesMap.
+                    HashMap<String, RoutingMessage.Order> tradesSnapshot = new HashMap<>(tradesMap);
+                    MainApp.submitRedisWrite(account, () -> {
+                        if (MainApp.getTradesMapReddis() != null) {
+                            MainApp.getTradesMapReddis().put(account, tradesSnapshot);
+                        }
+                    });
 
 
                     synchronized (lock) {
@@ -618,43 +1259,38 @@ public class ActorGroupPerAccount extends AbstractActor {
 
                         getSelf().tell(positions, ActorRef.noSender());
 
-                        ExecutorService executor = Executors.newSingleThreadExecutor();
-
-                        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> MainApp.getPositionsMapsRedis().put(account, positionsMaps), executor);
-
-                        try {
-                            future.get(5, TimeUnit.SECONDS);
-                        } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                            future.cancel(true);
-                            log.error("Operation timed out");
-                        } finally {
-                            executor.shutdown();
-                        }
+                        String positionsKey = getDailyRedisKey();
+                        Map<String, BlotterMessage.Position> positionsSnapshot = new HashMap<>(positionsMaps);
+                        MainApp.submitRedisWrite(account, () -> {
+                            if (MainApp.getPositionsMapsRedis() != null) {
+                                MainApp.getPositionsMapsRedis().put(positionsKey, positionsSnapshot);
+                            }
+                        });
 
                     }
                 }
 
 
+                boolean positionStateChanged;
                 synchronized (lock) {
                     // calculo de posiciones historicas
-                    if (logicaPosition != null) {
-                        logicaPosition.orderUpdate(order, orderold);
-                    } else {
-                        createLogicalPosition();
+                    ensureLogicaPosition("ORDER_UPDATE");
+                    positionStateChanged = logicaPosition.orderUpdate(order, orderold);
+
+                    if (tradeExecution) {
+                        logIntradayTradeAfterLive(order, duplicateExecId);
                     }
 
                 }
-                ExecutorService executortrde = Executors.newSingleThreadExecutor();
-                CompletableFuture<Void> futuretrade = CompletableFuture.runAsync(() -> MainApp.getOrdersMapRedis().put(account, ordersMap), executortrde);
-
-                try {
-                    futuretrade.get(5, TimeUnit.SECONDS);
-                } catch (TimeoutException | InterruptedException | ExecutionException e) {
-                    futuretrade.cancel(true);
-                    log.error("Operation timed out");
-                } finally {
-                    executortrde.shutdown();
+                if (positionStateChanged) {
+                    publishIntradayPositionState();
                 }
+                HashMap<String, RoutingMessage.Order> ordersSnapshot = new HashMap<>(ordersMap);
+                MainApp.submitRedisWrite(account, () -> {
+                    if (MainApp.getOrdersMapRedis() != null) {
+                        MainApp.getOrdersMapRedis().put(account, ordersSnapshot);
+                    }
+                });
             }
 
 
@@ -663,33 +1299,47 @@ public class ActorGroupPerAccount extends AbstractActor {
         }
     }
 
-    private boolean isDuplicatedOrderEvent(RoutingMessage.Order order) {
-        String orderId = order.getId();
-        if (orderId == null || orderId.isEmpty()) {
-            return false;
-        }
-
-        String eventKey = buildOrderEventKey(order);
-        String previousEventKey = lastProcessedOrderEventByOrderId.put(orderId, eventKey);
-        return eventKey.equals(previousEventKey);
-    }
-
-    private String buildOrderEventKey(RoutingMessage.Order order) {
-        return String.join("|",
-                order.getId(),
-                order.getExecId(),
-                order.getExecType().name(),
-                order.getOrdStatus().name(),
-                String.valueOf(order.getCumQty()),
-                String.valueOf(order.getLeaves()),
-                String.valueOf(order.getLastQty()),
-                String.valueOf(order.getAvgPrice()),
-                String.valueOf(order.getLastPx())
-        );
-    }
-
     private void createLogicalPosition() {
+        rebuildLogicaPosition("LAZY_INIT");
+    }
 
+    private void ensureLogicaPosition(String reason) {
+        if (logicaPosition == null) {
+            rebuildLogicaPosition(reason);
+        }
+    }
+
+    private void rebuildLogicaPosition(String reason) {
+        logicaPosition = new LogicaPosition(resolveMarginForPositionLogic(),
+                getSelf(),
+                balance,
+                snapshotPositionHistoryMaps,
+                simultaneasHashMap);
+
+        log.info("[IntradayRisk][LOGIC_READY] reason={} cuenta {} snapshotPositions={} saldoDisponible={} cupo={} ordersStored={} tradesStored={}",
+                reason,
+                account,
+                snapshotPositionHistoryMaps.size(),
+                balance.getSaldoDisponible(),
+                balance.getCupo(),
+                ordersMap.size(),
+                tradesMap.size());
+
+        // Publica el estado de custodia para la validación visual del admin (qué cuenta tiene/ no tiene data).
+        MainApp.updateAccountCustody(account, snapshotPositionHistoryMaps.size(), balance.getSaldoDisponible());
+    }
+
+    private double resolveMarginForPositionLogic() {
+        if (marginLimit != null && Double.compare(marginLimit, -1d) == 0) {
+            return -1d;
+        }
+        if (marginaccount != null) {
+            return marginaccount;
+        }
+        if (Double.compare(balance.getCupo(), 0d) != 0) {
+            return balance.getCupo();
+        }
+        return marginLimit != null ? marginLimit : 0d;
     }
 
     private void onActorSession(NewActorSession newConnecition) {
@@ -748,12 +1398,49 @@ public class ActorGroupPerAccount extends AbstractActor {
         private Initialized() {}
     }
 
+    @Data
+    @AllArgsConstructor
+    public static final class RefreshManualSimultaneas {
+        private boolean recalculate;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static final class RefreshManualPrestamos {
+        private boolean recalculate;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static final class RefreshManualSaldo {
+        private boolean recalculate;
+    }
+
     private void onInitialize(Initialize ignored) {
         try {
 
-            if (requiereCreasys && !restoredFromRedisState) {
+            // ── Custodia: SQL es la fuente de verdad del cierre; Redis solo aporta el delta intradía ──
+            // - Al INICIO DEL DÍA (sin órdenes/trades de hoy todavía) la custodia debe salir de SQL
+            //   (el cierre del día anterior). Redis no aporta nada útil ahí, y si su snapshot vino
+            //   vacío/stale (cacheado de madrugada antes de que el cierre estuviera en SQL) dejaba a
+            //   la cuenta SIN custodia -> había que correr el admin web cada mañana (caso dbarrios).
+            // - En un REINICIO INTRADÍA (ya hubo trades hoy) se confía en Redis: su snapshot ya incluye
+            //   esos trades aplicados sobre el cierre, y evita re-consultar SQL.
+            // - Una custodia VACÍA en Redis nunca se confía: se recalcula desde SQL.
+            // Nota: calculatePatrimonio() re-aplica los trades intradía (tradesMap) sobre la base SQL
+            // vía rebuildSnapshotPositionHistory(), así que no se pierden las posiciones del día.
+            boolean restoredEmpty = restoredFromRedisState
+                    && snapshotPositionHistory.getPositionsHistoryList().isEmpty();
+
+            boolean usarSqlComoBase = !restoredFromRedisState
+                    || !hasTodayIntradayActivity()
+                    || restoredEmpty;
+
+            if (requiereCreasys && usarSqlComoBase) {
                 calculatePatrimonio();
                 calculatePrestamos();
+            } else if (restoredFromRedisState) {
+                ensureLogicaPosition("INITIALIZE_RESTORE");
             }
             getSender().tell(Initialized.INSTANCE, getSelf());
 
@@ -767,6 +1454,7 @@ public class ActorGroupPerAccount extends AbstractActor {
     public static final class UpdateMargin {
         private Double margin;
         private String username;
+        private Long cycleId;
     }
 
     private void onUpdateMargin(UpdateMargin msg) {
@@ -779,8 +1467,26 @@ public class ActorGroupPerAccount extends AbstractActor {
 
                 marginLimit = msg.getMargin();
                 if (requiereCreasys) {
-                    calculatePatrimonio();
-                    calculatePrestamos();
+                    if (msg.getCycleId() != null && msg.getCycleId() > 0L) {
+                        MainApp.getAccountLoadTracker().onBackgroundRefreshStart(msg.getCycleId(), account);
+                    }
+
+                    long startedAt = System.nanoTime();
+                    try {
+                        calculatePatrimonio();
+                        calculatePrestamos();
+                        if (msg.getCycleId() != null && msg.getCycleId() > 0L) {
+                            MainApp.getAccountLoadTracker().onBackgroundRefreshFinished(msg.getCycleId(), true, null);
+                        }
+                    } catch (Exception e) {
+                        if (msg.getCycleId() != null && msg.getCycleId() > 0L) {
+                            MainApp.getAccountLoadTracker().onBackgroundRefreshFinished(msg.getCycleId(), false, e.getMessage());
+                        }
+                        throw e;
+                    } finally {
+                        long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+                        log.info("[Tracker] Refresh margin cuenta {} en {} ms", account, durationMs);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -791,6 +1497,15 @@ public class ActorGroupPerAccount extends AbstractActor {
     @Data
     @AllArgsConstructor
     public static final class UpdateLeverage {
+        private Double leverage;
+        private String username;
+        private Long cycleId;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static final class UpdateRiskConfig {
+        private Double margin;
         private Double leverage;
         private String username;
     }
@@ -807,8 +1522,63 @@ public class ActorGroupPerAccount extends AbstractActor {
                 palanca = msg.getLeverage();
 
                 if (requiereCreasys) {
+                    if (msg.getCycleId() != null && msg.getCycleId() > 0L) {
+                        MainApp.getAccountLoadTracker().onBackgroundRefreshStart(msg.getCycleId(), account);
+                    }
+
+                    long startedAt = System.nanoTime();
+                    try {
+                        calculatePatrimonio();
+                        calculatePrestamos();
+                        if (msg.getCycleId() != null && msg.getCycleId() > 0L) {
+                            MainApp.getAccountLoadTracker().onBackgroundRefreshFinished(msg.getCycleId(), true, null);
+                        }
+                    } catch (Exception e) {
+                        if (msg.getCycleId() != null && msg.getCycleId() > 0L) {
+                            MainApp.getAccountLoadTracker().onBackgroundRefreshFinished(msg.getCycleId(), false, e.getMessage());
+                        }
+                        throw e;
+                    } finally {
+                        long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+                        log.info("[Tracker] Refresh palanca cuenta {} en {} ms", account, durationMs);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            log.error(e.getMessage(), e);
+        }
+    }
+
+    private void onUpdateRiskConfig(UpdateRiskConfig msg) {
+        try {
+            boolean changed = false;
+
+            if (msg.getMargin() != null && !Objects.equals(msg.getMargin(), marginLimit)) {
+                log.info("se actualiza marginLimit de {} a {} para la cuenta {}",
+                        BigDecimal.valueOf(marginLimit == null ? 0 : marginLimit).toPlainString(),
+                        BigDecimal.valueOf(msg.getMargin()).toPlainString(),
+                        msg.getUsername() + "->" + account);
+                marginLimit = msg.getMargin();
+                changed = true;
+            }
+
+            if (msg.getLeverage() != null && !Objects.equals(msg.getLeverage(), palanca)) {
+                log.info("Se actualiza palanca de {} a {} para la cuenta {}",
+                        palanca == null ? 0 : palanca,
+                        msg.getLeverage(),
+                        msg.getUsername() + "->" + account);
+                palanca = msg.getLeverage();
+                changed = true;
+            }
+
+            if (changed && requiereCreasys) {
+                long startedAt = System.nanoTime();
+                try {
                     calculatePatrimonio();
                     calculatePrestamos();
+                } finally {
+                    long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+                    log.info("[Tracker] Refresh riesgo cuenta {} en {} ms", account, durationMs);
                 }
             }
         } catch (Exception e) {
@@ -823,13 +1593,29 @@ public class ActorGroupPerAccount extends AbstractActor {
 
     }
 
+    @Data
+    @AllArgsConstructor
+    public static final class CalculatePatriminioResult {
+        private boolean ok;
+        private String account;
+        private long durationMs;
+        private String message;
+    }
+
     private void onCalculatePatriminio(CalculatePatriminio calculatePatriminio) {
-
-        if (requiereCreasys) {
-            calculatePatrimonio();
-            calculatePrestamos();
+        long startedAt = System.nanoTime();
+        try {
+            if (requiereCreasys) {
+                calculatePatrimonio();
+                calculatePrestamos();
+            }
+            long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+            getSender().tell(new CalculatePatriminioResult(true, account, durationMs, "ok"), getSelf());
+        } catch (Exception e) {
+            long durationMs = (System.nanoTime() - startedAt) / 1_000_000L;
+            log.error("Error recalculando SQL para cuenta {}: {}", account, e.getMessage(), e);
+            getSender().tell(new CalculatePatriminioResult(false, account, durationMs, e.getMessage()), getSelf());
         }
-
     }
 
     private void onRestoreOrder(RestoreOrder restoreOrder) {
@@ -891,7 +1677,14 @@ public class ActorGroupPerAccount extends AbstractActor {
                 if (!MainApp.isOrderFromToday(value1)) {
                     return;
                 }
-                restoredToday.put(key1, value1);
+                boolean tradeExecution = value1.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE);
+                String restoredKey = tradeExecution ? tradeExecutionKey(value1) : key1;
+                restoredToday.put(restoredKey, value1);
+                if (tradeExecution
+                        && value1.getExecId() != null
+                        && !value1.getExecId().isBlank()) {
+                    exceIdProcess.put(restoredKey, value1);
+                }
                 actorSession.forEach((key2, value) -> value.tell(value1, ActorRef.noSender()));
             });
 
@@ -1018,18 +1811,311 @@ public class ActorGroupPerAccount extends AbstractActor {
                 || status == RoutingMessage.OrderStatus.DONE_FOR_DAY;
     }
 
+    private RoutingMessage.Order normalizeInconsistentFilledState(RoutingMessage.Order order) {
+        if (order == null
+                || order.getOrdStatus() != RoutingMessage.OrderStatus.FILLED
+                || order.getOrderQty() <= 0d
+                || order.getCumQty() >= order.getOrderQty()
+                || order.getLeaves() <= 0d) {
+            return order;
+        }
+
+        log.warn("[OrderState][INCONSISTENT_FILLED_NORMALIZED] cuenta={} orderId={} execId={} execType={} orderQty={} cumQty={} leaves={}",
+                account,
+                order.getId(),
+                order.getExecId(),
+                order.getExecType(),
+                order.getOrderQty(),
+                order.getCumQty(),
+                order.getLeaves());
+
+        return order.toBuilder()
+                .setOrdStatus(RoutingMessage.OrderStatus.PARTIALLY_FILLED)
+                .build();
+    }
+
+    private boolean isConclusiveFinalState(RoutingMessage.Order order) {
+        if (order == null || !isFinalStatus(order.getOrdStatus())) {
+            return false;
+        }
+        if (order.getOrdStatus() != RoutingMessage.OrderStatus.FILLED || order.getOrderQty() <= 0d) {
+            return true;
+        }
+        return order.getCumQty() >= order.getOrderQty() || order.getLeaves() <= 0d;
+    }
+
+    private boolean isRealTradeEvent(RoutingMessage.Order order, RoutingMessage.Order previous) {
+        return order != null
+                && order.getExecType() == RoutingMessage.ExecutionType.EXEC_TRADE
+                && (order.getLastQty() > 0d
+                || previous == null
+                || order.getCumQty() > previous.getCumQty());
+    }
+
+    private boolean shouldIgnoreStaleOrderUpdate(RoutingMessage.Order previous, RoutingMessage.Order incoming) {
+        if (previous == null || incoming == null || !isConclusiveFinalState(previous)) {
+            return false;
+        }
+
+        // La deduplicacion por ExecID ocurre antes de esta validacion. Un fill unico con
+        // LastQty real debe contabilizarse aunque CumQty llegue fuera de orden.
+        return !isRealTradeEvent(incoming, previous);
+    }
+
+    private RoutingMessage.Order preserveFinalStateForLateTrade(RoutingMessage.Order previous,
+                                                                 RoutingMessage.Order incoming) {
+        if (previous == null
+                || !isRealTradeEvent(incoming, previous)) {
+            return incoming;
+        }
+
+        boolean previousIsFinal = isConclusiveFinalState(previous);
+        boolean cumulativeStateRegressed = incoming.getCumQty() < previous.getCumQty();
+        if (!previousIsFinal && !cumulativeStateRegressed) {
+            return incoming;
+        }
+
+        RoutingMessage.OrderStatus finalStatus = previous.getOrdStatus();
+        if (incoming.getOrderQty() > 0d && incoming.getCumQty() >= incoming.getOrderQty()) {
+            finalStatus = RoutingMessage.OrderStatus.FILLED;
+        }
+
+        RoutingMessage.Order.Builder merged = incoming.toBuilder()
+                .setCumQty(Math.max(previous.getCumQty(), incoming.getCumQty()));
+
+        if (previousIsFinal) {
+            merged.setOrdStatus(finalStatus).setLeaves(0d);
+        } else if (cumulativeStateRegressed) {
+            // El fill se contabiliza por LastQty/ExecID, pero el estado visible no retrocede.
+            merged.setLeaves(previous.getLeaves());
+        }
+        return merged.build();
+    }
+
+    private void publishIntradayPositionState() {
+        BlotterMessage.SnapshotPositionHistory historyMsg = rebuildSnapshotPositionHistory().build();
+        BlotterMessage.Balance balanceMsg = balance.build();
+
+        onPositionHistory(historyMsg);
+        onBalances(balanceMsg);
+    }
+
+    private boolean shouldForceBookRefresh(RoutingMessage.Order previous, RoutingMessage.Order current) {
+        if (current == null || current.getOrdStatus() != RoutingMessage.OrderStatus.CANCELED) {
+            return false;
+        }
+        return previous == null || previous.getOrdStatus() != RoutingMessage.OrderStatus.CANCELED;
+    }
+
+    private void forceBookRefresh(RoutingMessage.Order order) {
+        MarketDataMessage.Subscribe subscribe = buildBookRefreshSubscribe(order);
+        if (subscribe == null) {
+            return;
+        }
+
+        String topicId = TopicGenerator.getTopicMKD(subscribe);
+        MarketDataMessage.Subscribe refreshSubscribe = subscribe.toBuilder().setId(topicId).build();
+
+        getContext().system().scheduler().scheduleOnce(
+                Duration.create(BOOK_REFRESH_DELAY_MS, TimeUnit.MILLISECONDS),
+                () -> {
+                    try {
+                        MainApp.getIdSymbolsSubscrib().remove(topicId);
+                        MainApp.getSnapshotHashMap().remove(topicId);
+                        MainApp.subscribeSymbol(refreshSubscribe, topicId);
+                        log.info("[BookRefresh] Re-suscripción forzada por cancel id={} symbol={} mkd={} settlType={}",
+                                order.getId(),
+                                order.getSymbol(),
+                                refreshSubscribe.getSecurityExchange(),
+                                refreshSubscribe.getSettlType());
+                    } catch (Exception e) {
+                        log.error("[BookRefresh] Error refrescando libro para {}: {}", order.getId(), e.getMessage(), e);
+                    }
+                },
+                getContext().dispatcher()
+        );
+    }
+
+    private MarketDataMessage.Subscribe buildBookRefreshSubscribe(RoutingMessage.Order order) {
+        if (order == null || order.getSymbol().isBlank()) {
+            return null;
+        }
+
+        MarketDataMessage.SecurityExchangeMarketData mkdExchange = mapRoutingToMarketData(order.getSecurityExchange());
+        if (mkdExchange == null) {
+            return null;
+        }
+
+        return MarketDataMessage.Subscribe.newBuilder()
+                .setSymbol(order.getSymbol())
+                .setSecurityExchange(mkdExchange)
+                .setSettlType(order.getSettlType())
+                .setSecurityType(order.getSecurityType())
+                .setDepth(MarketDataMessage.Depth.FULL_BOOK)
+                .setBook(true)
+                .setStatistic(true)
+                .setTrade(true)
+                .build();
+    }
+
+    private MarketDataMessage.SecurityExchangeMarketData mapRoutingToMarketData(RoutingMessage.SecurityExchangeRouting routingExchange) {
+        return switch (routingExchange) {
+            case XSGO, XSGO_OFS, XBCL, XSGO_1, XSGO_2, XSGO_3, XSGO_4 -> MarketDataMessage.SecurityExchangeMarketData.BCS;
+            case NUAM -> MarketDataMessage.SecurityExchangeMarketData.NUAM_MKD;
+            case IB_SMART -> MarketDataMessage.SecurityExchangeMarketData.FH_IBKR;
+            case ALPACA -> MarketDataMessage.SecurityExchangeMarketData.ALPACA_MKD;
+            default -> null;
+        };
+    }
+
+    private Optional<RoutingMessage.Order> findOdConflict(RoutingMessage.Order incoming) {
+        if (incoming == null || !isOdSide(incoming.getSide())) {
+            return Optional.empty();
+        }
+
+        String incomingSymbol = normalizeOdValue(incoming.getSymbol());
+        String incomingAccount = normalizeOdValue(incoming.getAccount());
+        RoutingMessage.SettlType incomingSettlType = incoming.getSettlType();
+        if (incomingSymbol.isEmpty() || incomingAccount.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return ordersMap.values().stream()
+                .filter(Objects::nonNull)
+                .filter(existing -> !Objects.equals(existing.getId(), incoming.getId()))
+                .filter(existing -> !isFinalStatus(existing.getOrdStatus()))
+                .filter(existing -> isOppositeOdSide(existing.getSide(), incoming.getSide()))
+                .filter(existing -> wouldCrossOwnOrder(incoming, existing))
+                .filter(existing -> incomingAccount.equals(normalizeOdValue(existing.getAccount())))
+                .filter(existing -> incomingSymbol.equals(normalizeOdValue(existing.getSymbol())))
+                .filter(existing -> existing.getSettlType() == incomingSettlType)
+                .findFirst();
+    }
+
+    private boolean isOdSide(RoutingMessage.Side side) {
+        return side == RoutingMessage.Side.BUY
+                || side == RoutingMessage.Side.SELL
+                || side == RoutingMessage.Side.SELL_SHORT;
+    }
+
+    private boolean isOppositeOdSide(RoutingMessage.Side existing, RoutingMessage.Side incoming) {
+        return (existing == RoutingMessage.Side.BUY && isSellOdSide(incoming))
+                || (incoming == RoutingMessage.Side.BUY && isSellOdSide(existing));
+    }
+
+    private boolean isSellOdSide(RoutingMessage.Side side) {
+        return side == RoutingMessage.Side.SELL || side == RoutingMessage.Side.SELL_SHORT;
+    }
+
+    private String normalizeOdValue(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private double odQuantity(RoutingMessage.Order order) {
+        return order.getOrderQty() > 0 ? order.getOrderQty() : order.getLeaves();
+    }
+
+    private boolean wouldCrossOwnOrder(RoutingMessage.Order incoming, RoutingMessage.Order existing) {
+        double incomingPrice = incoming.getPrice();
+        double existingPrice = existing.getPrice();
+        if (incomingPrice <= 0 || existingPrice <= 0) {
+            return true;
+        }
+        if (incoming.getSide() == RoutingMessage.Side.BUY && isSellOdSide(existing.getSide())) {
+            return incomingPrice >= existingPrice;
+        }
+        if (isSellOdSide(incoming.getSide()) && existing.getSide() == RoutingMessage.Side.BUY) {
+            return incomingPrice <= existingPrice;
+        }
+        return false;
+    }
+
+    private RoutingMessage.Order buildReplaceCandidate(RoutingMessage.Order baseOrder, RoutingMessage.OrderReplaceRequest replace) {
+        RoutingMessage.Order.Builder builder = baseOrder.toBuilder();
+        if (replace.getPrice() > 0) {
+            builder.setPrice(replace.getPrice());
+        }
+        if (replace.getQuantity() > 0) {
+            builder.setOrderQty(replace.getQuantity());
+        }
+        if (replace.getAmount() > 0) {
+            builder.setAmount(replace.getAmount());
+        }
+        return builder.build();
+    }
+
+    static RoutingMessage.OrderReplaceRequest normalizeNoneStrategyReplace(
+            RoutingMessage.Order order,
+            RoutingMessage.OrderReplaceRequest replace) {
+        if (order.getStrategyOrder() != RoutingMessage.StrategyOrder.NONE_STRATEGY) {
+            return replace;
+        }
+
+        double configuredMaxFloor = replace.getMaxFloor() > 0d
+                ? replace.getMaxFloor()
+                : order.getMaxFloor();
+        if (configuredMaxFloor <= 0d) {
+            return replace;
+        }
+
+        double targetQuantity = replace.getQuantity() > 0d
+                ? replace.getQuantity()
+                : order.getOrderQty();
+        double leavesQuantity = Math.max(0d, targetQuantity - order.getCumQty());
+        if (leavesQuantity <= 0d) {
+            return replace;
+        }
+
+        double normalizedMaxFloor = Math.min(configuredMaxFloor, leavesQuantity);
+        if (normalizedMaxFloor == replace.getMaxFloor()) {
+            return replace;
+        }
+        return replace.toBuilder()
+                .setMaxFloor(normalizedMaxFloor)
+                .build();
+    }
+
+    private OdAttempt buildOdAttempt(RoutingMessage.Order incoming, RoutingMessage.Order conflicting, String reason) {
+        return new OdAttempt(
+                System.currentTimeMillis(),
+                incoming.getOperator(),
+                incoming.getAccount(),
+                incoming.getSymbol(),
+                incoming.getSide().name(),
+                incoming.getPrice(),
+                odQuantity(incoming),
+                incoming.getId(),
+                incoming.getSecurityExchange().name(),
+                conflicting.getSide().name(),
+                conflicting.getPrice(),
+                odQuantity(conflicting),
+                conflicting.getId(),
+                conflicting.getOrdStatus().name(),
+                reason
+        );
+    }
+
     private void restoreFromRedisIfEnabled() {
         try {
-            if (!Boolean.parseBoolean(MainApp.getProperties().getProperty("redis.enable.persistencia"))) {
+            if (!isRedisPersistenceEnabled()) {
                 return;
             }
             String dailyKey = getDailyRedisKey();
             boolean restoredAny = false;
+            int restoredOrders = 0;
+            int restoredTrades = 0;
+            int restoredPositions = 0;
+            int restoredSnapshotPositions = 0;
+            boolean restoredPatrimonio = false;
+            boolean restoredBalance = false;
+            boolean restoredSimultaneas = false;
+            boolean restoredPrestamos = false;
 
             if (MainApp.getOrdersMapRedis() != null) {
                 HashMap<String, RoutingMessage.Order> redisOrders = MainApp.getOrdersMapRedis().get(account);
                 if (redisOrders != null && !redisOrders.isEmpty()) {
                     onRestoreOrder(new RestoreOrder(new HashMap<>(redisOrders)));
+                    restoredOrders = ordersMap.size();
                     restoredAny = true;
                 }
             }
@@ -1038,14 +2124,16 @@ public class ActorGroupPerAccount extends AbstractActor {
                 HashMap<String, RoutingMessage.Order> redisTrades = MainApp.getTradesMapReddis().get(account);
                 if (redisTrades != null && !redisTrades.isEmpty()) {
                     onRestoreTrade(new RestoreTrade(new HashMap<>(redisTrades)));
+                    restoredTrades = tradesMap.size();
                     restoredAny = true;
                 }
             }
 
             if (MainApp.getPositionsMapsRedis() != null) {
-                Map<String, BlotterMessage.Position> redisPositions = MainApp.getPositionsMapsRedis().get(account);
+                Map<String, BlotterMessage.Position> redisPositions = MainApp.getPositionsMapsRedis().get(dailyKey);
                 if (redisPositions != null && !redisPositions.isEmpty()) {
                     onRestorePositions(new RestorePositions(new HashMap<>(redisPositions)));
+                    restoredPositions = positionsMaps.size();
                     restoredAny = true;
                 }
             }
@@ -1054,6 +2142,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                 BlotterMessage.Patrimonio redisPatrimonio = MainApp.getPatrimonioMapsRedis().get(dailyKey);
                 if (redisPatrimonio != null) {
                     onRestorePatrimonio(new RestorePatrimonio(redisPatrimonio));
+                    restoredPatrimonio = true;
                     restoredAny = true;
                 }
             }
@@ -1062,6 +2151,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                 BlotterMessage.SnapshotPositionHistory redisSnapshotPositionHistory = MainApp.getSnapshotPositionHistoryRedis().get(dailyKey);
                 if (redisSnapshotPositionHistory != null) {
                     onRestoreSnapshotPositionHistory(new RestoreSnapshotPositionHistory(redisSnapshotPositionHistory));
+                    restoredSnapshotPositions = snapshotPositionHistoryMaps.size();
                     restoredAny = true;
                 }
             }
@@ -1070,6 +2160,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                 BlotterMessage.Balance redisBalance = MainApp.getBalanceRedis().get(dailyKey);
                 if (redisBalance != null) {
                     onRestoreBalance(new RestoreBalance(redisBalance));
+                    restoredBalance = true;
                     restoredAny = true;
                 }
             }
@@ -1078,6 +2169,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                 BlotterMessage.SnapshotSimultaneas redisSnapshotSimultaneas = MainApp.getSnapshotSimultaneasRedis().get(dailyKey);
                 if (redisSnapshotSimultaneas != null) {
                     onRestoreSnapshotSimultaneas(new RestoreSnapshotSimultaneas(redisSnapshotSimultaneas));
+                    restoredSimultaneas = true;
                     restoredAny = true;
                 }
             }
@@ -1086,10 +2178,34 @@ public class ActorGroupPerAccount extends AbstractActor {
                 BlotterMessage.SnapshotPrestamos redisSnapshotPrestamos = MainApp.getSnapshotPrestamosRedis().get(dailyKey);
                 if (redisSnapshotPrestamos != null) {
                     onRestoreSnapshotPrestamos(new RestoreSnapshotPrestamos(redisSnapshotPrestamos));
+                    restoredPrestamos = true;
                     restoredAny = true;
                 }
             }
 
+            if (restoredAny) {
+                if (hasTodayIntradayActivity()) {
+                    log.info("[RedisRestore][RECALC_REQUIRED] cuenta {} key={} ordersToday={} tradesToday={} snapshotPositions={}",
+                            account,
+                            dailyKey,
+                            countTodayOrders(),
+                            countTodayTrades(),
+                            snapshotPositionHistoryMaps.size());
+                } else {
+                    rebuildLogicaPosition("RESTORE");
+                }
+                log.info("[RedisRestore] cuenta {} key={} ordersToday={} tradesToday={} positions={} snapshotPositions={} patrimonio={} balance={} simultaneas={} prestamos={}",
+                        account,
+                        dailyKey,
+                        restoredOrders,
+                        restoredTrades,
+                        restoredPositions,
+                        restoredSnapshotPositions,
+                        restoredPatrimonio,
+                        restoredBalance,
+                        restoredSimultaneas,
+                        restoredPrestamos);
+            }
             restoredFromRedisState = restoredAny;
         } catch (Exception e) {
             log.error("Error restaurando estado desde redis para cuenta {}", account, e);
@@ -1136,6 +2252,11 @@ public class ActorGroupPerAccount extends AbstractActor {
 
     private void onRestoreSnapshotSimultaneas(RestoreSnapshotSimultaneas restoreSnapshotSimultaneas) {
         try {
+            if (MainApp.hasManualSimultaneasOverride(account)) {
+                reloadSimultaneasFromSources();
+                return;
+            }
+
             BlotterMessage.SnapshotSimultaneas snapshot = restoreSnapshotSimultaneas.getSnapshotSimultaneas();
             if (snapshot == null) {
                 return;
@@ -1143,7 +2264,7 @@ public class ActorGroupPerAccount extends AbstractActor {
 
             simultaneasHashMap.clear();
             snapshot.getSimultaneasList().forEach(s -> {
-                if (isSimultaneaFromToday(s)) {
+                if (isSimultaneaVigente(s)) {
                     simultaneasHashMap.put(s.getId(), s);
                 }
             });
@@ -1154,6 +2275,10 @@ public class ActorGroupPerAccount extends AbstractActor {
 
     private void onRestoreSnapshotPrestamos(RestoreSnapshotPrestamos restoreSnapshotPrestamos) {
         try {
+            if (MainApp.hasManualPrestamosOverride(account)) {
+                snapshotPrestamos = loadPrestamosFromSources();
+                return;
+            }
             if (restoreSnapshotPrestamos.getSnapshotPrestamos() == null) {
                 return;
             }
@@ -1173,32 +2298,54 @@ public class ActorGroupPerAccount extends AbstractActor {
             }
         } catch (Exception e) {
             log.error("Error persistiendo patrimonio para cuenta {}", account, e);
+            MainApp.reportRedisFailure("persist-patrimonio", e);
         }
     }
 
     private void persistSnapshotPositionHistory(BlotterMessage.SnapshotPositionHistory snapshotMsg) {
         try {
-            if (!Boolean.parseBoolean(MainApp.getProperties().getProperty("redis.enable.persistencia"))) {
+            if (!isRedisPersistenceEnabled()) {
                 return;
             }
             if (MainApp.getSnapshotPositionHistoryRedis() != null && snapshotMsg != null) {
                 MainApp.getSnapshotPositionHistoryRedis().put(getDailyRedisKey(), snapshotMsg);
+                if (hasTodayIntradayActivity()) {
+                    log.info("[IntradayPersist] type=SnapshotPositionHistory cuenta {} key={} positions={} negativePositions={}",
+                            account,
+                            getDailyRedisKey(),
+                            snapshotMsg.getPositionsHistoryCount(),
+                            countNegativeHistoryPositions());
+                }
             }
         } catch (Exception e) {
             log.error("Error persistiendo snapshotPositionHistory para cuenta {}", account, e);
+            MainApp.reportRedisFailure("persist-snapshot-position-history", e);
         }
     }
 
     private void persistBalance(BlotterMessage.Balance balanceMsg) {
         try {
-            if (!Boolean.parseBoolean(MainApp.getProperties().getProperty("redis.enable.persistencia"))) {
+            if (!isRedisPersistenceEnabled()) {
                 return;
             }
             if (MainApp.getBalanceRedis() != null && balanceMsg != null) {
                 MainApp.getBalanceRedis().put(getDailyRedisKey(), balanceMsg);
+                if (hasTodayIntradayActivity()) {
+                    log.info("[IntradayPersist] type=Balance cuenta {} key={} saldoDisponible={} cupo={} cartera={} actCompras={} actVentas={} calzCompras={} calzVentas={}",
+                            account,
+                            getDailyRedisKey(),
+                            balanceMsg.getSaldoDisponible(),
+                            balanceMsg.getCupo(),
+                            balanceMsg.getCartera(),
+                            balanceMsg.getOrdenesActivasCompras(),
+                            balanceMsg.getOrdenesActivasVentas(),
+                            balanceMsg.getOrdenesCalzadasCompras(),
+                            balanceMsg.getOrdenesCalzadasVentas());
+                }
             }
         } catch (Exception e) {
             log.error("Error persistiendo balance para cuenta {}", account, e);
+            MainApp.reportRedisFailure("persist-balance", e);
         }
     }
 
@@ -1212,6 +2359,7 @@ public class ActorGroupPerAccount extends AbstractActor {
             }
         } catch (Exception e) {
             log.error("Error persistiendo snapshotSimultaneas para cuenta {}", account, e);
+            MainApp.reportRedisFailure("persist-snapshot-simultaneas", e);
         }
     }
 
@@ -1225,7 +2373,134 @@ public class ActorGroupPerAccount extends AbstractActor {
             }
         } catch (Exception e) {
             log.error("Error persistiendo snapshotPrestamos para cuenta {}", account, e);
+            MainApp.reportRedisFailure("persist-snapshot-prestamos", e);
         }
+    }
+
+    private BlotterMessage.SnapshotPrestamos.Builder loadPrestamosFromSources() {
+        if (MainApp.hasManualPrestamosOverride(account)) {
+            BlotterMessage.SnapshotPrestamos.Builder manualSnapshot = BlotterMessage.SnapshotPrestamos.newBuilder();
+            manualSnapshot.setId("snapshot-prestamos-" + account.replace("-", "/"));
+            manualSnapshot.setAccount(account.replace("-", "/"));
+            MainApp.getManualPrestamosOverride(account).forEach(manualSnapshot::addPrestamos);
+            return manualSnapshot;
+        }
+
+        String prefixAccount = account.replace("-", "/");
+        return CalculoCreasys.snapshotPrestamos(prefixAccount);
+    }
+
+    private void applyManualPrestamosOverrideToPatrimonio() {
+        if (!MainApp.hasManualPrestamosOverride(account)) {
+            return;
+        }
+
+        BlotterMessage.Patrimonio.Builder patrimonioClp = patrimonioMaps.computeIfAbsent(
+                RoutingMessage.Currency.CLP,
+                currency -> BlotterMessage.Patrimonio.newBuilder()
+                        .setCaja(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+                        .setCuentaTransitoriasPorCobrarPagar(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+                        .setGarantiaEfectivo(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+                        .setPrestamos(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+        );
+
+        double totalPrestamos = MainApp.getManualPrestamosOverride(account).stream()
+                .mapToDouble(p -> p != null ? p.getMonto() : 0d)
+                .sum();
+
+        patrimonioClp.setPrestamos(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(totalPrestamos));
+    }
+
+    private void applyManualSaldoOverrideToPatrimonio() {
+        if (!MainApp.hasManualSaldoOverride(account)) {
+            return;
+        }
+
+        ManualSaldoOverride override = MainApp.getManualSaldoOverride(account);
+        if (override == null) {
+            return;
+        }
+
+        BlotterMessage.Patrimonio.Builder patrimonioClp = patrimonioMaps.computeIfAbsent(
+                RoutingMessage.Currency.CLP,
+                currency -> BlotterMessage.Patrimonio.newBuilder()
+                        .setCaja(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+                        .setCuentaTransitoriasPorCobrarPagar(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+                        .setGarantiaEfectivo(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+                        .setPrestamos(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(0))
+        );
+
+        patrimonioClp.setCaja(BlotterMessage.ValuesPatrimonio.newBuilder().setValues(override.getCaja()));
+        patrimonioClp.setCuentaTransitoriasPorCobrarPagar(
+                BlotterMessage.ValuesPatrimonio.newBuilder().setValues(override.getCuentaTransitorias()));
+        patrimonioClp.setGarantiaEfectivo(
+                BlotterMessage.ValuesPatrimonio.newBuilder().setValues(override.getGarantiaEfectivo()));
+    }
+
+    private void applyManualSaldoOverrideToBalance() {
+        if (!MainApp.hasManualSaldoOverride(account)) {
+            return;
+        }
+
+        ManualSaldoOverride override = MainApp.getManualSaldoOverride(account);
+        if (override == null) {
+            return;
+        }
+
+        balance.setGarantiasConstituidas(override.getGarantiasConstituidas());
+        balance.setGarantiasExigidas(override.getGarantiasExigidas());
+        balance.setGarantiasReservadas(override.getGarantiasReservadas());
+        balance.setLimiteFinanciero(override.getLimiteFinanciero());
+        balance.setGarantiasDisponible(override.getGarantiasDisponible());
+        balance.setOrdenesActivasCompras(override.getOrdenesActivasCompras());
+        balance.setOrdenesActivasVentas(override.getOrdenesActivasVentas());
+        balance.setOrdenesCalzadasCompras(override.getOrdenesCalzadasCompras());
+        balance.setOrdenesCalzadasVentas(override.getOrdenesCalzadasVentas());
+        balance.setOrdenesCestaCompras(override.getOrdenesCestaCompras());
+        balance.setOrdenesCestaVentas(override.getOrdenesCestaVentas());
+        balance.setRendimiento(override.getRendimiento());
+        balance.setTotal(override.getTotal());
+    }
+
+    private void reloadSimultaneasFromSources() {
+        simultaneasHashMap.clear();
+
+        if (MainApp.hasManualSimultaneasOverride(account)) {
+            MainApp.getManualSimultaneasOverride(account).forEach(simultanea -> {
+                if (simultanea != null && simultanea.getId() != null && !simultanea.getId().isBlank() && isSimultaneaVigente(simultanea)) {
+                    simultaneasHashMap.put(simultanea.getId(), simultanea);
+                }
+            });
+            return;
+        }
+
+        List<BlotterMessage.Simultaneas> simultaneasSql = MainApp.getAllSimultaneas();
+        if (simultaneasSql != null) {
+            simultaneasSql.forEach(s -> {
+                String sourceAccount = s.getNumCuenta();
+                if (this.account.equals(sourceAccount) && isSimultaneaVigente(s)) {
+                    simultaneasHashMap.put(s.getId(), s);
+                }
+            });
+        }
+    }
+
+    private double safePercentage(double value, double total) {
+        if (!Double.isFinite(value) || !Double.isFinite(total) || total == 0d) {
+            return 0d;
+        }
+        double percentage = (value / total) * 100d;
+        return Double.isFinite(percentage) ? percentage : 0d;
+    }
+
+    private void publishSimultaneasSnapshot() {
+        BlotterMessage.SnapshotSimultaneas snapshotSimultaneas = BlotterMessage.SnapshotSimultaneas.newBuilder()
+                .addAllSimultaneas(simultaneasHashMap.values())
+                .setAccount(account)
+                .build();
+
+        persistSnapshotSimultaneas(snapshotSimultaneas);
+        actorSession.forEach((key, value) -> value.tell(snapshotSimultaneas, ActorRef.noSender()));
     }
 
     private String getDailyRedisKey() {
@@ -1233,20 +2508,37 @@ public class ActorGroupPerAccount extends AbstractActor {
         return account + "|" + LocalDate.now(zoneId);
     }
 
-    private boolean isSimultaneaFromToday(BlotterMessage.Simultaneas s) {
-        if (s == null || s.getFechaOperacion() == null || s.getFechaOperacion().isBlank()) {
+    private boolean isSimultaneaVigente(BlotterMessage.Simultaneas s) {
+        if (s == null) {
             return false;
         }
 
         ZoneId zoneId = MainApp.getZoneId() != null ? MainApp.getZoneId() : ZoneId.of("America/Santiago");
         LocalDate today = LocalDate.now(zoneId);
-        String raw = s.getFechaOperacion().trim();
+        LocalDate fechaOperacion = parseSimultaneaDate(s.getFechaOperacion());
+        LocalDate fechaVcto = parseSimultaneaDate(s.getFechaVcto());
 
-        if (raw.length() >= 10) {
-            String first10 = raw.substring(0, 10);
+        if (fechaOperacion != null && fechaOperacion.isAfter(today)) {
+            return false;
+        }
+
+        if (fechaVcto != null) {
+            return !fechaVcto.isBefore(today);
+        }
+
+        return fechaOperacion != null && !fechaOperacion.isAfter(today);
+    }
+
+    private LocalDate parseSimultaneaDate(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+
+        String trimmed = raw.trim();
+        if (trimmed.length() >= 10) {
+            String first10 = trimmed.substring(0, 10);
             try {
-                LocalDate parsed = LocalDate.parse(first10, DateTimeFormatter.ISO_LOCAL_DATE);
-                return today.equals(parsed);
+                return LocalDate.parse(first10, DateTimeFormatter.ISO_LOCAL_DATE);
             } catch (DateTimeParseException ignored) {
             }
         }
@@ -1259,12 +2551,11 @@ public class ActorGroupPerAccount extends AbstractActor {
 
         for (DateTimeFormatter fmt : formats) {
             try {
-                LocalDate parsed = LocalDate.parse(raw, fmt);
-                return today.equals(parsed);
+                return LocalDate.parse(trimmed, fmt);
             } catch (DateTimeParseException ignored) {
             }
         }
-        return false;
+        return null;
     }
 
 }

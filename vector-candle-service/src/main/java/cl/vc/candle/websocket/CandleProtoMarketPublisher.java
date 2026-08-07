@@ -13,8 +13,9 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.ReplaceOptions;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
-import org.bson.types.ObjectId;
 import org.eclipse.jetty.websocket.api.Session;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,10 @@ public class CandleProtoMarketPublisher extends Thread {
     private final Set<Session> snapshotSent = ConcurrentHashMap.newKeySet();
     private final Set<Session> historySent = ConcurrentHashMap.newKeySet();
     private final Set<String> excludedSymbols;
-    private volatile ObjectId lastTradeId;
+    /** _id del ultimo trade publicado. Object, no ObjectId: ver esMayor(). */
+    private volatile Object lastTradeId;
+    /** Referencia viva a trades para consultas on-demand: reusa el MongoClient del hilo, no abre otro. */
+    private volatile MongoCollection<Document> tradesCollection;
     private volatile LocalDate lastDailyStatsLogDate;
     private volatile long lastBackfillTimeMs;
 
@@ -80,6 +84,7 @@ public class CandleProtoMarketPublisher extends Thread {
             MongoCollection<Document> trades = database.getCollection("trades");
             MongoCollection<Document> instrumentStats = database.getCollection("instrument_stats");
             MongoCollection<Document> bolsaHistory = database.getCollection(historyCollectionName);
+            tradesCollection = trades;
             log.info("Proto market publisher iniciado db={} pollMs={} topN={}", databaseName, pollMs, topN);
             backfillRecentDailyHistoryIfNeeded(trades, instrumentStats, bolsaHistory, topN, historyDays);
 
@@ -99,7 +104,146 @@ public class CandleProtoMarketPublisher extends Thread {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Error iniciando proto market publisher", e);
+        } finally {
+            tradesCollection = null;
         }
+    }
+
+    /**
+     * Serie intradia por instrumento para el mini grafico de la tabla "Datos del Mercado".
+     * Se calcula aca, no en cada cliente: el front solo pinta.
+     *
+     * Fuente: coleccion trades del dia (no candles). Es la unica que sabemos poblada por
+     * avn-core para los 249 simbolos; ademas evita depender de que exista la vela PT1M por papel.
+     *
+     * La grilla de buckets es COMUN a todas las series (mismo minBucket/maxBucket global), asi
+     * todas las filas de la tabla comparten eje X y son comparables entre si. Antes del primer
+     * trade del papel se emite null (el front no pinta), despues se arrastra el ultimo cierre
+     * (LOCF) para que un papel sin ticks recientes se vea plano y no desaparezca.
+     */
+    public boolean sendIntradaySeries(Session session, LocalDate day, List<String> symbols, int bucketMinutes) {
+        MongoCollection<Document> trades = tradesCollection;
+        if (session == null || trades == null) {
+            return false;
+        }
+        ZoneId zone = ZoneId.of("America/Santiago");
+        // No usa resolveLatestTradeDay: ese ordena por _id desc y con _id String
+        // ("instrumentId|mdEntryId") el orden es alfabetico por simbolo, no cronologico.
+        LocalDate targetDay = day != null ? day : resolveLatestTradeDayByEventTime(trades, zone);
+        int bucket = bucketMinutes > 0
+                ? bucketMinutes
+                : parseInt(properties.getProperty("mongo.market.intraday.bucket.minutes"), 5);
+        bucket = Math.min(60, Math.max(1, bucket));
+
+        List<org.bson.conversions.Bson> filters = new ArrayList<>();
+        filters.add(Filters.regex("eventTime", "^" + targetDay));
+        if (symbols != null && !symbols.isEmpty()) {
+            filters.add(Filters.in("symbol", symbols));
+        }
+
+        FindIterable<Document> cursor = trades.find(Filters.and(filters))
+                .projection(com.mongodb.client.model.Projections.include(
+                        "symbol", "settlement", "destination", "currency", "securityType", "price", "eventTime"))
+                .sort(Sorts.ascending("eventTime"));
+
+        Map<String, IntradaySeries> byFullKey = new LinkedHashMap<>();
+        int minBucket = Integer.MAX_VALUE;
+        int maxBucket = -1;
+        int rawDocs = 0;
+
+        for (Document doc : cursor) {
+            rawDocs++;
+            String symbol = getString(doc, "symbol", "");
+            if (symbol.isBlank() || isExcludedSymbol(symbol)) {
+                continue;
+            }
+            double price = getDouble(doc, "price");
+            if (price <= 0) {
+                continue;
+            }
+            Instant t = parseInstantOrNull(getString(doc, "eventTime", null), zone);
+            if (t == null) {
+                continue;
+            }
+            ZonedDateTime zdt = t.atZone(zone);
+            // El filtro regex es sobre el string crudo (UTC o con offset); el dia que vale es el local.
+            if (!zdt.toLocalDate().equals(targetDay)) {
+                continue;
+            }
+            int idx = (zdt.getHour() * 60 + zdt.getMinute()) / bucket;
+
+            MarketDataMessage.SecurityExchangeMarketData ex = parseSecurityExchange(getString(doc, "destination", "BCS"));
+            RoutingMessage.SettlType settl = parseSettlType(getString(doc, "settlement", "T2"));
+            RoutingMessage.SecurityType secType = parseSecurityType(getString(doc, "securityType", "CS"));
+            String currency = getString(doc, "currency", "");
+            // La moneda no viaja en el topic del front: se agrega aparte y despues se elige la
+            // variante con mas trades, para no mezclar precios CLP y USD en la misma linea.
+            String fullKey = symbol + "|" + ex.name() + "|" + settl.name() + "|" + secType.name() + "|" + currency;
+            IntradaySeries serie = byFullKey.get(fullKey);
+            if (serie == null) {
+                serie = new IntradaySeries(symbol, ex, settl, secType, currency);
+                byFullKey.put(fullKey, serie);
+            }
+            serie.apply(idx, price);
+            if (idx < minBucket) {
+                minBucket = idx;
+            }
+            if (idx > maxBucket) {
+                maxBucket = idx;
+            }
+        }
+
+        Map<String, IntradaySeries> byTopic = new LinkedHashMap<>();
+        for (IntradaySeries serie : byFullKey.values()) {
+            IntradaySeries prev = byTopic.get(serie.key);
+            if (prev == null || serie.count > prev.count) {
+                byTopic.put(serie.key, serie);
+            }
+        }
+
+        if (maxBucket < 0) {
+            minBucket = 0;
+        }
+        JSONArray rows = new JSONArray();
+        int points = maxBucket < 0 ? 0 : (maxBucket - minBucket + 1);
+        for (IntradaySeries serie : byTopic.values()) {
+            rows.put(serie.toJson(minBucket, maxBucket));
+        }
+        // Papel pedido sin un solo trade hoy: viaja igual con status no_trades y points vacio,
+        // para que el front distinga "sin datos" de "plano".
+        if (symbols != null && !symbols.isEmpty()) {
+            Set<String> conDatos = byTopic.values().stream().map(s -> s.symbol).collect(Collectors.toSet());
+            for (String symbol : symbols) {
+                if (!conDatos.contains(symbol)) {
+                    rows.put(new JSONObject()
+                            .put("symbol", symbol)
+                            .put("status", "no_trades")
+                            .put("points", new JSONArray()));
+                }
+            }
+        }
+
+        ZonedDateTime t0 = targetDay.atStartOfDay(zone).plusMinutes((long) minBucket * bucket);
+        JSONObject payload = new JSONObject()
+                .put("type", "intraday_series")
+                .put("date", targetDay.toString())
+                .put("bucketMinutes", bucket)
+                .put("t0", t0.toString())
+                .put("points", points)
+                .put("count", rows.length())
+                .put("series", rows);
+
+        log.info("[MONGO][INTRADAY] dia={} bucketMin={} rawDocs={} series={} puntos={} symbolsPedidos={}",
+                targetDay, bucket, rawDocs, rows.length(), points, symbols == null ? 0 : symbols.size());
+        try {
+            if (session.isOpen()) {
+                session.getRemote().sendString(payload.toString());
+                return true;
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo enviar intraday_series a session={}", session, e);
+        }
+        return false;
     }
 
     private void sendBootstrapTradesIfNeeded(MongoCollection<Document> trades,
@@ -119,7 +263,7 @@ public class CandleProtoMarketPublisher extends Thread {
         }
 
         List<MarketDataMessage.TradeGeneral> rows = new ArrayList<>();
-        ObjectId max = null;
+        Object max = null;
         ZoneId marketZone = ZoneId.of("America/Santiago");
         LocalDate latestDay = resolveLatestTradeDay(trades, marketZone);
         int safeDays = Math.max(1, bootstrapDays);
@@ -141,8 +285,8 @@ public class CandleProtoMarketPublisher extends Thread {
             if (rows.size() >= safeMaxTrades) {
                 break;
             }
-            ObjectId id = doc.getObjectId("_id");
-            if (id != null && (max == null || id.compareTo(max) > 0)) {
+            Object id = doc.get("_id");
+            if (esMayor(id, max)) {
                 max = id;
             }
         }
@@ -153,8 +297,8 @@ public class CandleProtoMarketPublisher extends Thread {
                     continue;
                 }
                 rows.add(toTradeGeneral(doc));
-                ObjectId id = doc.getObjectId("_id");
-                if (id != null && (max == null || id.compareTo(max) > 0)) {
+                Object id = doc.get("_id");
+                if (esMayor(id, max)) {
                     max = id;
                 }
             }
@@ -173,7 +317,7 @@ public class CandleProtoMarketPublisher extends Thread {
                     firstRow.getSymbol(),
                     lastRow.getSymbol());
         }
-        if (max != null && (lastTradeId == null || max.compareTo(lastTradeId) > 0)) {
+        if (esMayor(max, lastTradeId)) {
             lastTradeId = max;
         }
 
@@ -211,7 +355,7 @@ public class CandleProtoMarketPublisher extends Thread {
             try {
                 payloads.add(toPayload(historyDocToBolsaStats(d)));
             } catch (Exception e) {
-                log.warn("No se pudo serializar BolsaStats historico _id={}", d.getObjectId("_id"), e);
+                log.warn("No se pudo serializar BolsaStats historico _id={}", d.get("_id"), e);
             }
         }
 
@@ -273,6 +417,20 @@ public class CandleProtoMarketPublisher extends Thread {
         }
     }
 
+    /**
+     * Compara dos _id sin asumir su tipo. Los trades pueden traer _id ObjectId (inyector
+     * propio) o String "instrumentId|mdEntryId" (otros productores, p.ej. avn-core).
+     * Asumir ObjectId reventaba con ClassCastException y dejaba las estadisticas vacias.
+     */
+    @SuppressWarnings("unchecked")
+    private static boolean esMayor(Object candidato, Object actual) {
+        if (candidato == null) return false;
+        if (actual == null) return true;
+        if (candidato.getClass() != actual.getClass()) return false;
+        if (!(candidato instanceof Comparable)) return false;
+        return ((Comparable<Object>) candidato).compareTo(actual) > 0;
+    }
+
     private void publishIncrementalTrades(MongoCollection<Document> trades, int tradeBatch) {
         FindIterable<Document> cursor = (lastTradeId == null)
                 ? trades.find().sort(Sorts.ascending("_id")).limit(Math.max(1, tradeBatch))
@@ -282,7 +440,7 @@ public class CandleProtoMarketPublisher extends Thread {
             if (isExcludedSymbol(getString(doc, "symbol", ""))) {
                 continue;
             }
-            ObjectId id = doc.getObjectId("_id");
+            Object id = doc.get("_id");
             if (id != null) {
                 lastTradeId = id;
             }
@@ -302,37 +460,23 @@ public class CandleProtoMarketPublisher extends Thread {
         if (stats == null) {
             return;
         }
-        Map<String, TradeAgg> tradeAggByKey = loadTradeAggForDay(trades, marketDay, marketZone);
-        List<MarketDataMessage.RankinSymbol> rows = collectRankingRowsForDay(tradeAggByKey, instrumentStats, true);
-        List<MarketDataMessage.RankinSymbol> masVolatil = rows.stream()
-                .sorted(Comparator.comparingDouble((MarketDataMessage.RankinSymbol r) -> Math.abs(r.getVariacionPct())).reversed())
-                .limit(topN)
-                .collect(Collectors.toList());
-        List<MarketDataMessage.RankinSymbol> masTranzado = rows.stream()
-                .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getMonto).reversed())
-                .limit(topN)
-                .collect(Collectors.toList());
-        List<MarketDataMessage.RankinSymbol> menosTranzado = rows.stream()
-                .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getMonto))
-                .limit(topN)
-                .collect(Collectors.toList());
-        List<MarketDataMessage.RankinSymbol> bestRankin = rows.stream()
-                .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getVariacionPct).reversed())
-                .limit(topN)
-                .collect(Collectors.toList());
-        List<MarketDataMessage.RankinSymbol> worseRankin = rows.stream()
-                .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getVariacionPct))
-                .limit(topN)
-                .collect(Collectors.toList());
+        // horaFin ya es el ultimo trade del dia que calculo buildBolsaStatsForDay: reusarlo evita
+        // reagregar la coleccion trades completa en cada tick de 2 s.
+        Instant lastTradeInstant = parseInstant(stats.getHoraFin(), marketZone);
 
-        Instant lastTradeInstant = tradeAggByKey.values().stream()
-                .map(a -> a.lastTs)
-                .filter(java.util.Objects::nonNull)
-                .max(Comparator.naturalOrder())
-                .orElse(Instant.now());
+        if (!marketDay.equals(lastDailyStatsLogDate)) {
+            // Solo para el log diario, que corre una vez por dia: aqui si vale reagregar.
+            Map<String, TradeAgg> tradeAggByKey = loadTradeAggForDay(trades, marketDay, marketZone);
+            List<MarketDataMessage.RankinSymbol> rows = collectRankingRowsForDay(tradeAggByKey, instrumentStats, true);
+            List<MarketDataMessage.RankinSymbol> menosTranzado = rows.stream()
+                    .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getMonto))
+                    .limit(topN)
+                    .collect(Collectors.toList());
+            maybeLogDailyStats(marketDay, stats, stats.getMasTranzadoList(), menosTranzado, stats.getMasVolatilList(),
+                    stats.getBestRankinList(), stats.getWorseRankinList(), tradeAggByKey.size(), rows.size());
+        }
 
-        maybeLogDailyStats(marketDay, stats, masTranzado, menosTranzado, masVolatil, bestRankin, worseRankin, tradeAggByKey.size(), rows.size());
-        persistBolsaStatsHistory(history, stats, lastTradeInstant);
+        persistBolsaStatsHistory(history, stats, lastTradeInstant, marketDay);
         broadcast(toPayload(stats));
     }
 
@@ -397,6 +541,40 @@ public class CandleProtoMarketPublisher extends Thread {
             return null;
         }
 
+        long totalTrades = tradeAggByKey.values().stream().mapToLong(a -> a.count).sum();
+        if (tradeAggByKey.isEmpty()) {
+            // Las rows vienen del fallback de instrument_stats: el contador de trades tambien tiene
+            // que salir de ahi, si no el header muestra volumen y monto con "N Total Trades" = 0.
+            for (Document doc : instrumentStats.find()) {
+                if (!isExcludedSymbol(getString(doc, "symbol", ""))) {
+                    totalTrades += getLong(doc, "totalTrades");
+                }
+            }
+        }
+
+        Instant firstTradeInstant = tradeAggByKey.values().stream()
+                .map(a -> a.firstTs)
+                .filter(java.util.Objects::nonNull)
+                .min(Comparator.naturalOrder())
+                .orElse(marketDay.atStartOfDay(marketZone).toInstant());
+        Instant lastTradeInstant = tradeAggByKey.values().stream()
+                .map(a -> a.lastTs)
+                .filter(java.util.Objects::nonNull)
+                .max(Comparator.naturalOrder())
+                .orElse(Instant.now());
+
+        return buildBolsaStatsFromRows(rows, totalTrades, firstTradeInstant, lastTradeInstant, topN);
+    }
+
+    /**
+     * Parte pura del calculo: de las filas ya resueltas salen los 17 KPI y los 6 rankings.
+     * Separada de Mongo a proposito para poder fijar los invariantes con tests.
+     */
+    static MarketDataMessage.BolsaStats buildBolsaStatsFromRows(List<MarketDataMessage.RankinSymbol> rows,
+                                                                long totalTrades,
+                                                                Instant firstTradeInstant,
+                                                                Instant lastTradeInstant,
+                                                                int topN) {
         double totalVol = 0.0;
         double totalMonto = 0.0;
         double capTotal = 0.0;
@@ -405,7 +583,6 @@ public class CandleProtoMarketPublisher extends Thread {
         double varPos = 0.0;
         double varNeg = 0.0;
         double tendenciaSum = 0.0;
-        long totalTrades = 0L;
         double liqWeighted = 0.0;
         double liqWeight = 0.0;
 
@@ -435,8 +612,6 @@ public class CandleProtoMarketPublisher extends Thread {
                 liqWeight += monto;
             }
         }
-
-        totalTrades = tradeAggByKey.values().stream().mapToLong(a -> a.count).sum();
 
         int assets = rows.size();
         double sentimientoPositivo = assets > 0 ? (varPos / assets) * 100.0 : 0.0;
@@ -483,17 +658,6 @@ public class CandleProtoMarketPublisher extends Thread {
                 .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getVariacionPct))
                 .limit(topN)
                 .collect(Collectors.toList());
-
-        Instant firstTradeInstant = tradeAggByKey.values().stream()
-                .map(a -> a.firstTs)
-                .filter(java.util.Objects::nonNull)
-                .min(Comparator.naturalOrder())
-                .orElse(marketDay.atStartOfDay(marketZone).toInstant());
-        Instant lastTradeInstant = tradeAggByKey.values().stream()
-                .map(a -> a.lastTs)
-                .filter(java.util.Objects::nonNull)
-                .max(Comparator.naturalOrder())
-                .orElse(Instant.now());
 
         MarketDataMessage.BolsaStats stats = MarketDataMessage.BolsaStats.newBuilder()
                 .setId("candle-bolsa-stats")
@@ -560,10 +724,16 @@ public class CandleProtoMarketPublisher extends Thread {
         return dedupeRankRows(rows);
     }
 
-    private void persistBolsaStatsHistory(MongoCollection<Document> history, MarketDataMessage.BolsaStats stats, Instant referenceInstant) {
+    /**
+     * @param marketDay dia al que pertenecen los datos de {@code stats}. No se deriva de
+     *                  {@code referenceInstant}: cuando el dia no tiene trades ese instante cae a
+     *                  {@code Instant.now()} y el snapshot terminaria archivado bajo la fecha de hoy
+     *                  con datos del ultimo dia operado.
+     */
+    private void persistBolsaStatsHistory(MongoCollection<Document> history, MarketDataMessage.BolsaStats stats, Instant referenceInstant, LocalDate marketDay) {
         Instant now = referenceInstant == null ? Instant.now() : referenceInstant;
         ZonedDateTime zdt = now.atZone(ZoneId.of("America/Santiago"));
-        String dayKey = zdt.toLocalDate().toString();
+        String dayKey = marketDay.toString();
         String hourKey = zdt.truncatedTo(ChronoUnit.HOURS).format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH"));
         String hourlySnapshotKey = "1h:" + hourKey;
         String dailySnapshotKey = "1d:" + dayKey;
@@ -835,28 +1005,6 @@ public class CandleProtoMarketPublisher extends Thread {
         return s + "|" + ex.name() + "|" + settl.name();
     }
 
-    private MarketDataMessage.RankinSymbol mergeRankWithTradeAgg(MarketDataMessage.RankinSymbol rank, TradeAgg agg) {
-        MarketDataMessage.RankinSymbol.Builder b = rank.toBuilder();
-        if (rank.getVolumen() <= 0 && agg.volume > 0) {
-            b.setVolumen(agg.volume);
-        }
-        if (rank.getMonto() <= 0 && agg.amount > 0) {
-            b.setMonto(agg.amount);
-        }
-        if (rank.getPrecioUltimo() <= 0 && agg.last > 0) {
-            b.setPrecioUltimo(agg.last);
-            b.setPrecioPromedio(agg.last);
-        }
-        if (rank.getPrecioMaximo() <= 0 || rank.getPrecioMaximo() == rank.getPrecioMinimo()) {
-            if (agg.high > 0) b.setPrecioMaximo(agg.high);
-            if (agg.low > 0) b.setPrecioMinimo(agg.low);
-        }
-        if (Math.abs(rank.getVariacionPct()) < 0.000001d && agg.first > 0 && agg.last > 0) {
-            b.setVariacionPct(((agg.last - agg.first) / agg.first) * 100.0d);
-        }
-        return b.build();
-    }
-
     private MarketDataMessage.RankinSymbol enrichTradeRankWithInstrumentDoc(MarketDataMessage.RankinSymbol tradeRank, Document doc) {
         if (doc == null) {
             return tradeRank;
@@ -878,6 +1026,17 @@ public class CandleProtoMarketPublisher extends Thread {
             b.setImpliedVolatility(Math.abs(tradeRank.getVariacionPct()));
         }
         return b.build();
+    }
+
+    /** Ultimo dia operado segun eventTime (hay indice ascendente por eventTime), independiente del tipo de _id. */
+    private LocalDate resolveLatestTradeDayByEventTime(MongoCollection<Document> trades, ZoneId zone) {
+        for (Document doc : trades.find().sort(Sorts.descending("eventTime")).limit(20)) {
+            Instant t = parseInstantOrNull(getString(doc, "eventTime", null), zone);
+            if (t != null && !isExcludedSymbol(getString(doc, "symbol", ""))) {
+                return t.atZone(zone).toLocalDate();
+            }
+        }
+        return LocalDate.now(zone);
     }
 
     private LocalDate resolveLatestTradeDay(MongoCollection<Document> trades, ZoneId zone) {
@@ -946,8 +1105,8 @@ public class CandleProtoMarketPublisher extends Thread {
         MarketDataMessage.SecurityExchangeMarketData securityExchange = parseSecurityExchange(getString(doc, "destination", "BCS"));
 
         String id = getString(doc, "mdEntryId", "");
-        if (id.isBlank() && doc.getObjectId("_id") != null) {
-            id = doc.getObjectId("_id").toHexString();
+        if (id.isBlank() && doc.get("_id") != null) {
+            id = String.valueOf(doc.get("_id"));
         }
         Instant t = parseInstant(getString(doc, "eventTime", null), ZoneId.of("America/Santiago"));
         String side = getString(doc, "aggressorSide", "");
@@ -1136,6 +1295,77 @@ public class CandleProtoMarketPublisher extends Thread {
                 .map(String::toUpperCase)
                 .forEach(out::add);
         return out;
+    }
+
+    /** Serie intradia de un instrumento: ultimo precio por bucket, sin OHLC (el sparkline solo usa el cierre). */
+    private static class IntradaySeries {
+        final String symbol;
+        final String key;
+        final MarketDataMessage.SecurityExchangeMarketData ex;
+        final RoutingMessage.SettlType settl;
+        final RoutingMessage.SecurityType secType;
+        final String currency;
+        final java.util.TreeMap<Integer, Double> closeByBucket = new java.util.TreeMap<>();
+        long count;
+        double first;
+        double last;
+        double min = Double.MAX_VALUE;
+        double max;
+
+        IntradaySeries(String symbol,
+                       MarketDataMessage.SecurityExchangeMarketData ex,
+                       RoutingMessage.SettlType settl,
+                       RoutingMessage.SecurityType secType,
+                       String currency) {
+            this.symbol = symbol;
+            this.ex = ex;
+            this.settl = settl;
+            this.secType = secType;
+            this.currency = currency;
+            // Mismo formato que TopicGenerator.getTopicMKD(Statistic) en el front: match O(1) por fila.
+            this.key = symbol + ex.name() + settl.name() + secType.name();
+        }
+
+        void apply(int bucket, double price) {
+            if (count == 0) {
+                first = price;
+            }
+            last = price;
+            if (price < min) {
+                min = price;
+            }
+            if (price > max) {
+                max = price;
+            }
+            count++;
+            closeByBucket.put(bucket, price);
+        }
+
+        JSONObject toJson(int minBucket, int maxBucket) {
+            JSONArray points = new JSONArray();
+            Double carry = null;
+            for (int b = minBucket; b <= maxBucket; b++) {
+                Double v = closeByBucket.get(b);
+                if (v != null) {
+                    carry = v;
+                }
+                points.put(carry == null ? JSONObject.NULL : carry.doubleValue());
+            }
+            return new JSONObject()
+                    .put("key", key)
+                    .put("symbol", symbol)
+                    .put("destination", ex.name())
+                    .put("settlement", settl.name())
+                    .put("securityType", secType.name())
+                    .put("currency", currency)
+                    .put("trades", count)
+                    .put("first", first)
+                    .put("last", last)
+                    .put("min", min == Double.MAX_VALUE ? 0.0 : min)
+                    .put("max", max)
+                    .put("status", "ok")
+                    .put("points", points);
+        }
     }
 
     private static class TradeAgg {

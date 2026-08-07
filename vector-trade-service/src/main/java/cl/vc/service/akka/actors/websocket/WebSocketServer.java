@@ -5,6 +5,7 @@ import akka.actor.PoisonPill;
 import cl.vc.service.MainApp;
 import cl.vc.service.akka.actors.ActorPerSession;
 import cl.vc.service.akka.actors.BuySideConnect;
+import cl.vc.service.multibook.Multibook2Servlet;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -16,11 +17,11 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.annotations.*;
 import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
-import org.json.JSONObject;
 
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.EnumSet;
 import java.util.Properties;
 
 @WebSocket
@@ -35,6 +36,14 @@ public class WebSocketServer extends Thread {
     public void onConnect(Session session) {
 
         try {
+            String ip = extractIp(session);
+
+            // Rechazar IPs bloqueadas antes de crear el actor
+            if (MainApp.isIpBlocked(ip)) {
+                log.warn("[IpSecurity] Conexión rechazada — IP bloqueada: {}", ip);
+                session.close(1008, "IP bloqueada por política de seguridad");
+                return;
+            }
 
             if (!BuySideConnect.getActorPerSessionMaps().containsKey(session.getRemote().toString())) {
                 ActorRef client = MainApp.getSystem().actorOf(ActorPerSession.props(session).withDispatcher("ActorperSession"));
@@ -53,6 +62,22 @@ public class WebSocketServer extends Thread {
     public void onMessage(Session session, byte[] buf, int offset, int length) throws IOException {
 
         try {
+            String ip = extractIp(session);
+
+            // Rate-limit: si excede el umbral de mensajes, auto-bloquear la IP
+            if (MainApp.isIpBlocked(ip)) {
+                if (session != null && session.isOpen()) {
+                    session.close(1008, "IP bloqueada por política de seguridad");
+                }
+                return;
+            }
+
+            if (MainApp.recordIpMessageExceeded(ip)) {
+                MainApp.blockIp(ip);
+                log.warn("[IpSecurity] IP auto-bloqueada por exceso de mensajes: {}", ip);
+                session.close(1008, "IP bloqueada: rate limit excedido");
+                return;
+            }
 
             ByteBuffer byteBuffer = ByteBuffer.wrap(buf, offset, length);
 
@@ -70,22 +95,7 @@ public class WebSocketServer extends Thread {
     @OnWebSocketMessage
     public void onMessage(Session session, String message) throws IOException {
         try {
-            JSONObject request = new JSONObject(message);
-            String action = request.optString("action", "").trim().toLowerCase();
-
-            if (action.isEmpty()) {
-                sendError(session, "action es obligatoria");
-                return;
-            }
-
-            if ("ping".equals(action)) {
-                JSONObject response = new JSONObject();
-                response.put("type", "pong");
-                session.getRemote().sendString(response.toString());
-                return;
-            }
-
-            sendError(session, "action no soportada: " + action);
+            log.info("receives message String {}", message);
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -130,13 +140,6 @@ public class WebSocketServer extends Thread {
 
     }
 
-    private void sendError(Session session, String message) throws IOException {
-        JSONObject response = new JSONObject();
-        response.put("type", "error");
-        response.put("message", message);
-        session.getRemote().sendString(response.toString());
-    }
-
 
     @Override
     public void run() {
@@ -151,18 +154,26 @@ public class WebSocketServer extends Thread {
             context.addServlet(ProtectedWebSocketServlet.class, "/");
 
             FilterHolder authFilter = new FilterHolder(new AuthenticationFilter());
-            context.addFilter(authFilter, "/websocket/*", null);
+            context.addFilter(authFilter, "/websocket/*", (EnumSet)null);
 
             FilterHolder authFilters = new FilterHolder(new AuthenticationFilter());
-            context.addFilter(authFilters, "/*", null);
+            context.addFilter(authFilters, "/*", (EnumSet)null);
 
             ServletHolder wsHolder = new ServletHolder("ws", ProtectedWebSocketServlet.class);
             context.addServlet(wsHolder, "/websocket/*");
 
+            // Multibook 2.0: mismo puerto y mismo AuthenticationFilter que el upgrade del websocket.
+            context.addServlet(new ServletHolder(new Multibook2Servlet()), "/api/multibook2/*");
+
             WebSocketUpgradeFilter wsFilter = WebSocketUpgradeFilter.configureContext(context);
             wsFilter.getFactory().getPolicy().setMaxBinaryMessageSize(100 * 1024 * 1024);
             wsFilter.getFactory().getPolicy().setIdleTimeout(300000);
-            wsFilter.getFactory().getExtensionFactory().register("permessage-deflate", PerMessageDeflateExtension.class);
+            if (MainApp.isWebSocketCompressionEnabled()) {
+                wsFilter.getFactory().getExtensionFactory().register("permessage-deflate", PerMessageDeflateExtension.class);
+                log.info("[WebSocket] permessage-deflate habilitado");
+            } else {
+                log.warn("[WebSocket] permessage-deflate deshabilitado por propiedad websocket.compression.enabled=false");
+            }
 
 
             try {
@@ -181,5 +192,29 @@ public class WebSocketServer extends Thread {
 
     }
 
+    /** Extrae la dirección IP del cliente de la sesión WebSocket. */
+    static String extractIp(Session session) {
+        try {
+            if (session != null && session.getUpgradeRequest() != null) {
+                String forwardedFor = session.getUpgradeRequest().getHeader("X-Forwarded-For");
+                if (forwardedFor != null && !forwardedFor.isBlank()) {
+                    String candidate = forwardedFor.split(",")[0].trim();
+                    if (!candidate.isBlank()) {
+                        return candidate;
+                    }
+                }
+
+                String realIp = session.getUpgradeRequest().getHeader("X-Real-IP");
+                if (realIp != null && !realIp.isBlank()) {
+                    return realIp.trim();
+                }
+            }
+
+            if (session != null && session.getRemoteAddress() != null) {
+                return session.getRemoteAddress().getAddress().getHostAddress();
+            }
+        } catch (Exception ignored) {}
+        return "unknown";
+    }
 
 }

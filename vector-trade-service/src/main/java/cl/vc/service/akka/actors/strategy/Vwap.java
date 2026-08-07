@@ -450,7 +450,9 @@ public class Vwap implements StrategyI {
                         .setAvgPrice(0d)
                         .setId(IDGenerator.getID())
                         .setPrice(pxRound)
-                        .setOrderQty(sliceIndex);
+                        .setOrderQty(sliceIndex)
+                        .setMaxFloor(StrategyReplaceSupport.maxFloorForNewOrder(
+                                parentOrder.getMaxFloor(), sliceIndex));
 
                 MainApp.getMessageEventBus().subscribe(actorStrategy, childBuilder.getId());
 
@@ -494,6 +496,8 @@ public class Vwap implements StrategyI {
                                 .setId(childOrder.getId())
                                 .setPrice(pxRound)
                                 .setQuantity(qty)
+                                .setMaxFloor(StrategyReplaceSupport.maxFloorForReplace(
+                                        childOrder.getMaxFloor(), childOrder, qty))
                                 .build();
 
                 MainApp.getConnections().get(childOrder.getSecurityExchange()).sendMessage(replace);
@@ -518,6 +522,8 @@ public class Vwap implements StrategyI {
                                 .setId(childOrder.getId())
                                 .setPrice(px)
                                 .setQuantity(qty)
+                                .setMaxFloor(StrategyReplaceSupport.maxFloorForReplace(
+                                        childOrder.getMaxFloor(), childOrder, qty))
                                 .build();
 
                 MainApp.getConnections().get(childOrder.getSecurityExchange()).sendMessage(replace);

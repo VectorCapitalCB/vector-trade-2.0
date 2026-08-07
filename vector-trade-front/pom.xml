@@ -402,6 +402,7 @@
                         <list>cl.vc.blotter.controller.LanzadorController</list>
                         <list>cl.vc.blotter.controller.LibroEmergenteController</list>
                         <list>cl.vc.blotter.controller.LibroEmergentePrincipalController</list>
+                        <list>cl.vc.blotter.controller.MultibookController</list>
                         <list>cl.vc.blotter.controller.LoginController</list>
                         <list>cl.vc.blotter.controller.MarketDataPortfolioViewController</list>
                         <list>cl.vc.blotter.controller.MarketDataViewerController</list>

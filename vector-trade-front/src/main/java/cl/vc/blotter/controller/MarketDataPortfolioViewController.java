@@ -6,6 +6,7 @@ import cl.vc.blotter.Repository;
 import cl.vc.blotter.model.BookVO;
 import cl.vc.blotter.model.StatisticVO;
 import cl.vc.blotter.utils.Notifier;
+import cl.vc.blotter.utils.Sparkline;
 // === ADDED
 import cl.vc.blotter.utils.ColumnConfig;
 // === END ADDED
@@ -20,12 +21,19 @@ import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.scene.canvas.Canvas;
+import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.Clipboard;
+import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCodeCombination;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.AnchorPane;
@@ -36,6 +44,9 @@ import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -43,6 +54,8 @@ import java.util.HashSet;
 @Slf4j
 public class MarketDataPortfolioViewController {
     private static final Duration UI_REFRESH_DELAY = Duration.millis(80);
+    private static final KeyCodeCombination COPIAR = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
+    private final DecimalFormat dfCopia = new DecimalFormat("#,##0.####");
 
     @FXML
     public ChoiceBox<MarketDataMessage.SecurityExchangeMarketData> cbMarket;
@@ -108,6 +121,10 @@ public class MarketDataPortfolioViewController {
     private TableColumn<StatisticVO, Double> volumeGen;
     @FXML
     private TableColumn<StatisticVO, Double> vwapGen;
+
+    /** Mini grafico intradia del ultimo precio. */
+    @FXML
+    private TableColumn<StatisticVO, Number> sparklineGen;
     @FXML
     private TableColumn<StatisticVO, String> priceTheoric;
     @FXML
@@ -120,6 +137,46 @@ public class MarketDataPortfolioViewController {
     private final Timeline statisticsRefreshTimeline = new Timeline(new KeyFrame(UI_REFRESH_DELAY, e -> marketDataStatisticsTable.refresh()));
 
 
+    /**
+     * Copia en TSV las columnas VISIBLES de las filas seleccionadas (o de toda la tabla),
+     * para pegarlas en una planilla o en un script de validacion. Se excluye "Tendencia":
+     * es un canvas, no tiene texto que copiar.
+     */
+    private void copiarFilas(boolean soloSeleccion) {
+        List<StatisticVO> filas = soloSeleccion && !marketDataStatisticsTable.getSelectionModel().getSelectedItems().isEmpty()
+                ? new ArrayList<>(marketDataStatisticsTable.getSelectionModel().getSelectedItems())
+                : new ArrayList<>(marketDataStatisticsTable.getItems());
+        if (filas.isEmpty()) {
+            return;
+        }
+
+        List<TableColumn<StatisticVO, ?>> columnas = marketDataStatisticsTable.getColumns().stream()
+                .filter(TableColumn::isVisible)
+                .filter(columna -> columna != sparklineGen)
+                .toList();
+
+        StringBuilder sb = new StringBuilder();
+        agregarLinea(sb, columnas.stream().map(TableColumn::getText).toList());
+        for (StatisticVO fila : filas) {
+            agregarLinea(sb, columnas.stream().map(columna -> textoCelda(columna.getCellData(fila))).toList());
+        }
+
+        ClipboardContent contenido = new ClipboardContent();
+        contenido.putString(sb.toString());
+        Clipboard.getSystemClipboard().setContent(contenido);
+    }
+
+    private void agregarLinea(StringBuilder sb, List<String> celdas) {
+        sb.append(String.join("\t", celdas)).append('\n');
+    }
+
+    private String textoCelda(Object valor) {
+        if (valor == null) {
+            return "";
+        }
+        return valor instanceof Number numero ? dfCopia.format(numero.doubleValue()) : valor.toString();
+    }
+
     @FXML
     private void initialize() {
         try {
@@ -127,6 +184,14 @@ public class MarketDataPortfolioViewController {
             Repository.setMarketDataPortfolioViewController(this);
 
             ContextMenu columnMenu = new ContextMenu();
+
+            // Los valores de esta tabla se contrastan contra Mongo y contra la pestana Estadisticas,
+            // asi que tienen que poder copiarse en vez de transcribirse a mano.
+            MenuItem copiarInstrumento = new MenuItem("Copiar instrumento");
+            copiarInstrumento.setOnAction(e -> copiarFilas(true));
+            MenuItem copiarTablaCompleta = new MenuItem("Copiar tabla");
+            copiarTablaCompleta.setOnAction(e -> copiarFilas(false));
+            columnMenu.getItems().addAll(copiarInstrumento, copiarTablaCompleta, new SeparatorMenuItem());
 
             ColumnConfig cfg = Repository.getColumnConfig();
             try {
@@ -230,7 +295,15 @@ public class MarketDataPortfolioViewController {
                 columnMenu.show(marketDataStatisticsTable, event.getScreenX(), event.getScreenY());
             });
 
-            marketDataStatisticsTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+            // MULTIPLE para poder copiar varios instrumentos de una; el resto de la vista sigue
+            // usando getSelectedItem(), que devuelve el ultimo seleccionado.
+            marketDataStatisticsTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            marketDataStatisticsTable.setOnKeyPressed(event -> {
+                if (COPIAR.match(event)) {
+                    copiarFilas(true);
+                    event.consume();
+                }
+            });
             cbMarket.getSelectionModel().select(MarketDataMessage.SecurityExchangeMarketData.BCS);
 
             cbMarket.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
@@ -257,11 +330,25 @@ public class MarketDataPortfolioViewController {
             securityType.getItems().remove(RoutingMessage.SecurityType.FUT);
             securityType.getSelectionModel().selectFirst();
 
-            txtSymbol.textProperty().addListener((ov, oldValue, newValue) -> txtSymbol.setText(newValue.toUpperCase()));
-
             data = FXCollections.observableArrayList();
 
-            marketDataStatisticsTable.setItems(data);
+            // El campo de simbolo tambien filtra la tabla mientras se escribe. data sigue
+            // recibiendo los updates de mercado; la vista filtrada se recalcula sola.
+            FilteredList<StatisticVO> datosFiltrados = new FilteredList<>(data, vo -> true);
+            // SortedList es obligatorio: sin el, ordenar por una cabecera lanza
+            // UnsupportedOperationException porque FilteredList es inmutable.
+            SortedList<StatisticVO> datosOrdenados = new SortedList<>(datosFiltrados);
+            datosOrdenados.comparatorProperty().bind(marketDataStatisticsTable.comparatorProperty());
+
+            txtSymbol.textProperty().addListener((ov, oldValue, newValue) -> {
+                txtSymbol.setText(newValue.toUpperCase());
+                String filtro = txtSymbol.getText().trim();
+                datosFiltrados.setPredicate(filtro.isEmpty()
+                        ? vo -> true
+                        : vo -> vo.getSymbol() != null && vo.getSymbol().contains(filtro));
+            });
+
+            marketDataStatisticsTable.setItems(datosOrdenados);
             marketDataStatisticsTable.setFixedCellSize(26);
             this.marketDataStatisticsTable.setEditable(true);
             this.marketDataStatisticsTable.getSortOrder().add(this.symbol);
@@ -511,6 +598,14 @@ public class MarketDataPortfolioViewController {
             });
 
             this.vwapGen.setCellValueFactory(new PropertyValueFactory<>("vwap"));
+            configurarColumnaTendencia();
+
+            // Primera peticion cuando ya hay papeles, y refresco periodico.
+            Timeline seriesIntradia = new Timeline(
+                    new KeyFrame(Duration.seconds(6),  e -> solicitarSeriesIntradia()),
+                    new KeyFrame(Duration.seconds(60), e -> solicitarSeriesIntradia()));
+            seriesIntradia.setCycleCount(Timeline.INDEFINITE);
+            seriesIntradia.play();
             vwapGen.setCellFactory(column -> new TableCell<StatisticVO, Double>() {
                 @Override
                 protected void updateItem(Double item, boolean empty) {
@@ -759,13 +854,10 @@ public class MarketDataPortfolioViewController {
 
         if (!existeObjeto) {
 
-            RoutingMessage.SecurityType securityType1;
-
-            if(Repository.getStaticSecurityType().containsKey(txtSymbol.getText().trim())){
-                securityType1 = Repository.getStaticSecurityType().get(txtSymbol.getText().trim());
-            } else {
-                securityType1 = securityType.getSelectionModel().getSelectedItem();
-            }
+            // Manda la Clase que el usuario eligio. El mapa staticSecurityType forzaba a CS
+            // los simbolos CFI*, asi que un CFI nunca se podia suscribir como CFI; ese mapa
+            // sigue aplicando al Lanzador (ordenes), donde esos papeles si operan como CS.
+            RoutingMessage.SecurityType securityType1 = securityType.getSelectionModel().getSelectedItem();
 
             MarketDataMessage.Statistic statistic1 = MarketDataMessage.Statistic
                     .newBuilder()
@@ -821,20 +913,91 @@ public class MarketDataPortfolioViewController {
         }
     }
 
-    public void addModelVo(BookVO bookVO) {
+    /**
+     * Columna "Tendencia": dibuja la serie intradia del ultimo precio de cada papel.
+     *
+     * El cellValueFactory devuelve la propiedad 'close', asi que la celda se repinta
+     * exactamente cuando cambia el precio de ESA fila, sin listeners extra ni timers.
+     * TableView solo instancia celdas para las filas visibles, asi que el costo esta
+     * acotado a lo que se ve, no al total de instrumentos suscritos.
+     */
+    /**
+     * Pide al candle-service la serie intradia de los papeles de esta tabla. El backend la
+     * calcula desde los trades del dia, asi que el mini grafico se ve completo apenas carga
+     * el portafolio, sin esperar a acumular ticks en el cliente.
+     *
+     * Se repite cada 60 s porque la cola no se puede apoyar en el stream incremental de
+     * trades: ese cursorea por _id, que con los ids String del productor actual ordena
+     * alfabeticamente y se saltea papeles.
+     */
+    private void solicitarSeriesIntradia() {
         try {
-            if (bookVO == null || bookVO.getStatisticVO() == null || bookVO.getStatisticVO().getStatistic() == null) return;
-
-            String key = TopicGenerator.getTopicMKD(bookVO.getStatisticVO().getStatistic());
-
-            if (!loadedKeys.add(key)) {
+            if (Repository.getCandleClientService() == null || data == null || data.isEmpty()) {
                 return;
             }
-            data.add(bookVO.getStatisticVO());
+            org.json.JSONArray simbolos = new org.json.JSONArray();
+            data.stream()
+                    .map(StatisticVO::getSymbol)
+                    .filter(s -> s != null && !s.isBlank())
+                    .distinct()
+                    .forEach(simbolos::put);
+            if (simbolos.isEmpty()) return;
+
+            org.json.JSONObject peticion = new org.json.JSONObject()
+                    .put("action", "load_intraday_series")
+                    .put("symbols", simbolos);
+            Repository.getCandleClientService().sendMessage(peticion.toString());
+        } catch (Exception e) {
+            log.error("No se pudo pedir la serie intradia", e);
+        }
+    }
+
+    private void configurarColumnaTendencia() {
+        if (sparklineGen == null) return;
+
+        sparklineGen.setCellValueFactory(cd -> cd.getValue().closeProperty());
+
+        sparklineGen.setCellFactory(col -> new TableCell<>() {
+            private final Canvas lienzo = new Canvas(62, 18);
+
+            @Override
+            protected void updateItem(Number valor, boolean vacio) {
+                super.updateItem(valor, vacio);
+                StatisticVO vo = (getTableRow() == null) ? null : (StatisticVO) getTableRow().getItem();
+                if (vacio || vo == null) {
+                    setGraphic(null);
+                    return;
+                }
+                // Primero la serie del backend (llega completa al abrir el portafolio);
+                // si todavia no llego, el buffer local que se acumula con los ticks.
+                double[] serie = Repository.getSerieIntradia(TopicGenerator.getTopicMKD(vo.getStatistic()));
+                if (serie == null || serie.length < 2) {
+                    serie = vo.getSerieIntradia();
+                }
+                Sparkline.pintar(lienzo, serie);
+                setGraphic(lienzo);
+            }
+        });
+    }
+
+    public void addModelVo(BookVO bookVO) {
+        if (bookVO == null) return;
+        addStatisticVo(bookVO.getStatisticVO());
+    }
+
+    /** Agrega el VO vivo tal cual: comparte properties con la pestaña de origen, no lo clona. */
+    public void addStatisticVo(StatisticVO vo) {
+        try {
+            if (vo == null || vo.getStatistic() == null) return;
+
+            if (!loadedKeys.add(TopicGenerator.getTopicMKD(vo.getStatistic()))) {
+                return;
+            }
+            data.add(vo);
             scheduleStatisticsRefresh();
 
         } catch (Exception e) {
-            log.error("addModelVo error", e);
+            log.error("addStatisticVo error", e);
         }
     }
 

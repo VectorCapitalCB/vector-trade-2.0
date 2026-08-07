@@ -56,12 +56,8 @@ public class SellsideConnect extends AbstractActor {
 
                 MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order));
 
-
             } else if (conn.getMessage() instanceof RoutingMessage.Order order) {
                 MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order));
-                if (!order.getAccount().isEmpty()) {
-                    MainApp.getMessageEventBus().publish(new Envelope(order.getAccount(), order));
-                }
 
             } else if (conn.getMessage() instanceof MarketDataMessage.Snapshot snapshot) {
                 getSelf().tell(snapshot, ActorRef.noSender());
@@ -178,7 +174,7 @@ public class SellsideConnect extends AbstractActor {
                     .setMessage("Connected session: " + connect.getDestination()).build();
 
 
-            MainApp.putConnectionNotification(notification);
+            MainApp.getNotificationConectionMap().put(notification.getSecurityExchange(), notification);
             MainApp.getNotificationMap().add(notification);
             BuySideConnect.getClientSesionId().forEach((key1, value1) -> value1.channel().writeAndFlush(notification));
 
@@ -232,6 +228,12 @@ public class SellsideConnect extends AbstractActor {
 
             log.info("disconnected, {} {}", disconnect.getDestination(), disconnect.getComponent());
 
+            // Alerta crítica a Telegram: desconexión de sesión de ruteo / MKD
+            cl.vc.service.util.TelegramNotifier.alert(
+                    "disconnect:" + disconnect.getDestination() + ":" + disconnect.getComponent(),
+                    "🔌 Desconexión de sesión\ndestino: " + disconnect.getDestination()
+                            + "\ncomponente: " + disconnect.getComponent());
+
             NotificationMessage.Notification notification = NotificationMessage.Notification.newBuilder()
                     .setTitle("onDisconnect")
                     .setLevel(NotificationMessage.Level.ERROR)
@@ -242,7 +244,7 @@ public class SellsideConnect extends AbstractActor {
                     .setMessage("The session disconnected: " + disconnect.getDestination()).build();
 
             BuySideConnect.getClientSesionId().forEach((key, value) -> value.channel().writeAndFlush(notification));
-            MainApp.putConnectionNotification(notification);
+            MainApp.getNotificationConectionMap().put(notification.getSecurityExchange(), notification);
             MainApp.getNotificationMap().add(notification);
 
             MainApp.getAccountGroupUser().forEach((key, value) -> value.tell(disconnect, ActorRef.noSender()));
@@ -255,6 +257,7 @@ public class SellsideConnect extends AbstractActor {
 
     public void onSnapshot(MarketDataMessage.Snapshot snapshot) {
         try {
+            snapshot = normalizeSnapshot(snapshot);
 
             BookSnapshot bookSnapshot = new BookSnapshot(snapshot);
             snapshot.getTradesList().forEach(bookSnapshot::updateTrades);
@@ -263,6 +266,7 @@ public class SellsideConnect extends AbstractActor {
             bookSnapshot.setAsk(snapshot.getAsksList());
 
             MainApp.getSnapshotHashMap().put(bookSnapshot.getId(), bookSnapshot);
+            MainApp.markMarketDataActivity(bookSnapshot.getId());
             MainApp.getMessageEventBus().publish(new Envelope(bookSnapshot.getId(), bookSnapshot));
 
         } catch (Exception ex) {
@@ -272,6 +276,7 @@ public class SellsideConnect extends AbstractActor {
 
     public void onTrade(MarketDataMessage.Trade trade) {
         try {
+            trade = normalizeTrade(trade);
 
             try {
 
@@ -284,6 +289,7 @@ public class SellsideConnect extends AbstractActor {
                 }
 
                 bookSnapshot.updateTrades(trade);
+                MainApp.markMarketDataActivity(id);
 
                 MainApp.getMessageEventBus().publish(new Envelope(id, trade));
 
@@ -320,7 +326,7 @@ public class SellsideConnect extends AbstractActor {
     public synchronized void onIncrementalBook(MarketDataMessage.IncrementalBook incrementalBook) {
 
         try {
-
+            incrementalBook = normalizeIncrementalBook(incrementalBook);
 
             String id = TopicGenerator.getTopicMKD(incrementalBook);
             BookSnapshot bookSnapshot = MainApp.getSnapshotHashMap().get(id);
@@ -333,6 +339,7 @@ public class SellsideConnect extends AbstractActor {
             bookSnapshot.setBid(incrementalBook.getBidsList());
 
             MainApp.getSnapshotHashMap().put(id, bookSnapshot);
+            MainApp.markMarketDataActivity(id);
             MainApp.getMessageEventBus().publish(new Envelope(id, bookSnapshot.getIncrementalBookEmpty()));
 
         } catch (Exception ex) {
@@ -343,6 +350,7 @@ public class SellsideConnect extends AbstractActor {
 
     public void onStatistic(MarketDataMessage.Statistic statistic) {
         try {
+            statistic = normalizeStatistic(statistic);
 
             if(statistic.getSymbol().isEmpty()){
                 return;
@@ -357,12 +365,139 @@ public class SellsideConnect extends AbstractActor {
 
             bookSnapshot.setStatistic(statistic);
             MainApp.getSnapshotHashMap().put(id, bookSnapshot);
+            MainApp.markMarketDataActivity(id);
             MainApp.getMessageEventBus().publish(new Envelope(id, bookSnapshot.getStatisticBookEmpty()));
 
 
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
+    }
+
+    static MarketDataMessage.Snapshot normalizeSnapshot(MarketDataMessage.Snapshot snapshot) {
+        RoutingMessage.SecurityType securityType = resolveIncomingSecurityType(
+                snapshot.getId(),
+                snapshot.getSymbol(),
+                snapshot.getSecurityExchange(),
+                snapshot.getSecurityType()
+        );
+        if (securityType != snapshot.getSecurityType()) {
+            log.info("[MKD] Normalizando snapshot {} de {} a {}.",
+                    snapshot.getId(), snapshot.getSecurityType(), securityType);
+        }
+        String topicId = buildTopicId(
+                snapshot.getSymbol(),
+                snapshot.getSecurityExchange(),
+                snapshot.getSettlType(),
+                securityType
+        );
+
+        MarketDataMessage.Statistic statistic = snapshot.getStatistic().toBuilder()
+                .setId(topicId)
+                .setSymbol(snapshot.getSymbol())
+                .setSecurityExchange(snapshot.getSecurityExchange())
+                .setSettlType(snapshot.getSettlType())
+                .setSecurityType(securityType)
+                .build();
+
+        MarketDataMessage.Snapshot.Builder normalized = snapshot.toBuilder()
+                .setId(topicId)
+                .setSecurityType(securityType)
+                .setStatistic(statistic)
+                .clearTrades();
+        snapshot.getTradesList().forEach(trade -> normalized.addTrades(trade.toBuilder()
+                .setId(topicId)
+                .setSymbol(snapshot.getSymbol())
+                .setSecurityExchange(snapshot.getSecurityExchange())
+                .setSettlType(snapshot.getSettlType())
+                .setSecurityType(securityType)
+                .build()));
+        return normalized.build();
+    }
+
+    static MarketDataMessage.Trade normalizeTrade(MarketDataMessage.Trade trade) {
+        RoutingMessage.SecurityType securityType = resolveIncomingSecurityType(
+                trade.getId(),
+                trade.getSymbol(),
+                trade.getSecurityExchange(),
+                trade.getSecurityType()
+        );
+        return trade.toBuilder()
+                .setId(buildTopicId(
+                        trade.getSymbol(),
+                        trade.getSecurityExchange(),
+                        trade.getSettlType(),
+                        securityType
+                ))
+                .setSecurityType(securityType)
+                .build();
+    }
+
+    static MarketDataMessage.IncrementalBook normalizeIncrementalBook(
+            MarketDataMessage.IncrementalBook incrementalBook
+    ) {
+        RoutingMessage.SecurityType securityType = resolveIncomingSecurityType(
+                incrementalBook.getId(),
+                incrementalBook.getSymbol(),
+                incrementalBook.getSecurityExchange(),
+                incrementalBook.getSecurityType()
+        );
+        return incrementalBook.toBuilder()
+                .setId(buildTopicId(
+                        incrementalBook.getSymbol(),
+                        incrementalBook.getSecurityExchange(),
+                        incrementalBook.getSettlType(),
+                        securityType
+                ))
+                .setSecurityType(securityType)
+                .build();
+    }
+
+    static MarketDataMessage.Statistic normalizeStatistic(MarketDataMessage.Statistic statistic) {
+        RoutingMessage.SecurityType securityType = resolveIncomingSecurityType(
+                statistic.getId(),
+                statistic.getSymbol(),
+                statistic.getSecurityExchange(),
+                statistic.getSecurityType()
+        );
+        return statistic.toBuilder()
+                .setId(buildTopicId(
+                        statistic.getSymbol(),
+                        statistic.getSecurityExchange(),
+                        statistic.getSettlType(),
+                        securityType
+                ))
+                .setSecurityType(securityType)
+                .build();
+    }
+
+    private static RoutingMessage.SecurityType resolveIncomingSecurityType(
+            String messageId,
+            String symbol,
+            MarketDataMessage.SecurityExchangeMarketData exchange,
+            RoutingMessage.SecurityType fallback
+    ) {
+        MarketDataMessage.Subscribe subscribe = MainApp.getIdSymbolsSubscrib().get(messageId);
+        if (subscribe != null
+                && symbol.equals(subscribe.getSymbol())
+                && exchange == subscribe.getSecurityExchange()) {
+            return subscribe.getSecurityType();
+        }
+        return MainApp.resolveMkdSecurityType(symbol, exchange, fallback);
+    }
+
+    private static String buildTopicId(
+            String symbol,
+            MarketDataMessage.SecurityExchangeMarketData exchange,
+            RoutingMessage.SettlType settlType,
+            RoutingMessage.SecurityType securityType
+    ) {
+        return TopicGenerator.getTopicMKD(MarketDataMessage.Subscribe.newBuilder()
+                .setSymbol(symbol)
+                .setSecurityExchange(exchange)
+                .setSettlType(settlType)
+                .setSecurityType(securityType)
+                .build());
     }
 
 }

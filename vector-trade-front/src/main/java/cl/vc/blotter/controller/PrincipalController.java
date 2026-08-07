@@ -525,9 +525,9 @@ public class PrincipalController {
                 return;
             }
 
-            RoutingMessage.SecurityType securityType1 = selectedSecurityType.equals(RoutingMessage.SecurityType.CFI)
-                    ? RoutingMessage.SecurityType.CS : selectedSecurityType;
-
+            // La Clase elegida viaja tal cual: el topic MKD la incluye, y el servicio re-estampa
+            // la data entrante con el securityType de la suscripcion. Degradar CFI a CS aca
+            // hacia imposible suscribir un CFI como CFI.
             MarketDataMessage.Subscribe.Builder subscribeAux = MarketDataMessage.Subscribe.newBuilder();
 
             if (orderSelected != null) {
@@ -559,7 +559,7 @@ public class PrincipalController {
                 }
 
                 subscribeAux.setSettlType(selectedSettlType)
-                        .setSecurityType(securityType1)
+                        .setSecurityType(selectedSecurityType)
                         .setDepth(MarketDataMessage.Depth.FULL_BOOK)
                         .setBook(true)
                         .setStatistic(true)
@@ -638,9 +638,19 @@ public class PrincipalController {
             MarketDataPortfolioViewController c = loader.getController();
 
             VBox vbox = (VBox) root.getChildren().get(0);
+
+            // La barra se deja VISIBLE: ocultarla entera dejaba el flotante como una tabla
+            // de solo lectura, sin poder agregar ni quitar instrumentos.
+            // Se quitan solo el separador elastico y "Eliminar Portafolio": el hueco enorme
+            // al ensanchar venia del Region con hgrow=ALWAYS del medio, y borrar un
+            // portafolio desde una ventana desprendida es confuso.
             Node topBar = vbox.getChildren().get(0);
-            topBar.setVisible(false);
-            topBar.setManaged(false);
+            if (topBar instanceof HBox barra && barra.getChildren().size() >= 3) {
+                for (Node n : List.of(barra.getChildren().get(1), barra.getChildren().get(2))) {
+                    n.setVisible(false);
+                    n.setManaged(false);
+                }
+            }
             AnchorPane center = (AnchorPane) vbox.getChildren().get(1);
             Node news = vbox.getChildren().get(2);
             news.setVisible(false);
@@ -652,31 +662,21 @@ public class PrincipalController {
             AnchorPane.setBottomAnchor(table, 0.0);
             AnchorPane.setLeftAnchor(table, 0.0);
             table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-            table.setPlaceholder(new Label("Cargando…"));
+            table.setPlaceholder(new Label("Sin instrumentos"));
 
+            // Se desprende la pestaña que el usuario esta mirando, no una fija: antes se
+            // copiaba siempre DEFAULT_PORTFOLIO_NAME y si ese controller no existia el
+            // flotante salia vacio con "Cargando..." para siempre.
+            MarketDataPortfolioViewController source = currentMarketDataController();
 
-            c.setPortfolioName(DEFAULT_PORTFOLIO_NAME);
-            c.getData().clear();
+            c.setPortfolioName(source != null ? source.getPortfolioName() : DEFAULT_PORTFOLIO_NAME);
 
-            MarketDataPortfolioViewController principalCtrl =
-                    marketDataPortfolioViewControllers.get(DEFAULT_PORTFOLIO_NAME);
-
-            if (principalCtrl != null) {
-                // Copiamos lo que ya está en la pestaña por defecto (sin re-suscribir)
-                var snapshot = new ArrayList<>(principalCtrl.getData());
-                for (StatisticVO svo : snapshot) {
-                    try {
-                        String topicId = TopicGenerator.getTopicMKD(svo.getStatistic());
-                        BookVO book = Repository.getBookPortMaps().get(topicId);
-                        if (book != null) {
-                            c.addModelVo(book);
-                        }
-                    } catch (Exception ex) {
-                        log.error("Error copiando símbolo al flotante", ex);
-                    }
-                }
+            if (source != null) {
+                // Se agregan los MISMOS StatisticVO de la pestaña (no una copia ni un lookup
+                // por topic): son properties vivas, asi el flotante tickea con el mismo feed.
+                new ArrayList<>(source.getData()).forEach(c::addStatisticVo);
             } else {
-                log.warn("No se encontró el controller del portafolio '{}'; el flotante quedará vacío.", DEFAULT_PORTFOLIO_NAME);
+                log.warn("No hay ningún portafolio de datos de mercado cargado; el flotante queda vacío.");
             }
 
             Scene scene = new Scene(root);
@@ -684,7 +684,7 @@ public class PrincipalController {
             if (css != null) scene.getStylesheets().add(css.toExternalForm());
 
             Stage stage = new Stage();
-            stage.setTitle("Datos de Mercado");
+            stage.setTitle("Datos de Mercado - " + c.getPortfolioName());
             stage.setScene(scene);
             stage.setWidth(1500);
             stage.setHeight(800);
@@ -707,6 +707,20 @@ public class PrincipalController {
 
 
 
+    /** Pestaña de datos de mercado visible; cae al portafolio por defecto y luego a cualquiera. */
+    private MarketDataPortfolioViewController currentMarketDataController() {
+        Tab selected = tpMkData != null ? tpMkData.getSelectionModel().getSelectedItem() : null;
+        MarketDataPortfolioViewController ctrl =
+                selected != null ? marketDataPortfolioViewControllers.get(selected.getText()) : null;
+        if (ctrl == null) {
+            ctrl = marketDataPortfolioViewControllers.get(DEFAULT_PORTFOLIO_NAME);
+        }
+        if (ctrl == null) {
+            ctrl = marketDataPortfolioViewControllers.values().stream().findFirst().orElse(null);
+        }
+        return ctrl;
+    }
+
     private void addToFloating(BookVO book) {
         if (floatingMDTable != null && book != null) {
             Platform.runLater(() -> floatingMDTable.addModelVo(book));
@@ -725,7 +739,15 @@ public class PrincipalController {
         }
     }
 
-    public void addDatosDeMercado() {
+    /**
+     * La respuesta viaja como PARAMETRO, no por response: ese campo es
+     * estatico y lo escriben en paralelo los 2 ClientActor del RoundRobinPool. Leerlo aca adentro
+     * significaba despachar segun la ultima respuesta que hubiera llegado, no la que disparo esta
+     * llamada. Al reiniciar el front salen varios SNAPSHOT casi juntos y el bloque terminaba
+     * despachando con el status equivocado: la rama que reconstruye las pestañas no corria y los
+     * portafolios "desaparecian".
+     */
+    public void addDatosDeMercado(BlotterMessage.PortfolioResponse response) {
 
         try {
 
@@ -735,7 +757,7 @@ public class PrincipalController {
 
                     AtomicReference<Tab> principal = new AtomicReference<>();
 
-                    if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.SNAPSHOT_PORTFOLIO)) {
+                    if (response.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.SNAPSHOT_PORTFOLIO)) {
 
                         // Clear stale portfolio tabs and controllers before re-creating.
                         // Without this, each reconnect leaks the old controllers because the
@@ -753,7 +775,7 @@ public class PrincipalController {
                         }
 
                         List<BlotterMessage.Portfolio> orderedPortfolios =
-                                new ArrayList<>(Repository.getPortfolioResponse().getPostfolioList());
+                                new ArrayList<>(response.getPostfolioList());
                         orderedPortfolios.removeIf(p -> p != null
                                 && p.getNamePortfolio() != null
                                 && "Principal".equalsIgnoreCase(p.getNamePortfolio().trim()));
@@ -811,28 +833,28 @@ public class PrincipalController {
 
                         MarketDataPortfolioViewController marketDataPortfolioViewController =
                                 Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
-                                        .get(Repository.getPortfolioResponse().getNamePortfolio());
+                                        .get(response.getNamePortfolio());
 
                         if (marketDataPortfolioViewController != null) {
 
-                            if (Repository.getBookPortMaps().containsKey(Repository.getPortfolioResponse().getAsset().getStatistic().getId())) {
+                            if (Repository.getBookPortMaps().containsKey(response.getAsset().getStatistic().getId())) {
 
-                                BookVO statisticVO = Repository.getBookPortMaps().get(Repository.getPortfolioResponse().getAsset().getStatistic().getId());
+                                BookVO statisticVO = Repository.getBookPortMaps().get(response.getAsset().getStatistic().getId());
                                 marketDataPortfolioViewController.addModelVo(statisticVO);
                                 marketDataPortfolioViewController.getMarketDataStatisticsTable().refresh();
 
                             } else {
 
-                                BookVO bookVO = Repository.createBook(Repository.getPortfolioResponse().getAsset().getStatistic());
+                                BookVO bookVO = Repository.createBook(response.getAsset().getStatistic());
                                 marketDataPortfolioViewController.addModelVo(bookVO);
 
                             }
 
                             Repository.createSuscripcion(
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSymbol(),
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSecurityExchange(),
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSettlType(),
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSecurityType()
+                                    response.getAsset().getStatistic().getSymbol(),
+                                    response.getAsset().getStatistic().getSecurityExchange(),
+                                    response.getAsset().getStatistic().getSettlType(),
+                                    response.getAsset().getStatistic().getSecurityType()
                             );
 
                         }
@@ -856,12 +878,12 @@ public class PrincipalController {
                             selectPrincipalOrFirst();
                         }
 
-                    } else if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.REMOVE_ASSET)) {
+                    } else if (response.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.REMOVE_ASSET)) {
 
-                        String id = TopicGenerator.getTopicMKD(Repository.getPortfolioResponse().getAsset().getStatistic());
+                        String id = TopicGenerator.getTopicMKD(response.getAsset().getStatistic());
                         MarketDataPortfolioViewController s =
                                 Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
-                                        .get(Repository.getPortfolioResponse().getNamePortfolio());
+                                        .get(response.getNamePortfolio());
 
                         if (s != null) {
                             List<StatisticVO> statistics = s.getData().stream()
@@ -875,17 +897,17 @@ public class PrincipalController {
                             });
                         }
 
-                    } else if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.NEW_PORTFOLIO)) {
+                    } else if (response.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.NEW_PORTFOLIO)) {
 
                         try {
 
                             Tab tab = new Tab();
-                            tab.setText(Repository.getPortfolioResponse().getNamePortfolio());
-                            tab.setId(Repository.getPortfolioResponse().getNamePortfolio());
+                            tab.setText(response.getNamePortfolio());
+                            tab.setId(response.getNamePortfolio());
                             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/MarketDataPortfolioView.fxml"));
                             Pane root = loader.load();
                             MarketDataPortfolioViewController statisticsViewController = loader.getController();
-                            statisticsViewController.setPortfolioName(Repository.getPortfolioResponse().getNamePortfolio());
+                            statisticsViewController.setPortfolioName(response.getNamePortfolio());
                             tab.setContent(root);
 
                             Repository.getPrincipalController().getTpMkData().getTabs().add(tab);
@@ -898,28 +920,28 @@ public class PrincipalController {
                             log.error(e.getMessage(), e);
                         }
 
-                    } else if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.ADD_ASSET)) {
+                    } else if (response.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.ADD_ASSET)) {
 
                         MarketDataPortfolioViewController sss =
                                 Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
-                                        .get(Repository.getPortfolioResponse().getNamePortfolio());
-                        BookVO bookVO = Repository.createBook(Repository.getPortfolioResponse().getAsset().getStatistic());
+                                        .get(response.getNamePortfolio());
+                        BookVO bookVO = Repository.createBook(response.getAsset().getStatistic());
                         if (sss != null && bookVO != null) {
                             sss.addModelVo(bookVO);
                             addToFloating(bookVO);
                             Repository.createSuscripcion(
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSymbol(),
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSecurityExchange(),
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSettlType(),
-                                    Repository.getPortfolioResponse().getAsset().getStatistic().getSecurityType()
+                                    response.getAsset().getStatistic().getSymbol(),
+                                    response.getAsset().getStatistic().getSecurityExchange(),
+                                    response.getAsset().getStatistic().getSettlType(),
+                                    response.getAsset().getStatistic().getSecurityType()
                             );
                         }
 
-                    } else if (Repository.getPortfolioResponse().getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.DELETE_PORTFOLIO)) {
+                    } else if (response.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.DELETE_PORTFOLIO)) {
                         try {
                             // Si el server te manda ID, úsalo; si no, queda en null y se borrará por name
-                            String portfolioId = Repository.getPortfolioResponse().getNamePortfolio(); // <- si no existe este getter, deja null
-                            String name       = Repository.getPortfolioResponse().getNamePortfolio();
+                            String portfolioId = response.getNamePortfolio(); // <- si no existe este getter, deja null
+                            String name       = response.getNamePortfolio();
 
                             // Quitar del mapa y desuscribirse de sus assets (si lo tenemos cargado)
                             MarketDataPortfolioViewController ctrl =

@@ -56,6 +56,19 @@ public final class ConfigLoader {
         overrideFromEnv(properties, "REPLAY_TIMING_SPEED", "replay.timing.speed");
         overrideFromEnv(properties, "REPLAY_TIMING_MAX_SLEEP_MS", "replay.timing.max.sleep.ms");
         overrideFromEnv(properties, "REPLAY_PURGE_DAY_BEFORE_INJECT", "replay.purge.day.before.inject");
+        overrideFromEnv(properties, "STATS_REPLAY_ENABLED", "stats.replay.enabled");
+        overrideFromEnv(properties, "STATS_REPLAY_INPUT_PATH", "stats.replay.input.path");
+        overrideFromEnv(properties, "STATS_MARKET", "stats.market");
+        overrideFromEnv(properties, "STATS_CURRENCY", "stats.currency");
+        overrideFromEnv(properties, "MKD_SOURCE", "mkd.source");
+        overrideFromEnv(properties, "MKD_ITCH_HOST", "mkd.itch.host");
+        overrideFromEnv(properties, "MKD_ITCH_PORT", "mkd.itch.port");
+        overrideFromEnv(properties, "MKD_ITCH_EXCHANGE", "mkd.itch.exchange");
+        overrideFromEnv(properties, "ALPACA_ENABLED", "alpaca.enabled");
+        overrideFromEnv(properties, "ALPACA_KEY_ID", "alpaca.key.id");
+        overrideFromEnv(properties, "ALPACA_SECRET_KEY", "alpaca.secret.key");
+        overrideFromEnv(properties, "ALPACA_FEED", "alpaca.feed");
+        overrideFromEnv(properties, "ALPACA_SYMBOLS", "alpaca.symbols");
 
         return AppConfig.fromProperties(properties);
     }

@@ -3,6 +3,16 @@
     "allow": [
       "Bash(xargs:*)",
       "Bash(python -c \":*)",
+      "Bash(python:*)",
+      "PowerShell(Invoke-RestMethod:*)",
+      "PowerShell(Invoke-WebRequest:*)",
+      "PowerShell(ssh:*)",
+      "PowerShell(scp:*)",
+      "Bash(ssh:*)",
+      "Bash(scp:*)",
+      "Bash(curl:*)",
+      "Bash(xargs:*)",
+      "Bash(python -c \":*)",
       "Bash(python:*)"
     ]
   }

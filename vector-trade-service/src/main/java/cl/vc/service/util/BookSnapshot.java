@@ -35,6 +35,7 @@ public class BookSnapshot {
     private Double minClose = Double.POSITIVE_INFINITY;;
 
     private MarketDataMessage.Statistic statistic = MarketDataMessage.Statistic.newBuilder().build();
+    private MarketDataMessage.Ohlcv.Builder ohlcv = MarketDataMessage.Ohlcv.newBuilder();
 
     public BookSnapshot(String id, MarketDataMessage.Subscribe subscribe) {
         this.id = id;

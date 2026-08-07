@@ -31,10 +31,43 @@ public class SQLServerConnection {
             log.info("Conexión exitosa a SQL Server.");
 
         } catch (Exception e) {
-            log.info("Error al registrar el controlador JDBC.");
+            connection = null;
+            // Antes se logueaba "Error al registrar el controlador JDBC" SIN la causa real,
+            // dejando connection=null y provocando NPE en TODAS las consultas hasta el reinicio.
+            log.error("[SQL] No se pudo conectar a SQL Server (server={}, db={}): {}",
+                    prop.getProperty("server.sql"), prop.getProperty("database.sql"), e.getMessage(), e);
+            // Alerta crítica a Telegram: base de datos / custodia no disponible
+            TelegramNotifier.alert("sql-down",
+                    "🗄️ Base de datos no disponible (custodia/posiciones)\nserver: "
+                            + prop.getProperty("server.sql") + "\ndb: " + prop.getProperty("database.sql")
+                            + "\nerror: " + e.getMessage());
         }
 
         return connection;
+    }
+
+    /**
+     * Devuelve una conexión válida, reconectando si está null / cerrada / inválida.
+     * <p>Causa del incidente 05-06: tras un reinicio la conexión quedó null y, como cada consulta
+     * usaba el campo estático directo sin validar ni reconectar, todas lanzaban NPE
+     * ("Connection is null") por horas → la custodia no se cargaba → ventas rechazadas "sin custodia".
+     * <p>Devuelve {@code null} si no se pudo (re)conectar; los métodos de consulta validan y
+     * devuelven vacío en ese caso (en vez de hacer NPE).
+     */
+    public static synchronized Connection ensureConnection() {
+        try {
+            if (connection != null && !connection.isClosed() && connection.isValid(3)) {
+                return connection;
+            }
+        } catch (SQLException e) {
+            log.warn("[SQL] conexión inválida ({}); se reintenta reconectar", e.getMessage());
+        }
+        if (MainApp.getProperties() == null) {
+            log.error("[SQL] properties no disponibles; no se puede reconectar a SQL Server");
+            return null;
+        }
+        log.warn("[SQL] conexión no disponible; reconectando a SQL Server...");
+        return getConnection(MainApp.getProperties());
     }
 
 
@@ -42,6 +75,12 @@ public class SQLServerConnection {
 
 
         List<String> accountsUser = new ArrayList<>();
+
+        Connection connection = ensureConnection();
+        if (connection == null) {
+            log.warn("[SQL] sin conexión a SQL Server; getAccountByrut() devuelve vacío para rut {}", rut);
+            return accountsUser;
+        }
 
         try {
 
@@ -84,6 +123,12 @@ public class SQLServerConnection {
 
     public static List<BlotterMessage.SaldoCaja.Builder> saldoCaja(String rut) {
         List<BlotterMessage.SaldoCaja.Builder> saldoList = new ArrayList<>();
+
+        Connection connection = ensureConnection();
+        if (connection == null) {
+            log.warn("[SQL] sin conexión a SQL Server; saldoCaja() devuelve vacío para cuenta {}", rut);
+            return saldoList;
+        }
 
 
         String combinedQuery =
@@ -245,6 +290,12 @@ public class SQLServerConnection {
     public static List<BlotterMessage.Prestamos.Builder> prestamos(String rut) {
         List<BlotterMessage.Prestamos.Builder> prestamosList = new ArrayList<>();
 
+        Connection connection = ensureConnection();
+        if (connection == null) {
+            log.warn("[SQL] sin conexión a SQL Server; prestamos() devuelve vacío para cuenta {}", rut);
+            return prestamosList;
+        }
+
         final String sql =
                 "WITH BasePCalc AS (                                                                 \n" +
                         "    SELECT DISTINCT                                                                  \n" +
@@ -335,6 +386,12 @@ public class SQLServerConnection {
     public static List<BlotterMessage.CierreCarteraResumida.Builder> carteraResumida(String rut) {
 
         List<BlotterMessage.CierreCarteraResumida.Builder> carteraList = new ArrayList<>();
+
+        Connection connection = ensureConnection();
+        if (connection == null) {
+            log.warn("[SQL] sin conexión a SQL Server; carteraResumida() devuelve vacío para cuenta {}", rut);
+            return carteraList;
+        }
 
         try {
 
@@ -484,10 +541,22 @@ public class SQLServerConnection {
     }
 
     public static List<BlotterMessage.Simultaneas> consultaSimultanea() {
+        return consultaSimultaneaInternal(null);
+    }
+
+    public static List<BlotterMessage.Simultaneas> consultaSimultaneaByAccount(String account) {
+        return consultaSimultaneaInternal(account);
+    }
+
+    private static List<BlotterMessage.Simultaneas> consultaSimultaneaInternal(String accountFilter) {
+
+        Connection connection = ensureConnection();
+        if (connection == null) {
+            log.warn("[SQL] sin conexión a SQL Server; consultaSimultanea() devuelve vacío");
+            return new ArrayList<>();
+        }
 
         try {
-
-            Statement statement = connection.createStatement();
 
             String query = "select ROW_NUMBER() OVER (ORDER BY S.IDENTIFICADOR) AS Detalle_Simultanea, " +
                     "     case when TIPO_SIMULTANEA = 'cirvs' then 'Simultánea Compra' when TIPO_SIMULTANEA = 'virvs' then 'Simultánea Venta' end  as Tipo_Simul , " +
@@ -505,8 +574,15 @@ public class SQLServerConnection {
                     "from SIMULTANEAS_DIARIAS_MO S  with (nolock) LEFT JOIN  VIEW_CUENTAS C with (nolock)\n" +
                     "ON S.NUM_CUENTA=C.NUM_CUENTA";
 
+            boolean filterByAccount = accountFilter != null && !accountFilter.isBlank();
+            if (filterByAccount) {
+                query += " WHERE S.NUM_CUENTA = ?";
+            }
 
             PreparedStatement preparedStatement = connection.prepareStatement(query);
+            if (filterByAccount) {
+                preparedStatement.setString(1, accountFilter);
+            }
 
             ResultSet resultSet = preparedStatement.executeQuery();
             List<BlotterMessage.Simultaneas> list = new ArrayList<>();
@@ -514,118 +590,10 @@ public class SQLServerConnection {
             while (resultSet.next()) {
 
                 try {
-
-
-
-                    BlotterMessage.Simultaneas.Builder simultaneasBuilder = BlotterMessage.Simultaneas.newBuilder();
-                    ProtoDateProcessor.setDateProcesorIfMissing(simultaneasBuilder);
-
-                    if (resultSet.getString("Tipo_Simul") != null) {
-                        simultaneasBuilder.setTipoSimul(resultSet.getString("Tipo_Simul"));
+                    BlotterMessage.Simultaneas simultanea = mapSimultanea(resultSet);
+                    if (simultanea != null) {
+                        list.add(simultanea);
                     }
-
-                    if (resultSet.getString("Detalle_Simultanea") != null) {
-                        simultaneasBuilder.setDetalleSimultanea(resultSet.getString("Detalle_Simultanea"));
-                    }
-
-                    if (resultSet.getString("Ident_Cliente") != null) {
-                        simultaneasBuilder.setIdentCliente(resultSet.getString("Ident_Cliente"));
-                    }
-
-                    if (resultSet.getString("Num_Cuenta") != null) {
-                        simultaneasBuilder.setNumCuenta(resultSet.getString("Num_Cuenta"));
-                    }
-
-                    if (resultSet.getString("Fecha_Operacion") != null) {
-                        simultaneasBuilder.setFechaOperacion(resultSet.getString("Fecha_Operacion"));
-                    }
-
-                    if (resultSet.getString("Fecha_Vcto") != null) {
-                        simultaneasBuilder.setFechaVcto(resultSet.getString("Fecha_Vcto"));
-                    }
-
-                    if (resultSet.getString("Nombre_Cliente") != null) {
-                        simultaneasBuilder.setNombreCliente(resultSet.getString("Nombre_Cliente"));
-                    }
-
-                    if (resultSet.getString("Plazo") != null) {
-                        simultaneasBuilder.setPlazo(resultSet.getString("Plazo"));
-                    }
-
-                    if (resultSet.getString("Plazo_Rem") != null) {
-                        simultaneasBuilder.setPlazoRem(resultSet.getString("Plazo_Rem"));
-                    }
-
-                    if (resultSet.getString("Nemotecnico") != null) {
-                        simultaneasBuilder.setNemotecnico(resultSet.getString("Nemotecnico"));
-                    }
-
-                    if (resultSet.getString("Cantidad") != null) {
-                        simultaneasBuilder.setCantidad(resultSet.getString("Cantidad"));
-                    }
-
-                    if (resultSet.getString("Tasa") != null) {
-                        simultaneasBuilder.setTasa(resultSet.getString("Tasa"));
-                    }
-
-                    if (resultSet.getString("Precio_PH") != null) {
-                        simultaneasBuilder.setPrecioPH(resultSet.getString("Precio_PH"));
-                    }
-
-                    if (resultSet.getString("Precio_Plazo") != null) {
-                        simultaneasBuilder.setPrecioPlazo(resultSet.getString("Precio_Plazo"));
-                    }
-
-                    if (resultSet.getString("Precio_Mercado") != null) {
-                        simultaneasBuilder.setPrecioMercado(resultSet.getString("Precio_Mercado"));
-                    }
-
-                    if (resultSet.getString("Monto_Contado") != null) {
-                        simultaneasBuilder.setMontoContado(resultSet.getString("Monto_Contado"));
-                    }
-
-                    if (resultSet.getString("Costo_Diario2") != null) {
-                        simultaneasBuilder.setCostoDiario2(resultSet.getString("Costo_Diario2"));
-                    }
-
-                    if (resultSet.getString("Monto_Presente") != null) {
-                        simultaneasBuilder.setMontoPresente(resultSet.getString("Monto_Presente"));
-                    }
-
-                    if (resultSet.getString("Monto_Plazo") != null) {
-                        simultaneasBuilder.setMontoPlazo(resultSet.getString("Monto_Plazo"));
-                    }
-
-                    if (resultSet.getString("Cod_Inst") != null) {
-                        simultaneasBuilder.setCodInst(resultSet.getString("Cod_Inst"));
-                    }
-
-                    if (resultSet.getString("Cantidad_Orig") != null) {
-                        simultaneasBuilder.setCantidadOrig(resultSet.getString("Cantidad_Orig"));
-                    }
-
-                    if (resultSet.getString("Corredor_Venta") != null) {
-                        simultaneasBuilder.setCorredorVenta(resultSet.getString("Corredor_Venta"));
-                    }
-
-                    if (resultSet.getString("Corredor_Compra") != null) {
-                        simultaneasBuilder.setCorredorCompra(resultSet.getString("Corredor_Compra"));
-                    }
-
-                    if (resultSet.getString("Folio_Fact_PH") != null) {
-                        simultaneasBuilder.setFolioFactPH(resultSet.getString("Folio_Fact_PH"));
-                    }
-
-                    if (resultSet.getString("Folio_Fact_TP") != null) {
-                        simultaneasBuilder.setFolioFactTP(resultSet.getString("Folio_Fact_TP"));
-                    }
-
-                    if (resultSet.getString("id") != null) {
-                        simultaneasBuilder.setId(resultSet.getString("id"));
-                    }
-
-
-                    list.add(simultaneasBuilder.build());
 
                 } catch (SQLException e) {
                     log.error(e.getMessage(), e);
@@ -635,7 +603,7 @@ public class SQLServerConnection {
             }
 
             resultSet.close();
-            statement.close();
+            preparedStatement.close();
 
 
             return list;
@@ -644,9 +612,120 @@ public class SQLServerConnection {
             log.error(e.getMessage(), e);
         }
 
-        return null;
+        return new ArrayList<>();
 
 
+    }
+
+    private static BlotterMessage.Simultaneas mapSimultanea(ResultSet resultSet) throws SQLException {
+        BlotterMessage.Simultaneas.Builder simultaneasBuilder = BlotterMessage.Simultaneas.newBuilder();
+        ProtoDateProcessor.setDateProcesorIfMissing(simultaneasBuilder);
+
+        if (resultSet.getString("Tipo_Simul") != null) {
+            simultaneasBuilder.setTipoSimul(resultSet.getString("Tipo_Simul"));
+        }
+
+        if (resultSet.getString("Detalle_Simultanea") != null) {
+            simultaneasBuilder.setDetalleSimultanea(resultSet.getString("Detalle_Simultanea"));
+        }
+
+        if (resultSet.getString("Ident_Cliente") != null) {
+            simultaneasBuilder.setIdentCliente(resultSet.getString("Ident_Cliente"));
+        }
+
+        if (resultSet.getString("Num_Cuenta") != null) {
+            simultaneasBuilder.setNumCuenta(resultSet.getString("Num_Cuenta"));
+        }
+
+        if (resultSet.getString("Fecha_Operacion") != null) {
+            simultaneasBuilder.setFechaOperacion(resultSet.getString("Fecha_Operacion"));
+        }
+
+        if (resultSet.getString("Fecha_Vcto") != null) {
+            simultaneasBuilder.setFechaVcto(resultSet.getString("Fecha_Vcto"));
+        }
+
+        if (resultSet.getString("Nombre_Cliente") != null) {
+            simultaneasBuilder.setNombreCliente(resultSet.getString("Nombre_Cliente"));
+        }
+
+        if (resultSet.getString("Plazo") != null) {
+            simultaneasBuilder.setPlazo(resultSet.getString("Plazo"));
+        }
+
+        if (resultSet.getString("Plazo_Rem") != null) {
+            simultaneasBuilder.setPlazoRem(resultSet.getString("Plazo_Rem"));
+        }
+
+        if (resultSet.getString("Nemotecnico") != null) {
+            simultaneasBuilder.setNemotecnico(resultSet.getString("Nemotecnico"));
+        }
+
+        if (resultSet.getString("Cantidad") != null) {
+            simultaneasBuilder.setCantidad(resultSet.getString("Cantidad"));
+        }
+
+        if (resultSet.getString("Tasa") != null) {
+            simultaneasBuilder.setTasa(resultSet.getString("Tasa"));
+        }
+
+        if (resultSet.getString("Precio_PH") != null) {
+            simultaneasBuilder.setPrecioPH(resultSet.getString("Precio_PH"));
+        }
+
+        if (resultSet.getString("Precio_Plazo") != null) {
+            simultaneasBuilder.setPrecioPlazo(resultSet.getString("Precio_Plazo"));
+        }
+
+        if (resultSet.getString("Precio_Mercado") != null) {
+            simultaneasBuilder.setPrecioMercado(resultSet.getString("Precio_Mercado"));
+        }
+
+        if (resultSet.getString("Monto_Contado") != null) {
+            simultaneasBuilder.setMontoContado(resultSet.getString("Monto_Contado"));
+        }
+
+        if (resultSet.getString("Costo_Diario2") != null) {
+            simultaneasBuilder.setCostoDiario2(resultSet.getString("Costo_Diario2"));
+        }
+
+        if (resultSet.getString("Monto_Presente") != null) {
+            simultaneasBuilder.setMontoPresente(resultSet.getString("Monto_Presente"));
+        }
+
+        if (resultSet.getString("Monto_Plazo") != null) {
+            simultaneasBuilder.setMontoPlazo(resultSet.getString("Monto_Plazo"));
+        }
+
+        if (resultSet.getString("Cod_Inst") != null) {
+            simultaneasBuilder.setCodInst(resultSet.getString("Cod_Inst"));
+        }
+
+        if (resultSet.getString("Cantidad_Orig") != null) {
+            simultaneasBuilder.setCantidadOrig(resultSet.getString("Cantidad_Orig"));
+        }
+
+        if (resultSet.getString("Corredor_Venta") != null) {
+            simultaneasBuilder.setCorredorVenta(resultSet.getString("Corredor_Venta"));
+        }
+
+        if (resultSet.getString("Corredor_Compra") != null) {
+            simultaneasBuilder.setCorredorCompra(resultSet.getString("Corredor_Compra"));
+        }
+
+        if (resultSet.getString("Folio_Fact_PH") != null) {
+            simultaneasBuilder.setFolioFactPH(resultSet.getString("Folio_Fact_PH"));
+        }
+
+        if (resultSet.getString("Folio_Fact_TP") != null) {
+            simultaneasBuilder.setFolioFactTP(resultSet.getString("Folio_Fact_TP"));
+        }
+
+        if (resultSet.getString("id") != null) {
+            simultaneasBuilder.setId(resultSet.getString("id"));
+        }
+
+        return simultaneasBuilder.build();
     }
 
 

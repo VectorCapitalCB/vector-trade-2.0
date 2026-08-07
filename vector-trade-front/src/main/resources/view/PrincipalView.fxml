@@ -77,26 +77,29 @@
                             </HBox>
                         </VBox>
 
-                        <HBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
-                            <TabPane fx:id="tabPrincipa" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
-                                <Tab text="Datos del Mercado">
-                                    <graphic>
-                                        <HBox spacing="6" styleClass="launch-wrap hint-host">
-                                            <Button onAction="#datosMercadoFlotante" text="↗" styleClass="launch-btn"/>
-                                        </HBox>
-                                    </graphic>
-                                    <TabPane fx:id="tpMkData" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
-                                        <Tab fx:id="add" closable="false" text="+" />
-                                    </TabPane>
-                                </Tab>
-                                <Tab text="Ruteo">
-                                    <fx:include fx:id="routingView" source="RoutingView.fxml" />
-                                </Tab>
-                                <Tab text="Posiciones" >
-                                    <fx:include fx:id="positionsView" source="PositionsView.fxml" />
-                                </Tab>
-                            </TabPane>
-                        </HBox>
+                        <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <fx:include fx:id="huincha" source="Huincha.fxml" />
+                            <HBox HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                <TabPane fx:id="tabPrincipa" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                    <Tab text="Datos del Mercado">
+                                        <graphic>
+                                            <HBox spacing="6" styleClass="launch-wrap hint-host">
+                                                <Button onAction="#datosMercadoFlotante" text="↗" styleClass="launch-btn"/>
+                                            </HBox>
+                                        </graphic>
+                                        <TabPane fx:id="tpMkData" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                                            <Tab fx:id="add" closable="false" text="+" />
+                                        </TabPane>
+                                    </Tab>
+                                    <Tab text="Ruteo">
+                                        <fx:include fx:id="routingView" source="RoutingView.fxml" />
+                                    </Tab>
+                                    <Tab text="Posiciones" >
+                                        <fx:include fx:id="positionsView" source="PositionsView.fxml" />
+                                    </Tab>
+                                </TabPane>
+                            </HBox>
+                        </VBox>
                     </items>
                 </SplitPane>
 

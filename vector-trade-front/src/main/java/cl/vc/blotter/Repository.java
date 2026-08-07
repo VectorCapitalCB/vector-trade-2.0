@@ -73,10 +73,85 @@ public class Repository {
     private static final String DAY_MODE_KEY = "dayMode";
 
     @Getter
-    @Setter
     private static MarketDataMessage.BolsaStats stats;
+
+    /**
+     * El mismo BolsaStats en vivo, observable: la huincha se repinta cuando llega, sin
+     * timers propios ni acoplarse a los actores que lo reciben.
+     */
+    @Getter
+    private static final javafx.beans.property.ObjectProperty<MarketDataMessage.BolsaStats> statsProperty =
+            new javafx.beans.property.SimpleObjectProperty<>();
+
+    public static void setStats(MarketDataMessage.BolsaStats item) {
+        stats = item;
+        javafx.application.Platform.runLater(() -> statsProperty.set(item));
+    }
+
     @Getter
     private static final ObservableList<MarketDataMessage.BolsaStats> bolsaStatsHistory = FXCollections.observableArrayList();
+
+    /**
+     * Serie intradia por instrumento que calcula el backend (accion load_intraday_series
+     * del candle-service). La clave es el topic de TopicGenerator.getTopicMKD(Statistic),
+     * la misma que ya usa el front. Los NaN son puntos sin dato y no se dibujan.
+     *
+     * Se ACUMULA, no se reemplaza. Cada pestana de portafolio es un controller distinto y
+     * pide solo sus propios simbolos, asi que cada respuesta es un snapshot PARCIAL. Con
+     * reemplazo, la respuesta de una pestana de 2 papeles borraba la de 29 que habia
+     * llegado 75 ms antes, y la columna Tendencia quedaba casi vacia.
+     */
+    private static final java.util.Map<String, double[]> seriesIntradia = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void setSeriesIntradia(java.util.Map<String, double[]> series) {
+        if (series != null) {
+            seriesIntradia.putAll(series);
+        }
+    }
+
+    public static double[] getSerieIntradia(String topic) {
+        return (topic == null) ? null : seriesIntradia.get(topic);
+    }
+
+    /** Estados en los que una orden sigue viva en el mercado y por lo tanto aparece en el libro. */
+    private static final java.util.Set<RoutingMessage.OrderStatus> ESTADOS_VIVOS = java.util.EnumSet.of(
+            RoutingMessage.OrderStatus.NEW,
+            RoutingMessage.OrderStatus.PARTIALLY_FILLED,
+            RoutingMessage.OrderStatus.LIVE,
+            RoutingMessage.OrderStatus.PENDING_LIVE,
+            RoutingMessage.OrderStatus.PENDING_NEW,
+            RoutingMessage.OrderStatus.PENDING_REPLACE,
+            RoutingMessage.OrderStatus.REPLACED);
+
+    /**
+     * true si el usuario tiene una orden VIVA en ese simbolo, lado y precio; es decir, si
+     * ese nivel del libro es suyo.
+     *
+     * Se cruza contra las ordenes propias en vez de mirar el 'account' que publica el
+     * mercado: ese campo identifica la cuenta, no la orden, asi que marca por igual
+     * cualquier orden de tus cuentas venga de donde venga, y no todos los mercados lo
+     * publican. El precio se compara con tolerancia porque viene como double desde dos
+     * fuentes distintas (el libro y el ack de ruteo) y la igualdad exacta falla.
+     */
+    public static boolean tieneOrdenVivaEn(String symbol, RoutingMessage.Side side, double precio) {
+        if (symbol == null || side == null || precio <= 0d) return false;
+        try {
+            var tabla = getRoutingController() == null ? null
+                    : getRoutingController().getWorkingOrderController();
+            if (tabla == null || tabla.getTableExecutionReports() == null) return false;
+
+            for (RoutingMessage.Order orden : tabla.getTableExecutionReports().getItems()) {
+                if (orden == null) continue;
+                if (!symbol.equals(orden.getSymbol())) continue;
+                if (orden.getSide() != side) continue;
+                if (!ESTADOS_VIVOS.contains(orden.getOrdStatus())) continue;
+                if (Math.abs(orden.getPrice() - precio) < 0.0001d) return true;
+            }
+        } catch (Exception ignore) {
+            // La tabla puede no existir todavia durante el arranque.
+        }
+        return false;
+    }
 
     @Getter
     private final static Properties properties = new Properties();
@@ -97,10 +172,6 @@ public class Repository {
 
     @Getter
     private final static String STYLE_ESTADISTICAS = "/blotter/css/styleEstadisticas.css";
-
-    @Getter
-    @Setter
-    private static BlotterMessage.PortfolioResponse portfolioResponse;
 
     @Getter
     @Setter
@@ -170,9 +241,6 @@ public class Repository {
     @Setter
     public static String credencial;
     @Getter
-    @Setter
-    public static Integer countMultibook = -1;
-    @Getter
     public static ActorRef clientActor;
     @Getter
     @Setter
@@ -191,11 +259,7 @@ public class Repository {
     @Setter
     public static String dolarSymbol;
     @Getter
-    @Setter
-    public static BlotterMessage.Multibook multibook;
-    @Getter
-    @Setter
-    public static HashMap<String, LibroEmergentePrincipalController> controllerMultibook = new HashMap<>();
+    public static final HashMap<Integer, MultibookController> controllerMultibook = new HashMap<>();
     @Getter
     @Setter
     public static String dolarSecurity;
@@ -530,8 +594,14 @@ public class Repository {
         return serviceConnected;
     }
 
+    /**
+     * Solo entran snapshots historicos (id "hist:&lt;tf&gt;:&lt;instant&gt;"). Los stats en vivo llegan
+     * siempre con el id constante "candle-bolsa-stats", asi que la deduplicacion por id dejaba
+     * congelado el primero que llegara y esa foto vieja competia con el snapshot del dia en el
+     * calendario y en el filtro por fecha.
+     */
     public static void addBolsaStatsHistory(MarketDataMessage.BolsaStats item) {
-        if (item == null) {
+        if (item == null || item.getId() == null || !item.getId().startsWith("hist:")) {
             return;
         }
         javafx.application.Platform.runLater(() -> {

@@ -128,20 +128,23 @@ public class LoginController {
             encryptionUtil = new EncryptionUtil();
 
             if (encryptionUtil.credentialsExist(Repository.getCredencialPath())) {
+                String encryptedData = null;
                 try (BufferedReader reader = new BufferedReader(new FileReader(Repository.getCredencialPath()))) {
-                    String encryptedData = reader.readLine();
-                    if (encryptedData != null && !encryptedData.isEmpty()) {
-                        String decryptedData = encryptionUtil.decrypt(encryptedData);
-                        String[] parts = decryptedData.split(":");
-                        if (parts.length == 2) {
-                            txtUsername.setText(parts[0]);
-                            password.setText(parts[1]);
-                            chkGuardarContrasena.setSelected(true);
-                        }
-                    }
+                    encryptedData = reader.readLine();
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
                     label.setText("Error al cargar credenciales.");
+                }
+                // decrypt() devuelve null si el archivo no es un ciphertext AES nuestro.
+                String decryptedData = (encryptedData == null || encryptedData.isEmpty())
+                        ? null : encryptionUtil.decrypt(encryptedData);
+                String[] parts = (decryptedData == null) ? new String[0] : decryptedData.split(":");
+                if (parts.length == 2) {
+                    txtUsername.setText(parts[0]);
+                    password.setText(parts[1]);
+                    chkGuardarContrasena.setSelected(true);
+                } else if (encryptedData != null) {
+                    encryptionUtil.apartarCredencialesIlegibles();
                 }
             }
 

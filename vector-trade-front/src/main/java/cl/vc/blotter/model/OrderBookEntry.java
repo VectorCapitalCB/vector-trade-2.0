@@ -8,6 +8,8 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
@@ -36,8 +38,15 @@ public class OrderBookEntry {
 
     private String id ;
 
+    /** Precio numerico: getPrice() devuelve el string ya formateado y no sirve para comparar. */
+    @Getter private double priceValue;
+
+    /** Lado del libro. Lo fija BookVO segun la lista a la que pertenece la entrada. */
+    @Getter @Setter private RoutingMessage.Side side;
+
 
     public OrderBookEntry(String id , double price, double size, DecimalFormat decimalFormat, String symbol, String account, String operator, MarketDataMessage.SecurityExchangeMarketData securityExchangeMarketData) {
+        this.priceValue = price;
 
         try {
 
@@ -98,6 +107,12 @@ public class OrderBookEntry {
 
     public void setDecimalFormatBkp(DecimalFormat decimalFormatBkp) {
         this.decimalFormatBkp = decimalFormatBkp;
+    }
+
+    /** Fija el lado y devuelve this, para poder encadenarlo en el new de BookVO. */
+    public OrderBookEntry setSideAnd(RoutingMessage.Side side) {
+        this.side = side;
+        return this;
     }
 
     public String getPrice() {

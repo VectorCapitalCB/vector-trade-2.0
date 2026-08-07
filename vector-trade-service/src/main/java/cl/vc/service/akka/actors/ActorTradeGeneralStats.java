@@ -58,6 +58,11 @@ public class ActorTradeGeneralStats extends AbstractActor {
 
                     calculateBolsaStats();
 
+                    // Sin horaFin el front no puede fechar el mensaje y cae a Instant.EPOCH,
+                    // que en America/Santiago se ve como 31-12-1969. El candle-service ya
+                    // publica estos campos; el OMS tiene que hacer lo mismo.
+                    bolsaStats.setHoraFin(java.time.Instant.now().toString());
+
                     MarketDataMessage.BolsaStats bolsaStatsAux = bolsaStats.build();
 
 
@@ -223,7 +228,10 @@ public class ActorTradeGeneralStats extends AbstractActor {
                 .setMa(ma)
                 .setMacd(macd)
                 .setLiquidRatio(liquidRatio)
-                .setImpliedVolatility(0.0); // No calculado
+                // sortByVolatilidad ordena por este campo: dejarlo en 0.0 hacia que el ranking
+                // "Mas volatil" saliera en el orden arbitrario del mapa. Mismo criterio que usan
+                // CandleProtoMarketPublisher.toRankin y TradeAgg.toRank.
+                .setImpliedVolatility(Math.abs(variacionPct));
 
     }
 
@@ -285,8 +293,13 @@ public class ActorTradeGeneralStats extends AbstractActor {
             if (variacionPct > 0) {
                 totalVariacionPositiva++;
                 bestRankin.add(rankin.build());
-            } else {
+            } else if (variacionPct < 0) {
                 totalVariacionNegativa++;
+                worseRankin.add(rankin.build());
+            } else {
+                // Variacion exactamente 0 no es sentimiento negativo. Contarla como negativa hacia
+                // que sentimientoPositivo + sentimientoNegativo diera 100,00% exacto y que la
+                // Tendencia General saliera "bajista" con la mayoria de los papeles planos.
                 worseRankin.add(rankin.build());
             }
 
@@ -302,7 +315,10 @@ public class ActorTradeGeneralStats extends AbstractActor {
         }
 
         masVolatil = sortByVolatilidad(masVolatil);  // Ordenado por volatilidad
-        masTranzado = sortByVolumen(masTranzado);   // Ordenado por volumen
+        // "Mas tranzado" en la bolsa chilena es mayor MONTO transado, no mayor numero de acciones.
+        // Ordenando por volumen, un papel caro como SQM-B (el #1 del dia por monto, con solo
+        // ~184.000 acciones) quedaba sepultado bajo papeles baratos de alto volumen.
+        masTranzado = sortByMonto(masTranzado);
         bestRankin = sortByVariacionPct(bestRankin); // Ordenado por variación positiva
         worseRankin = sortByVariacionPctNegativa(worseRankin); // Ordenado por variación negativa
         masCayo = sortByVariacionPctNegativa(masCayo); // Ordenado por caída en el precio
@@ -327,7 +343,9 @@ public class ActorTradeGeneralStats extends AbstractActor {
         double sumRango = rankinSymbols.stream()
                 .mapToDouble(s -> s.getPrecioMaximo() - s.getPrecioMinimo())
                 .sum();
-        double rangoPromedio = sumRango / rankinSymbols.size();
+        // Sin dividir por cero: el scheduler emite cada 60 s desde el arranque, tambien antes del
+        // primer trade, y 0/0 = NaN se propagaba al proto y el front pintaba "NaN" en el header.
+        double rangoPromedio = rankinSymbols.isEmpty() ? 0.0 : sumRango / rankinSymbols.size();
 
         // Paso 7: Volatilidad promedio (utilizando desviación estándar de los log-returns)
         double sumVolatilityWeighted = 0.0;
@@ -436,9 +454,9 @@ public class ActorTradeGeneralStats extends AbstractActor {
                 .collect(Collectors.toList());
     }
 
-    private List<MarketDataMessage.RankinSymbol> sortByVolumen(List<MarketDataMessage.RankinSymbol> src) {
+    private List<MarketDataMessage.RankinSymbol> sortByMonto(List<MarketDataMessage.RankinSymbol> src) {
         return src.stream()
-                .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getVolumen).reversed()) // De mayor a menor volumen
+                .sorted(Comparator.comparingDouble(MarketDataMessage.RankinSymbol::getMonto).reversed()) // De mayor a menor monto transado
                 .collect(Collectors.toList());
     }
 

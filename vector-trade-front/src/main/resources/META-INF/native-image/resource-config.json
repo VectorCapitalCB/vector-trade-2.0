@@ -95,6 +95,10 @@
   }, {
     "pattern":"front:\\Qblotter/css/style.css\\E"
   }, {
+    "pattern":"front:\\Qblotter/css/styleEstadisticas.css\\E"
+  }, {
+    "pattern":"front:\\Qblotter/enviroment/application.production.properties\\E"
+  }, {
     "pattern":"front:\\Qblotter/enviroment/application.v3.properties\\E"
   }, {
     "pattern":"front:\\Qblotter/enviroment/applicationqa.properties\\E"
@@ -107,6 +111,28 @@
   }, {
     "pattern":"front:\\Qblotter/img/conexions.png\\E"
   }, {
+    "pattern":"front:\\Qblotter/img/emoji/blush.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/clap.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/fire.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/grin.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/heart.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/smile.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/thumbsdown.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/thumbsup.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/tongue.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/emoji/wink.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/estadisticas.png\\E"
+  }, {
     "pattern":"front:\\Qblotter/img/excel.png\\E"
   }, {
     "pattern":"front:\\Qblotter/img/icono.jpg\\E"
@@ -116,6 +142,8 @@
     "pattern":"front:\\Qblotter/img/news.png\\E"
   }, {
     "pattern":"front:\\Qblotter/img/notification.png\\E"
+  }, {
+    "pattern":"front:\\Qblotter/img/prod.png\\E"
   }, {
     "pattern":"front:\\Qblotter/img/sound.png\\E"
   }, {
@@ -145,11 +173,17 @@
   }, {
     "pattern":"front:\\Qsounds/trade.mp3\\E"
   }, {
+    "pattern":"front:\\Qview/Chat.fxml\\E"
+  }, {
     "pattern":"front:\\Qview/Login.fxml\\E"
   }, {
     "pattern":"front:\\Qview/MarketDataPortfolioView.fxml\\E"
   }, {
+    "pattern":"front:\\Qview/News.fxml\\E"
+  }, {
     "pattern":"front:\\Qview/PrincipalView.fxml\\E"
+  }, {
+    "pattern":"front:\\Qview/StadisticsView.fxml\\E"
   }, {
     "pattern":"graph/index.html"
   }, {
@@ -265,6 +299,10 @@
   }, {
     "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/FillRoundRect_Color.obj\\E"
   }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/FillRoundRect_LinearGradient_PAD.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Mask_TextureSuper.obj\\E"
+  }, {
     "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Solid_Color.obj\\E"
   }, {
     "pattern":"javafx.graphics:\\Qcom/sun/prism/d3d/hlsl/Solid_TextureFirstPassLCD.obj\\E"
@@ -286,6 +324,10 @@
     "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_12.obj\\E"
   }, {
     "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_20.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_24.obj\\E"
+  }, {
+    "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_28.obj\\E"
   }, {
     "pattern":"javafx.graphics:\\Qcom/sun/scenario/effect/impl/hw/d3d/hlsl/LinearConvolveShadow_4.obj\\E"
   }, {
@@ -380,6 +422,9 @@
   }, {
     "name":"com/sun/javafx/scene/control/skin/resources/controls",
     "locales":["", "es", "und"]
+  }, {
+    "name":"com/sun/javafx/scene/control/skin/resources/controls-nt",
+    "locales":[""]
   }, {
     "name":"sun.awt.resources.awt",
     "classNames":["sun.awt.resources.awt"]

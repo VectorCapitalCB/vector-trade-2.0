@@ -9,7 +9,6 @@ import com.mongodb.client.model.Filters;
 import com.mongodb.client.model.Sorts;
 import org.bson.Document;
 import org.bson.conversions.Bson;
-import org.bson.types.ObjectId;
 import org.eclipse.jetty.websocket.api.Session;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -21,15 +20,30 @@ import java.util.concurrent.ConcurrentHashMap;
 
 public class CandleMongoPublisher extends Thread {
     private static final Logger log = LoggerFactory.getLogger(CandleMongoPublisher.class);
+    // El feed publica Long.MIN_VALUE/1000 cuando la bolsa no informa el campo (limites, referencia).
+    private static final double ABSENT_NUMBER = 1e15;
+    private static volatile CandleMongoPublisher INSTANCE;
 
     private final Properties properties;
-    private final Map<CandleSubscriptionKey, ObjectId> lastSeenByKey = new ConcurrentHashMap<>();
+    /**
+     * _id de la ultima vela publicada por key. Object, no ObjectId: el _id de candles es el String
+     * "instrumentId|timeframe|bucketStart" (ver MongoMarketRepository.upsertCandle). Tipar esto como
+     * ObjectId reventaba con ClassCastException en el primer subscribe y mataba el hilo completo,
+     * dejando ademas dailyCollection=null y load_instrument_daily inservible.
+     */
+    private final Map<CandleSubscriptionKey, Object> lastSeenByKey = new ConcurrentHashMap<>();
     private final Set<CandleSubscriptionKey> initialized = Collections.newSetFromMap(new ConcurrentHashMap<>());
+    private volatile MongoCollection<Document> dailyCollection;
 
     public CandleMongoPublisher(Properties properties) {
         this.properties = properties;
+        INSTANCE = this;
         setName("candle-mongo-publisher");
         setDaemon(true);
+    }
+
+    public static CandleMongoPublisher getInstance() {
+        return INSTANCE;
     }
 
     @Override
@@ -47,6 +61,7 @@ public class CandleMongoPublisher extends Thread {
         try (MongoClient client = new MongoClient(new MongoClientURI(mongoUri))) {
             MongoDatabase database = client.getDatabase(databaseName);
             MongoCollection<Document> collection = database.getCollection(collectionName);
+            dailyCollection = database.getCollection(properties.getProperty("mongo.daily.collection", "instrument_daily"));
             log.info("Mongo publisher iniciado pollMs={} batchSize={} bootstrapLimit={}", pollMs, batchSize, bootstrapLimit);
 
             while (!Thread.currentThread().isInterrupted()) {
@@ -60,7 +75,122 @@ public class CandleMongoPublisher extends Thread {
             Thread.currentThread().interrupt();
         } catch (Exception e) {
             log.error("Error en mongo publisher", e);
+        } finally {
+            dailyCollection = null;
         }
+    }
+
+    /**
+     * Estadistica oficial de la bolsa para un dia: todos los instrumentos ordenados por turnover desc.
+     * Consulta on-demand (la coleccion cambia una vez al dia), sin polling.
+     */
+    public boolean sendInstrumentDailyByDay(Session session, String market, String tradingDay, int limit) {
+        MongoCollection<Document> collection = dailyCollection;
+        if (collection == null) {
+            return false;
+        }
+        FindIterable<Document> docs = collection
+                .find(Filters.and(Filters.eq("market", market), Filters.eq("tradingDay", tradingDay)))
+                .sort(Sorts.descending("turnover"));
+        if (limit > 0) {
+            docs = docs.limit(limit);
+        }
+        JSONArray rows = new JSONArray();
+        for (Document doc : docs) {
+            rows.put(toInstrumentDailyJson(doc));
+        }
+        JSONObject payload = new JSONObject()
+                .put("type", "instrument_daily")
+                .put("mode", "day")
+                .put("market", market)
+                .put("date", tradingDay)
+                .put("limit", limit)
+                .put("count", rows.length())
+                .put("rows", rows);
+        log.info("instrument_daily dia market={} date={} rows={} limit={}", market, tradingDay, rows.length(), limit);
+        return send(session, payload.toString());
+    }
+
+    /**
+     * Serie historica oficial de un simbolo entre dos dias (ambos inclusive), ordenada por dia asc.
+     */
+    public boolean sendInstrumentDailyBySymbol(Session session, String market, String symbol, String fromDay, String toDay) {
+        MongoCollection<Document> collection = dailyCollection;
+        if (collection == null) {
+            return false;
+        }
+        FindIterable<Document> docs = collection
+                .find(Filters.and(
+                        Filters.eq("market", market),
+                        Filters.eq("symbol", symbol),
+                        Filters.gte("tradingDay", fromDay),
+                        Filters.lte("tradingDay", toDay)))
+                .sort(Sorts.ascending("tradingDay"));
+        JSONArray rows = new JSONArray();
+        for (Document doc : docs) {
+            rows.put(toInstrumentDailyJson(doc));
+        }
+        JSONObject payload = new JSONObject()
+                .put("type", "instrument_daily")
+                .put("mode", "history")
+                .put("market", market)
+                .put("symbol", symbol)
+                .put("from", fromDay)
+                .put("to", toDay)
+                .put("count", rows.length())
+                .put("rows", rows);
+        log.info("instrument_daily historico market={} symbol={} from={} to={} rows={}", market, symbol, fromDay, toDay, rows.length());
+        return send(session, payload.toString());
+    }
+
+    private JSONObject toInstrumentDailyJson(Document doc) {
+        JSONObject o = new JSONObject();
+        putText(o, "id", doc.get("_id"));
+        putText(o, "market", doc.get("market"));
+        putText(o, "symbol", doc.get("symbol"));
+        putText(o, "securityId", doc.get("securityId"));
+        putText(o, "currency", doc.get("currency"));
+        putText(o, "tradingDay", doc.get("tradingDay"));
+        putNumber(o, "open", doc.get("open"));
+        putNumber(o, "high", doc.get("high"));
+        putNumber(o, "low", doc.get("low"));
+        putNumber(o, "last", doc.get("last"));
+        putNumber(o, "close", doc.get("close"));
+        putNumber(o, "previousClose", doc.get("previousClose"));
+        putNumber(o, "volume", doc.get("volume"));
+        putNumber(o, "turnover", doc.get("turnover"));
+        putNumber(o, "vwap", doc.get("vwap"));
+        putNumber(o, "variationPct", doc.get("variationPct"));
+        putNumber(o, "auctionPrice", doc.get("auctionPrice"));
+        putNumber(o, "lowLimit", doc.get("lowLimit"));
+        putNumber(o, "highLimit", doc.get("highLimit"));
+        putNumber(o, "referencePrice", doc.get("referencePrice"));
+        Object updates = doc.get("updates");
+        o.put("updates", updates instanceof Number n ? n.longValue() : 0L);
+        putText(o, "updatedAt", doc.get("updatedAt"));
+        return o;
+    }
+
+    private static void putText(JSONObject o, String key, Object value) {
+        o.put(key, value == null ? JSONObject.NULL : String.valueOf(value));
+    }
+
+    private static void putNumber(JSONObject o, String key, Object value) {
+        double v = value instanceof Number n ? n.doubleValue() : Double.NaN;
+        boolean absent = Double.isNaN(v) || Double.isInfinite(v) || Math.abs(v) >= ABSENT_NUMBER;
+        o.put(key, absent ? JSONObject.NULL : v);
+    }
+
+    private boolean send(Session session, String payload) {
+        try {
+            if (session != null && session.isOpen()) {
+                session.getRemote().sendString(payload);
+                return true;
+            }
+        } catch (Exception e) {
+            log.warn("No se pudo enviar payload a session={}", session, e);
+        }
+        return false;
     }
 
     private void processKey(MongoCollection<Document> collection,
@@ -81,12 +211,12 @@ public class CandleMongoPublisher extends Thread {
                 Filters.eq(timeframeField, key.getTimeframe())
         );
 
-        ObjectId lastSeen = lastSeenByKey.get(key);
+        Object lastSeen = lastSeenByKey.get(key);
         Bson filter = lastSeen == null ? baseFilter : Filters.and(baseFilter, Filters.gt("_id", lastSeen));
 
         FindIterable<Document> docs = collection.find(filter).sort(Sorts.ascending("_id")).limit(Math.max(1, batchSize));
         for (Document doc : docs) {
-            ObjectId id = doc.getObjectId("_id");
+            Object id = doc.get("_id");
             if (id != null) {
                 lastSeenByKey.put(key, id);
             }
@@ -117,10 +247,10 @@ public class CandleMongoPublisher extends Thread {
         Collections.reverse(rows);
 
         JSONArray candles = new JSONArray();
-        ObjectId max = null;
+        Object max = null;
         for (Document row : rows) {
             candles.put(new JSONObject(row.toJson()));
-            ObjectId id = row.getObjectId("_id");
+            Object id = row.get("_id");
             if (id != null) {
                 max = id;
             }
