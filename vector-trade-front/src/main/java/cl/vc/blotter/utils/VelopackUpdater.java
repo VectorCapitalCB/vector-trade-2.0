@@ -40,8 +40,9 @@ import java.util.Objects;
  *     {root}\current\            <- binarios reales (el native-image corre desde aca)
  *     {root}\packages\           <- aca dejamos el .nupkg descargado
  *
- * El packId sale de la property {@code application}, para que QA (VectorTradeQA) y produccion
- * (VectorTrade) no compartan directorio ni feed. DEBE coincidir con el --packId del pipeline.
+ * El packId sale de {@code update.packId}, con fallback a {@code application}. Asi la linea
+ * Vector Trade 2 puede tener una instalacion independiente sin mover credenciales ni layouts
+ * del namespace historico {@code application=VectorTrade}.
  */
 @Slf4j
 public class VelopackUpdater {
@@ -202,9 +203,9 @@ public class VelopackUpdater {
 
     // ------------------------------------------------------------------ helpers
 
-    /** packId = property 'application'; debe coincidir con el --packId del pipeline. */
+    /** packId de Velopack; debe coincidir con el --packId del pipeline. */
     private static String packId() {
-        return prop("application", DEFAULT_PACK_ID);
+        return prop("update.packId", prop("application", DEFAULT_PACK_ID));
     }
 
     private static String prop(String key, String def) {
