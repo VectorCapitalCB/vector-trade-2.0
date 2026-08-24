@@ -309,7 +309,7 @@ public final class ClientLogCollector {
         if (version != null && !version.isBlank()) return safeText(version, 80);
         Package pkg = ClientLogCollector.class.getPackage();
         if (pkg != null && pkg.getImplementationVersion() != null) return pkg.getImplementationVersion();
-        return "3.1.7";
+        return "2.0.0";
     }
 
     private static Instant lastModified(Path path) {
