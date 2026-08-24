@@ -960,13 +960,7 @@ public class PrincipalController {
                         }
 
                         List<BlotterMessage.Portfolio> orderedPortfolios =
-                                new ArrayList<>(response.getPostfolioList());
-                        orderedPortfolios.removeIf(p -> p != null
-                                && p.getNamePortfolio() != null
-                                && "Principal".equalsIgnoreCase(p.getNamePortfolio().trim()));
-                        orderedPortfolios.sort(Comparator
-                                .comparingInt(this::portfolioOrderPriority)
-                                .thenComparing(BlotterMessage.Portfolio::getNamePortfolio, String.CASE_INSENSITIVE_ORDER));
+                                orderedPortfoliosForSnapshot(response.getPostfolioList());
 
                         orderedPortfolios.forEach(s -> {
 
@@ -1182,7 +1176,16 @@ public class PrincipalController {
         return null;
     }
 
-    private int portfolioOrderPriority(BlotterMessage.Portfolio portfolio) {
+    static List<BlotterMessage.Portfolio> orderedPortfoliosForSnapshot(
+            List<BlotterMessage.Portfolio> portfolios) {
+        List<BlotterMessage.Portfolio> orderedPortfolios = new ArrayList<>(portfolios);
+        orderedPortfolios.sort(Comparator
+                .comparingInt(PrincipalController::portfolioOrderPriority)
+                .thenComparing(BlotterMessage.Portfolio::getNamePortfolio, String.CASE_INSENSITIVE_ORDER));
+        return orderedPortfolios;
+    }
+
+    private static int portfolioOrderPriority(BlotterMessage.Portfolio portfolio) {
         if (portfolio == null || portfolio.getNamePortfolio() == null) {
             return 99;
         }
