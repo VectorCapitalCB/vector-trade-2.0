@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Vector Trade - Descargas</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --page: #0d1118;
+      --panel: #151c27;
+      --panel-2: #1b2532;
+      --line: #304052;
+      --text: #edf3fa;
+      --muted: #9babbd;
+      --accent: #3f8fd2;
+      --accent-hover: #55a2e1;
+      --ok: #4fc38a;
+    }
+
+    * { box-sizing: border-box; }
+
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--page);
+      color: var(--text);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+      font-size: 14px;
+      letter-spacing: 0;
+    }
+
+    header {
+      min-height: 64px;
+      border-bottom: 1px solid var(--line);
+      background: #111722;
+      display: flex;
+      align-items: center;
+    }
+
+    .shell {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 700;
+    }
+
+    .mark {
+      width: 34px;
+      height: 34px;
+      border: 1px solid #5e7084;
+      display: grid;
+      place-items: center;
+      font-size: 18px;
+      color: #bfe0fb;
+      background: #182536;
+      border-radius: 4px;
+    }
+
+    .brand small {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-weight: 500;
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    main { padding: 32px 0 48px; }
+
+    h1 {
+      margin: 0;
+      font-size: 26px;
+      line-height: 1.25;
+      letter-spacing: 0;
+    }
+
+    .intro {
+      margin: 8px 0 24px;
+      color: var(--muted);
+      max-width: 720px;
+      line-height: 1.5;
+    }
+
+    .latest {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 20px;
+      align-items: center;
+      padding: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      border-radius: 6px;
+      margin-bottom: 24px;
+    }
+
+    .eyebrow {
+      color: var(--ok);
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+
+    .latest-version {
+      font-size: 20px;
+      font-weight: 700;
+    }
+
+    .latest-meta {
+      margin-top: 6px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .button {
+      min-width: 170px;
+      min-height: 38px;
+      padding: 9px 15px;
+      border: 1px solid #68a9dc;
+      border-radius: 5px;
+      background: #276c9f;
+      color: white;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+    }
+
+    .button:hover { background: var(--accent-hover); }
+
+    .section-title {
+      margin: 0 0 10px;
+      font-size: 16px;
+      letter-spacing: 0;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: var(--panel);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      text-align: left;
+      padding: 12px 14px;
+      border-bottom: 1px solid #273444;
+      white-space: nowrap;
+    }
+
+    th {
+      color: #b9c6d5;
+      background: var(--panel-2);
+      font-size: 11px;
+      text-transform: uppercase;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .download-link { color: #7fc3f4; font-weight: 700; }
+    .muted { color: var(--muted); }
+
+    .empty {
+      padding: 24px;
+      color: var(--muted);
+      text-align: center;
+    }
+
+    footer {
+      margin-top: 18px;
+      color: #738397;
+      font-size: 11px;
+    }
+
+    @media (max-width: 640px) {
+      .shell { width: min(100% - 20px, 1120px); }
+      main { padding-top: 22px; }
+      .latest { grid-template-columns: 1fr; }
+      .button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell brand">
+      <div class="mark" aria-hidden="true">VC</div>
+      <div>Vector Trade <small>Centro interno de descargas</small></div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <h1>Instaladores de Vector Trade</h1>
+    <p class="intro">Descarga la ultima version firmada para Windows o consulta una version anterior. El actualizador de la aplicacion utiliza este mismo repositorio interno.</p>
+
+    <section class="latest" id="latest" hidden>
+      <div>
+        <div class="eyebrow">Version recomendada</div>
+        <div class="latest-version" id="latest-version"></div>
+        <div class="latest-meta" id="latest-meta"></div>
+      </div>
+      <a class="button" id="latest-link" href="#">Descargar instalador</a>
+    </section>
+
+    <h2 class="section-title">Historial de versiones</h2>
+    <div class="table-wrap">
+      <table id="release-table" hidden>
+        <thead>
+          <tr>
+            <th>Version</th>
+            <th>Publicacion</th>
+            <th>Plataforma</th>
+            <th>Tamano</th>
+            <th>SHA-256</th>
+            <th>Instalador</th>
+          </tr>
+        </thead>
+        <tbody id="release-body"></tbody>
+      </table>
+      <div class="empty" id="empty">Todavia no hay instaladores publicados.</div>
+    </div>
+
+    <footer>Acceso interno mediante VPN. Ejecutables firmados por Vector Capital Corredores de Bolsa SpA.</footer>
+  </main>
+
+  <script>
+    const feed = '/updatevtautoupdate/';
+
+    function size(bytes) {
+      if (!Number.isFinite(bytes) || bytes <= 0) return '-';
+      const units = ['B', 'KB', 'MB', 'GB'];
+      let value = bytes;
+      let unit = 0;
+      while (value >= 1024 && unit < units.length - 1) {
+        value /= 1024;
+        unit += 1;
+      }
+      return `${value.toFixed(unit > 1 ? 1 : 0)} ${units[unit]}`;
+    }
+
+    function shortHash(hash) {
+      return hash ? `${hash.slice(0, 12)}...` : '-';
+    }
+
+    async function load() {
+      try {
+        const response = await fetch(`${feed}downloads.json`, { cache: 'no-store' });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        const releases = Array.isArray(data.releases) ? data.releases : [];
+        if (!releases.length) return;
+
+        const latest = releases[0];
+        document.getElementById('latest-version').textContent = `Vector Trade ${latest.version}`;
+        document.getElementById('latest-meta').textContent = `${latest.publishedAt} | ${size(latest.size)}`;
+        document.getElementById('latest-link').href = `${feed}${latest.path}`;
+        document.getElementById('latest').hidden = false;
+
+        const body = document.getElementById('release-body');
+        releases.forEach((release) => {
+          const row = document.createElement('tr');
+          const values = [
+            release.version,
+            release.publishedAt,
+            'Windows x64',
+            size(release.size),
+            shortHash(release.sha256)
+          ];
+          values.forEach((value, index) => {
+            const cell = document.createElement('td');
+            cell.textContent = value || '-';
+            if (index === 4) cell.className = 'muted';
+            row.appendChild(cell);
+          });
+          const download = document.createElement('td');
+          const link = document.createElement('a');
+          link.className = 'download-link';
+          link.href = `${feed}${release.path}`;
+          link.textContent = 'Descargar';
+          download.appendChild(link);
+          row.appendChild(download);
+          body.appendChild(row);
+        });
+
+        document.getElementById('empty').hidden = true;
+        document.getElementById('release-table').hidden = false;
+      } catch (error) {
+        document.getElementById('empty').textContent = 'No se pudo cargar el catalogo de instaladores.';
+      }
+    }
+
+    load();
+  </script>
+</body>
+</html>

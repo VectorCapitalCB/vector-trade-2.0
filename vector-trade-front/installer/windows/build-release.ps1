@@ -36,7 +36,7 @@ if ($Version -notmatch '^\d+(\.\d+){1,3}$') { throw "Version invalida: '$Version
 # --- identidad por entorno ---------------------------------------------------
 $cfg = @{
   qa         = @{ PackId = 'VectorTradeQA'; Title = 'Vector Trade QA'; MainClass = 'cl.vc.blotter.MainAppQa' }
-  production = @{ PackId = 'VectorTrade2';  Title = 'Vector Trade 2';  MainClass = 'cl.vc.blotter.MainApp' }
+  production = @{ PackId = 'VectorTrade';   Title = 'Vector Trade 2';  MainClass = 'cl.vc.blotter.MainApp' }
 }[$Env]
 
 $propsFile = Join-Path $repo "src\main\resources\blotter\enviroment\application.$Env.properties"
@@ -115,28 +115,25 @@ if ($NoPublish) {
   return
 }
 
-$server  = 'voultech@172.16.0.8'
-$root    = '/home/azureuser/apps/VECTOR-TRADE-2.0/update'
-$channel = @{ qa = 'qa'; production = 'prod' }[$Env]
-$dest    = "$root/$channel"
-$archive = "$root/archive/$($cfg.PackId)/$Version"
+$server   = 'voultech@172.16.0.6'
+$root     = '/home/voultech/app/VectorTrade2.0/updatefeed'
+$incoming = "$root/.incoming-$Version"
 
-Write-Host "[4/4] publicando en 172.16.0.8 canal '$channel'" -ForegroundColor Cyan
-& ssh -o StrictHostKeyChecking=no $server "mkdir -p '$dest' '$archive'"
+Write-Host "[4/4] publicando en el feed interno de 172.16.0.6" -ForegroundColor Cyan
+& ssh -o StrictHostKeyChecking=accept-new $server "rm -rf '$incoming' && mkdir -p '$incoming'"
 if ($LASTEXITCODE -ne 0) { throw "no se pudo preparar el destino" }
 
-# El canal se sobrescribe (es el feed vivo); el archive guarda cada release para rollback.
-& scp -o StrictHostKeyChecking=no -r "$out\*" "${server}:$dest/"
-if ($LASTEXITCODE -ne 0) { throw "scp al canal fallo" }
-& scp -o StrictHostKeyChecking=no -r "$out\*" "${server}:$archive/"
-if ($LASTEXITCODE -ne 0) { throw "scp al archive fallo" }
-& ssh -o StrictHostKeyChecking=no $server "chmod -R 644 '$dest'/* '$archive'/*"
+& scp -o StrictHostKeyChecking=accept-new -r "$out\*" "${server}:$incoming/"
+if ($LASTEXITCODE -ne 0) { throw "scp al servidor fallo" }
 
-$feed = "http://172.16.0.8:8101/$channel/releases.win.json"
+& ssh -o StrictHostKeyChecking=accept-new $server "FEED_ROOT='$root/releases' BACKUP_DIR='$root/backups' bash '$root/publish-feed.sh' --src '$incoming' && rm -rf '$incoming'"
+if ($LASTEXITCODE -ne 0) { throw "publish-feed.sh fallo" }
+
+$feed = "http://172.16.0.6:8092/updatevtautoupdate/releases.win.json"
 Write-Host "Listo." -ForegroundColor Green
 Write-Host "  feed     $feed"
-Write-Host "  descarga http://172.16.0.8:8101/"
-Write-Host "  archive  http://172.16.0.8:8101/archive/$($cfg.PackId)/$Version/"
+Write-Host "  descarga http://172.16.0.6:8092/"
+Write-Host "  archive  http://172.16.0.6:8092/updatevtautoupdate/archive/$Version/"
 try {
   (Invoke-WebRequest -Uri $feed -TimeoutSec 10 -UseBasicParsing).Content | Write-Host
 } catch {

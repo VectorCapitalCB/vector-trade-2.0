@@ -1,0 +1,254 @@
+# =============================================================================
+#  publish-feed.yml  -  publica en el feed de PROD un release YA FIRMADO.
+#
+#  Copiar a:  vector-trade-front/.github/workflows/publish-feed.yml
+#             (repo git@github.com:VectorCapitalCB/vector-trade-front.git)
+#
+#  NO compila y NO firma: consume el artifact que ya produjo
+#  build-signed-release.yml, que descarga CodeSignTool, firma con eSigner y
+#  verifica firmante + timestamp. Este workflow solo mueve ese artifact al feed.
+#  Asi la cadena de firma queda en un unico lugar y esto no la puede romper.
+#
+#  Flujo completo de "pasa la nueva version":
+#    1. Actions -> build-signed-release -> Run workflow (version = X.Y.Z)
+#    2. Revisar el artifact VectorTrade-signed-X.Y.Z y su SHA256SUMS.txt
+#    3. Actions -> publish-feed -> Run workflow (version = X.Y.Z, run_id del paso 1)
+#
+#  POR QUE runs-on: self-hosted
+#  -----------------------------
+#  El servidor del feed tiene IP privada. Un runner hospedado por GitHub
+#  (windows-latest) no puede alcanzarlo: el scp queda colgado hasta el timeout.
+#  Este job DEBE correr en el runner que ya vive en la red interna, el mismo que
+#  usa release-windows.yml.
+#
+#  SECRETS que hay que crear en el repo (Settings -> Secrets and variables):
+#    FEED_DEPLOY_HOST     host del feed (IP privada del servidor)
+#    FEED_DEPLOY_USER     usuario SSH del deploy
+#    FEED_DEPLOY_SSH_KEY  clave PRIVADA SSH del deploy (OpenSSH, sin passphrase)
+#    FEED_PUBLIC_URL      URL interna del feed, sin barra final. DEBE ser IDENTICA
+#                         al 'url' de application.prod.properties del build.
+#                         Ej: http://172.16.0.6:8092/updatevtautoupdate
+#                         Si no calza, este workflow verifica un feed distinto del
+#                         que consultan los clientes y da un falso OK.
+#                         La IP del runner tiene que estar en nginx/allowlist.inc,
+#                         o el paso de verificacion recibe 403.
+#  Opcional:
+#    FEED_REMOTE_PATH     ruta del feed en el servidor
+#                         (default /home/voultech/app/VectorTrade2.0/updatefeed/releases)
+#
+#  Se usan nombres FEED_* nuevos a proposito: los DEPLOY_* existentes apuntan al
+#  servidor viejo y no hay que reutilizarlos mientras convivan los dos feeds.
+#
+#  AUTENTICACION: solo clave SSH. No se soporta ni se debe usar contrasena; una
+#  contrasena en un secret de CI termina en logs de proceso y en el historial del
+#  runner.
+# =============================================================================
+name: publish-feed
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version que se publica (X.Y.Z). Debe existir como artifact firmado."
+        required: true
+      run_id:
+        description: "Run id de build-signed-release que genero el artifact firmado."
+        required: true
+      dry_run:
+        description: "Solo validar (no escribe en el feed)"
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  actions: read          # necesario para bajar el artifact de otro run
+
+concurrency:
+  group: publish-feed          # una publicacion a la vez, nunca en paralelo
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Publicar v${{ inputs.version }} en el feed
+    runs-on: [self-hosted, windows, gluon]
+    timeout-minutes: 30
+
+    env:
+      VERSION: ${{ inputs.version }}
+      ARTIFACT: VectorTrade-signed-${{ inputs.version }}
+      STAGE: ${{ github.workspace }}\feed-stage
+
+    steps:
+      - name: Validar formato de la version
+        shell: pwsh
+        run: |
+          if ($env:VERSION -notmatch '^\d+\.\d+\.\d+$') {
+            throw "Version invalida (esperado X.Y.Z): $env:VERSION"
+          }
+
+      - name: Validar secrets
+        shell: pwsh
+        env:
+          FEED_DEPLOY_HOST: ${{ secrets.FEED_DEPLOY_HOST }}
+          FEED_DEPLOY_USER: ${{ secrets.FEED_DEPLOY_USER }}
+          FEED_DEPLOY_SSH_KEY: ${{ secrets.FEED_DEPLOY_SSH_KEY }}
+          FEED_PUBLIC_URL: ${{ secrets.FEED_PUBLIC_URL }}
+        run: |
+          $req = @{
+            FEED_DEPLOY_HOST    = $env:FEED_DEPLOY_HOST
+            FEED_DEPLOY_USER    = $env:FEED_DEPLOY_USER
+            FEED_DEPLOY_SSH_KEY = $env:FEED_DEPLOY_SSH_KEY
+            FEED_PUBLIC_URL     = $env:FEED_PUBLIC_URL
+          }
+          $missing = @($req.GetEnumerator() | Where-Object { [string]::IsNullOrWhiteSpace($_.Value) } | ForEach-Object { $_.Key })
+          if ($missing.Count -gt 0) { throw "Faltan secrets: $($missing -join ', ')" }
+          Write-Host "Secrets presentes."
+
+      - name: Descargar el artifact firmado del run ${{ inputs.run_id }}
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ env.ARTIFACT }}
+          path: ${{ env.STAGE }}
+          run-id: ${{ inputs.run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verificar integridad y firma del artifact
+        shell: pwsh
+        run: |
+          $stage = $env:STAGE
+          $index = Join-Path $stage "releases.win.json"
+          if (!(Test-Path -LiteralPath $index)) { throw "El artifact no trae releases.win.json." }
+
+          # 1. SHA256SUMS del propio artifact
+          $sums = Join-Path $stage "SHA256SUMS.txt"
+          if (!(Test-Path -LiteralPath $sums)) { throw "El artifact no trae SHA256SUMS.txt." }
+          foreach ($line in Get-Content -LiteralPath $sums) {
+            if ([string]::IsNullOrWhiteSpace($line)) { continue }
+            $parts = $line -split '\s+', 2
+            $expected = $parts[0].Trim().ToLowerInvariant()
+            $name = $parts[1].Trim()
+            $path = Join-Path $stage $name
+            if (!(Test-Path -LiteralPath $path)) { throw "SHA256SUMS menciona $name pero no esta en el artifact." }
+            $actual = (Get-FileHash -LiteralPath $path -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($actual -ne $expected) { throw "SHA256 no coincide para $name." }
+          }
+          Write-Host "SHA256SUMS.txt verificado."
+
+          # 2. El indice debe ofrecer justo la version que se pidio publicar
+          $json = Get-Content -LiteralPath $index -Raw | ConvertFrom-Json
+          $full = @($json.Assets | Where-Object { "$($_.Type)".ToLowerInvariant() -eq "full" })
+          if ($full.Count -eq 0) { throw "El indice no declara ningun asset Type=Full." }
+          $newest = $full | Sort-Object { [version]$_.Version } | Select-Object -Last 1
+          if ($newest.Version -ne $env:VERSION) {
+            throw "El artifact ofrece $($newest.Version) y se pidio publicar $env:VERSION."
+          }
+          Write-Host "El indice ofrece Full $($newest.Version) -> $($newest.FileName)"
+
+          # 3. La firma sigue siendo la de Vector Capital (no re-firmamos aca)
+          $exes = Get-ChildItem -Path $stage -Filter *.exe -File -ErrorAction SilentlyContinue
+          foreach ($exe in $exes) {
+            $sig = Get-AuthenticodeSignature -LiteralPath $exe.FullName
+            if ($sig.Status -ne "Valid") { throw "Firma invalida en $($exe.Name): $($sig.Status)" }
+            if ($sig.SignerCertificate.Subject -notlike "*Vector Capital Corredores De Bolsa Spa*") {
+              throw "Firmante inesperado en $($exe.Name)."
+            }
+            if ($null -eq $sig.TimeStamperCertificate) { throw "$($exe.Name) sin timestamp." }
+            Write-Host "$($exe.Name): firma valida y con timestamp."
+          }
+
+      - name: Confirmar que el feed publico responde antes de tocarlo
+        shell: pwsh
+        env:
+          FEED_PUBLIC_URL: ${{ secrets.FEED_PUBLIC_URL }}
+        run: |
+          $base = $env:FEED_PUBLIC_URL.TrimEnd('/')
+          # MaximumRedirection 0: el cliente Java tampoco sigue redirecciones.
+          try {
+            $r = Invoke-WebRequest -Uri "$base/releases.win.json" -MaximumRedirection 0 -TimeoutSec 15 -UseBasicParsing
+            Write-Host "Feed actual: HTTP $($r.StatusCode)"
+            $cur = ($r.Content | ConvertFrom-Json).Assets |
+                   Where-Object { "$($_.Type)".ToLowerInvariant() -eq "full" } |
+                   Sort-Object { [version]$_.Version } | Select-Object -Last 1
+            Write-Host "Version publicada hoy: $($cur.Version)"
+          } catch {
+            # Primera publicacion: el 404 es esperado y no debe frenar el job.
+            Write-Host "AVISO: no se pudo leer el feed actual ($($_.Exception.Message))."
+            Write-Host "       Si es la primera publicacion, es lo esperado."
+          }
+
+      - name: Publicar en el feed (scp + swap atomico del indice)
+        if: ${{ inputs.dry_run == false }}
+        shell: pwsh
+        env:
+          FEED_DEPLOY_HOST: ${{ secrets.FEED_DEPLOY_HOST }}
+          FEED_DEPLOY_USER: ${{ secrets.FEED_DEPLOY_USER }}
+          FEED_DEPLOY_SSH_KEY: ${{ secrets.FEED_DEPLOY_SSH_KEY }}
+          FEED_REMOTE_PATH: ${{ secrets.FEED_REMOTE_PATH }}
+        run: |
+          $remote = if ([string]::IsNullOrWhiteSpace($env:FEED_REMOTE_PATH)) {
+            "/home/voultech/app/VectorTrade2.0/updatefeed/releases"
+          } else { $env:FEED_REMOTE_PATH }
+
+          $key = Join-Path $env:RUNNER_TEMP "feed_key"
+          try {
+            # -NoNewline: una clave OpenSSH con CRLF de mas es rechazada por ssh.
+            $env:FEED_DEPLOY_SSH_KEY | Set-Content -NoNewline -Path $key -Encoding ascii
+            icacls $key /inheritance:r /grant:r "$($env:USERNAME):(R)" | Out-Null
+
+            $target = "$($env:FEED_DEPLOY_USER)@$($env:FEED_DEPLOY_HOST)"
+            $sshOpts = @("-i", $key, "-o", "StrictHostKeyChecking=accept-new", "-o", "ConnectTimeout=15")
+
+            # 1. Sube a un incoming/ temporal, no directo al feed: mientras se
+            #    copia, el feed sigue sirviendo la version anterior intacta.
+            $incoming = "$remote/.incoming-$env:VERSION"
+            & ssh @sshOpts $target "mkdir -p '$incoming'"
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo crear $incoming en el servidor." }
+
+            & scp @sshOpts -r "$env:STAGE\*" "${target}:$incoming/"
+            if ($LASTEXITCODE -ne 0) { throw "scp fallo al subir el feed." }
+
+            # 2. publish-feed.sh hace el resto en el servidor: valida hashes,
+            #    respalda el indice, copia los paquetes PRIMERO y recien despues
+            #    reemplaza releases.win.json de forma atomica. No reinicia nginx.
+            $publish = "$(Split-Path -Parent $remote)/publish-feed.sh"
+            & ssh @sshOpts $target "test -x '$publish' && FEED_ROOT='$remote' bash '$publish' --src '$incoming' || { echo 'FALTA $publish (corre bootstrap.sh en el servidor)'; exit 3; }"
+            if ($LASTEXITCODE -ne 0) { throw "publish-feed.sh fallo en el servidor (codigo $LASTEXITCODE)." }
+
+            & ssh @sshOpts $target "rm -rf '$incoming'"
+          } finally {
+            Remove-Item -LiteralPath $key -Force -ErrorAction SilentlyContinue
+          }
+
+      - name: Verificar el feed de punta a punta
+        if: ${{ inputs.dry_run == false }}
+        shell: pwsh
+        env:
+          FEED_PUBLIC_URL: ${{ secrets.FEED_PUBLIC_URL }}
+        run: |
+          $base = $env:FEED_PUBLIC_URL.TrimEnd('/')
+          $r = Invoke-WebRequest -Uri "$base/releases.win.json" -MaximumRedirection 0 -TimeoutSec 15 -UseBasicParsing
+          if ($r.StatusCode -ne 200) { throw "El indice responde HTTP $($r.StatusCode)." }
+
+          $newest = ($r.Content | ConvertFrom-Json).Assets |
+                    Where-Object { "$($_.Type)".ToLowerInvariant() -eq "full" } |
+                    Sort-Object { [version]$_.Version } | Select-Object -Last 1
+          if ($newest.Version -ne $env:VERSION) {
+            throw "El feed publico ofrece $($newest.Version), se esperaba $env:VERSION."
+          }
+
+          # El paquete tiene que estar realmente descargable, no solo declarado.
+          $pkg = Invoke-WebRequest -Uri "$base/$($newest.FileName)" -Method Head -MaximumRedirection 0 -TimeoutSec 20 -UseBasicParsing
+          if ($pkg.StatusCode -ne 200) { throw "El paquete responde HTTP $($pkg.StatusCode)." }
+
+          Write-Host "Feed OK: ofrece $($newest.Version) y el paquete se descarga."
+          "## Feed publicado: v$env:VERSION" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "- Indice y paquete verificados por HTTP (sin redirecciones)"  | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "- Sin reinicio de contenedores"                              | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+
+      - name: Resumen del dry-run
+        if: ${{ inputs.dry_run == true }}
+        shell: pwsh
+        run: |
+          "## Dry-run de publish-feed v$env:VERSION" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "- Artifact verificado (SHA256SUMS + firma + version del indice)" | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append
+          "- NO se escribio en el feed. Volve a correr con dry_run=false."  | Out-File -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8 -Append

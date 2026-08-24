@@ -1,0 +1,80 @@
+# =============================================================================
+#  vt2-updatefeed  -  feed de auto-update (Velopack) de VectorTrade
+#
+#  Sirve por HTTP el contenido de ${FEED_ROOT} bajo la ruta /updatevtautoupdate/,
+#  que es exactamente la que VelopackUpdater.java le pide al feed.
+#
+#  nginx lee los archivos directo del bind mount:
+#    -> publicar una version nueva NO requiere reiniciar ni recrear el contenedor.
+#
+#  Pensado para Portainer (Stacks -> Add stack -> Web editor). Todo lo ajustable
+#  esta en variables de entorno; no hay nada horneado en una imagen propia.
+#
+#  ANTES de crear el stack, en el servidor:
+#    bash bootstrap.sh     (crea el arbol y deja nginx/feed.conf + allowlist.inc)
+#
+#  ESTE ORDEN NO ES OPCIONAL. Si creas el stack primero, Docker no encuentra los
+#  archivos de los bind mounts y los crea como DIRECTORIOS vacios; nginx falla el
+#  include, el contenedor muere al arrancar y el sintoma es
+#  ERR_CONNECTION_REFUSED (nada escuchando en el puerto).
+#  Si ya te paso: `bash bootstrap.sh` lo detecta y lo repara, y despues hay que
+#  RECREAR el stack. `bash diagnose.sh` te lo dice explicitamente.
+#
+#  Puertos: confirma FEED_HTTP_PORT contra `ss -tlnp` antes de levantar. Este
+#  stack no toca ningun otro contenedor, pero un puerto ya tomado lo deja caido.
+# =============================================================================
+
+services:
+  updatefeed:
+    image: nginx:1.27-alpine
+    container_name: ${CONTAINER_NAME:-vt2-updatefeed}
+    restart: unless-stopped
+
+    # Solo publica el puerto HTTP. El TLS lo termina el reverse proxy que ya
+    # atiende vectortrade.cl (ver README, seccion "Decision de URL").
+    ports:
+      - "${FEED_BIND_ADDR:-0.0.0.0}:${FEED_HTTP_PORT:-8092}:80"
+
+    volumes:
+      # Contenido del feed. :ro -> el contenedor no puede corromper los paquetes;
+      # publicar escribe desde el host (publish-feed.sh), no desde nginx.
+      - ${SITE_ROOT:-/home/voultech/app/VectorTrade2.0/updatefeed/site}:/srv/site:ro
+      - ${FEED_ROOT:-/home/voultech/app/VectorTrade2.0/updatefeed/releases}:/srv/feed:ro
+      # Config editable sin reconstruir imagen.
+      - ${STACK_ROOT:-/home/voultech/app/VectorTrade2.0/updatefeed}/nginx/feed.conf:/etc/nginx/conf.d/default.conf:ro
+      # Lista blanca de IP, aparte para cambiar el alcance del piloto sin tocar
+      # feed.conf. Si este archivo no existe, nginx no arranca (include fallido).
+      - ${STACK_ROOT:-/home/voultech/app/VectorTrade2.0/updatefeed}/nginx/allowlist.inc:/etc/nginx/conf.d/allowlist.inc:ro
+
+    security_opt:
+      - no-new-privileges:true
+
+    # NOTA sobre endurecimiento adicional:
+    # `read_only: true` seria deseable, pero el entrypoint de nginx:alpine
+    # (docker-entrypoint.d/10-listen-on-ipv6-by-default.sh) puede intentar
+    # reescribir conf.d/default.conf al arrancar y fallar con rootfs de solo
+    # lectura. No se pudo verificar en esta maquina (no hay Docker), asi que se
+    # deja fuera a proposito: un contenedor que no arranca en PROD es peor que
+    # un rootfs escribible.
+    # Si lo quieres activar, hay que saltarse el entrypoint y probarlo primero
+    # en un host de pruebas:
+    #   entrypoint: ["nginx", "-g", "daemon off;"]
+    #   read_only: true
+    #   tmpfs: [/var/cache/nginx, /var/run]
+    # La proteccion que si importa ya esta: los dos bind mounts son :ro, asi que
+    # nginx no puede alterar el contenido del feed ni su propia config.
+
+    healthcheck:
+      # /healthz lo sirve nginx, no depende de que ya exista una release
+      # publicada (si apuntara a releases.win.json el stack nacería unhealthy).
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"

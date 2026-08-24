@@ -41,14 +41,14 @@ import java.util.Objects;
  *     {root}\packages\           <- aca dejamos el .nupkg descargado
  *
  * El packId sale de la property {@code application}, para que QA (VectorTradeQA) y produccion
- * (VectorTrade2) no compartan directorio ni feed. DEBE coincidir con el --packId del pipeline.
+ * (VectorTrade) no compartan directorio ni feed. DEBE coincidir con el --packId del pipeline.
  */
 @Slf4j
 public class VelopackUpdater {
 
     /** Canal del feed -> archivo releases.{channel}.json que genera vpk. */
     private static final String CHANNEL = "win";
-    private static final String DEFAULT_PACK_ID = "VectorTrade2";
+    private static final String DEFAULT_PACK_ID = "VectorTrade";
 
     // -------------------------------------------------------------------------
     //  1. Hooks de arranque: llamar como PRIMERA linea de main(), antes de launch()

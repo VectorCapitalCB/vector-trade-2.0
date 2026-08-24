@@ -9,8 +9,8 @@ descomprimirlo sobre la propia instalacion y recrear el `.lnk` con PowerShell).
 codigo -> mvn -Pwindows gluonfx:build -> VectorTrade.exe (native-image)
        -> vpk pack --signTemplate sign-file.cmd (SSL.com eSigner)
        -> feed firmado (releases.win.json + .nupkg + Setup.exe)
-       -> scp a 172.16.0.8:/home/azureuser/apps/VECTOR-TRADE-2.0/update/<canal>
-       -> nginx vt2-update lo sirve en http://172.16.0.8:8101/
+       -> publicacion atomica en 172.16.0.6:/home/voultech/app/VectorTrade2.0/updatefeed
+       -> nginx vt2-updatefeed lo sirve en http://172.16.0.6:8092/
        -> VelopackUpdater lee releases.win.json al arrancar
 ```
 
@@ -19,10 +19,9 @@ nativo sale de native-image sobre MSVC, o sea una maquina Windows).
 
 | Ruta | |
 |---|---|
-| `http://172.16.0.8:8101/` | pagina de descarga; se arma sola leyendo los feeds |
-| `http://172.16.0.8:8101/qa/` | feed QA (`VectorTradeQA`) |
-| `http://172.16.0.8:8101/prod/` | feed produccion (`VectorTrade2`) |
-| `http://172.16.0.8:8101/archive/` | cada release publicado, navegable, para rollback |
+| `http://172.16.0.6:8092/` | portal interno de descargas |
+| `http://172.16.0.6:8092/updatevtautoupdate/` | feed produccion (`VectorTrade`) |
+| `http://172.16.0.6:8092/updatevtautoupdate/archive/` | instaladores historicos |
 
 **Promover QA a produccion es recompilar, no copiar.** El packId, la URL del feed y los
 endpoints WebSocket quedan horneados en el exe nativo, asi que el binario de QA no puede
@@ -54,7 +53,7 @@ Para probar sin firmar ni publicar: `-NoSign -NoPublish`.
 | Entorno | packId / `application` | Feed |
 |---|---|---|
 | qa | `VectorTradeQA` | `http://172.16.0.8:8101/updatevt2` |
-| production | `VectorTrade2` | pendiente de definir |
+| production | `VectorTrade` | `http://172.16.0.6:8092/updatevtautoupdate` |
 
 El `packId` debe coincidir con la property `application`, porque `VelopackUpdater` lo usa
 para ubicar `%LOCALAPPDATA%\{packId}\Update.exe`. El script valida ambos.
