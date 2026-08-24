@@ -989,10 +989,29 @@ public class ActorPerSession extends AbstractActor {
                 HashMap<String, BlotterMessage.Portfolio> porfolios =
                         MainApp.getPortfolioMaps().get(portfolioRequest.getUsername());
 
+                String requestedName = portfolioRequest.getNamePortfolio() == null
+                        ? ""
+                        : portfolioRequest.getNamePortfolio().trim();
+                BlotterMessage.Portfolio existingPortfolio = findPortfolioIgnoreCase(porfolios, requestedName);
+                if (existingPortfolio != null) {
+                    log.warn("[Portfolio][NEW][DUPLICATE] usuario='{}' intento recrear '{}'; "
+                                    + "se preserva el portafolio existente con {} instrumentos",
+                            portfolioRequest.getUsername(), existingPortfolio.getNamePortfolio(),
+                            existingPortfolio.getAssetCount());
+
+                    BlotterMessage.PortfolioResponse portfolioResponse = BlotterMessage.PortfolioResponse.newBuilder()
+                            .addAllPostfolio(porfolios.values())
+                            .setMarketdataControllerId(portfolioRequest.getMarketdataControllerId())
+                            .setStatusPortfolio(BlotterMessage.StatusPortfolio.SNAPSHOT_PORTFOLIO)
+                            .build();
+                    sendMessages(portfolioResponse);
+                    return;
+                }
+
                 // Crea portafolio nuevo
                 BlotterMessage.Portfolio newPortfolio = BlotterMessage.Portfolio.newBuilder()
                         .setId(IDGenerator.getID())
-                        .setNamePortfolio(portfolioRequest.getNamePortfolio())
+                        .setNamePortfolio(requestedName)
                         .setUsername(portfolioRequest.getUsername())
                         .build();
 
@@ -1006,7 +1025,7 @@ public class ActorPerSession extends AbstractActor {
 
                 BlotterMessage.PortfolioResponse portfolioResponse = BlotterMessage.PortfolioResponse.newBuilder()
                         .setStatusPortfolio(BlotterMessage.StatusPortfolio.NEW_PORTFOLIO)
-                        .setNamePortfolio(portfolioRequest.getNamePortfolio())
+                        .setNamePortfolio(requestedName)
                         .setUsername(portfolioRequest.getUsername())
                         .setMarketdataControllerId(portfolioRequest.getMarketdataControllerId())
                         .addPostfolio(newPortfolio)
@@ -1168,6 +1187,19 @@ public class ActorPerSession extends AbstractActor {
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
+    }
+
+    static BlotterMessage.Portfolio findPortfolioIgnoreCase(
+            Map<String, BlotterMessage.Portfolio> portfolios, String requestedName) {
+        if (portfolios == null || requestedName == null || requestedName.isBlank()) {
+            return null;
+        }
+        String normalizedName = requestedName.trim();
+        return portfolios.values().stream()
+                .filter(Objects::nonNull)
+                .filter(portfolio -> normalizedName.equalsIgnoreCase(portfolio.getNamePortfolio().trim()))
+                .findFirst()
+                .orElse(null);
     }
 
 
