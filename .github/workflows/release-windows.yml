@@ -21,7 +21,8 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  APP_ID: VectorTrade
+  APP_ID: VectorTrade2
+  DATA_APP_ID: VectorTrade
   APP_TITLE: Vector Trade 2.0
   EXE_NAME: VectorTrade.exe
   FRONT_DIR: vector-trade-front
@@ -58,14 +59,20 @@ jobs:
           $content = Get-Content -LiteralPath $properties -Raw
           $content = [regex]::Replace($content, '(?m)^version=.*$', "version=$version")
           $content = [regex]::Replace($content, '(?m)^url=.*$', "url=$env:FEED_URL")
-          $content = [regex]::Replace($content, '(?m)^application=.*$', "application=$env:APP_ID")
+          $content = [regex]::Replace($content, '(?m)^application=.*$', "application=$env:DATA_APP_ID")
+          if ($content -match '(?m)^update\.packId=.*$') {
+            $content = [regex]::Replace($content, '(?m)^update\.packId=.*$', "update.packId=$env:APP_ID")
+          } else {
+            $content = $content.TrimEnd() + "`nupdate.packId=$env:APP_ID`n"
+          }
           Set-Content -LiteralPath $properties -Value $content -NoNewline -Encoding utf8
 
           $main = Get-Content -LiteralPath (Join-Path $env:FRONT_DIR 'src/main/java/cl/vc/blotter/MainApp.java') -Raw
           if (!$main.Contains('/blotter/enviroment/application.production.properties')) {
             throw 'MainApp no carga application.production.properties.'
           }
-          if (!$content.Contains("version=$version") -or !$content.Contains("url=$env:FEED_URL") -or !$content.Contains("application=$env:APP_ID")) {
+          if (!$content.Contains("version=$version") -or !$content.Contains("url=$env:FEED_URL") `
+              -or !$content.Contains("application=$env:DATA_APP_ID") -or !$content.Contains("update.packId=$env:APP_ID")) {
             throw 'No se pudo estampar la identidad completa del release.'
           }
           "version=$version" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
