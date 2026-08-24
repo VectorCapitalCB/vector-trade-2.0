@@ -18,6 +18,11 @@
                                 <TabPane fx:id="TabPaneLanzador" prefHeight="183.0" prefWidth="695">
                                     <tabs>
                                         <Tab fx:id="tabLanzador" closable="false" text="Lanzador de Ordenes">
+                                            <graphic>
+                                                <HBox spacing="6" styleClass="launch-wrap hint-host">
+                                                    <Button onAction="#abrirLanzador" text="↗" styleClass="launch-btn"/>
+                                                </HBox>
+                                            </graphic>
                                             <fx:include fx:id="lanzador" source="Lanzador.fxml" />
                                         </Tab>
                                     </tabs>
@@ -78,8 +83,7 @@
                         </VBox>
 
                         <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
-                            <fx:include fx:id="huincha" source="Huincha.fxml" />
-                            <HBox HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                            <StackPane HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
                                 <TabPane fx:id="tabPrincipa" nodeOrientation="LEFT_TO_RIGHT" tabClosingPolicy="UNAVAILABLE" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
                                     <Tab text="Datos del Mercado">
                                         <graphic>
@@ -98,7 +102,13 @@
                                         <fx:include fx:id="positionsView" source="PositionsView.fxml" />
                                     </Tab>
                                 </TabPane>
-                            </HBox>
+                                <AnchorPane minHeight="27" prefHeight="27" maxHeight="27" pickOnBounds="false"
+                                            StackPane.alignment="TOP_LEFT">
+                                    <fx:include fx:id="huincha" source="Huincha.fxml"
+                                                AnchorPane.topAnchor="4.0" AnchorPane.leftAnchor="272.0"
+                                                AnchorPane.rightAnchor="0.0"/>
+                                </AnchorPane>
+                            </StackPane>
                         </VBox>
                     </items>
                 </SplitPane>

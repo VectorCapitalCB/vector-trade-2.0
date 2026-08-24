@@ -15,9 +15,11 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.session.SessionsMessage;
 import cl.vc.module.protocolbuff.ws.vectortrade.MessageUtilVT;
 import cl.vc.service.MainApp;
+import cl.vc.service.admin.ClientLogDiagnosticsStore;
 import cl.vc.service.akka.actors.mkd.ActorPerSubscriptionMkd;
 import cl.vc.service.akka.actors.routing.ActorGroupPerAccount;
 import cl.vc.service.multibook.Multibook2Repository;
+import cl.vc.service.util.MongoHistoryRepository;
 import com.google.protobuf.Message;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -51,6 +53,8 @@ public class ActorPerSession extends AbstractActor {
     // el cliente ya tiene los datos y se mantiene al día por mensajes en vivo.
     private boolean connectInitialized = false;
     private String initializedUsername = null;
+    private String sessionUsername = null;
+    private final Set<String> sessionAccounts = new LinkedHashSet<>();
     private int debouncedConnects = 0;
     private long lastDebounceLogMs = 0L;
 
@@ -69,6 +73,7 @@ public class ActorPerSession extends AbstractActor {
     public Receive createReceive() {
 
         return receiveBuilder()
+                .match(ActorPerSubscriptionMkd.RefreshPreviousClose.class, this::onRefreshPreviousClose)
                 .match(ByteBuffer.class, this::onByteBuffer)
                 .match(BlotterMessage.PreselectRequest.class, this::onPreselect)
                 .match(BlotterMessage.SnapshotPositionHistory.class, this::onSnapshotPositionHistory)
@@ -101,6 +106,10 @@ public class ActorPerSession extends AbstractActor {
                 .match(MarketDataMessage.BolsaStats.class, this::onBolsaStats)
                 .match(BlotterMessage.SnapshotSimultaneas.class, this::onSnapshotSimultaneas)
                 .match(BlotterMessage.SnapshotPrestamos.class, this::onSnapshotPrestamos)
+                .match(BlotterMessage.HistoricalOrdersRequest.class, this::onHistoricalOrdersRequest)
+                .match(BlotterMessage.HistoricalOrdersSnapshot.class, this::onHistoricalOrdersSnapshot)
+                .match(BlotterMessage.ClientLogRequest.class, this::sendMessages)
+                .match(BlotterMessage.ClientLogResponse.class, this::onClientLogResponse)
                 .build();
     }
 
@@ -155,14 +164,18 @@ public class ActorPerSession extends AbstractActor {
 
             MainApp.getSessionAdminList().remove(getSelf());
 
-            // Limpiar sesión activa del mapa de admin
-            if (connect != null && !connect.getUsername().isEmpty()) {
-                MainApp.getUserActiveSessionsMap().remove(connect.getUsername());
-                MainApp.getUserSessionConnectedAt().remove(connect.getUsername());
-            }
-
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        } finally {
+            String username = sessionUsername;
+            if ((username == null || username.isBlank()) && connect != null) {
+                username = connect.getUsername();
+            }
+            if (username != null && !username.isBlank()) {
+                boolean removedCurrentSession = MainApp.getUserActiveSessionsMap().remove(username, session);
+                MainApp.getUserSessionActorsMap().remove(username, getSelf());
+                if (removedCurrentSession) MainApp.getUserSessionConnectedAt().remove(username);
+            }
         }
     }
 
@@ -211,12 +224,115 @@ public class ActorPerSession extends AbstractActor {
         sendMessages(stats);
     }
 
+    /**
+     * Reparte a los hijos MKD el aviso de que el Admin recargo cierres en Mongo.
+     *
+     * Va por mensaje y no por acceso directo a proposito: actorPerSubscriptionMkdHash es un HashMap
+     * sin sincronizar que solo debe tocarse desde el hilo de este actor. Cada hijo decide si el aviso
+     * le corresponde (compara el simbolo) y si tiene que re-emitir.
+     */
+    private void onRefreshPreviousClose(ActorPerSubscriptionMkd.RefreshPreviousClose msg) {
+        try {
+            for (ActorRef mkd : actorPerSubscriptionMkdHash.values()) {
+                if (mkd != null) mkd.tell(msg, ActorRef.noSender());
+            }
+        } catch (Exception ex) {
+            log.error("[VarPct] error repartiendo refresh de cierre en sesion {}: {}",
+                    idSession, ex.getMessage(), ex);
+        }
+    }
+
     public void onSnapshotPrestamos(BlotterMessage.SnapshotPrestamos snapshot) {
         sendMessages(snapshot);
     }
 
     public void onSnapshotSimultaneas(BlotterMessage.SnapshotSimultaneas snapshotSimultaneas) {
         sendMessages(snapshotSimultaneas);
+    }
+
+    private void onHistoricalOrdersSnapshot(BlotterMessage.HistoricalOrdersSnapshot snapshot) {
+        sendMessages(snapshot);
+    }
+
+    private void onClientLogResponse(BlotterMessage.ClientLogResponse response) {
+        ClientLogDiagnosticsStore.acceptAsync(sessionUsername, response);
+    }
+
+    private void onHistoricalOrdersRequest(BlotterMessage.HistoricalOrdersRequest request) {
+        if (!MongoHistoryRepository.isConnected()) {
+            sendMessages(historyError(request.getRequestId(),
+                    "El historico de ordenes no esta conectado a Mongo"));
+            return;
+        }
+        LinkedHashSet<String> allowed = new LinkedHashSet<>(sessionAccounts);
+        if (allowed.isEmpty()) {
+            sendMessages(historyError(request.getRequestId(), "No hay cuentas asignadas a esta sesion"));
+            return;
+        }
+
+        LinkedHashSet<String> selected = new LinkedHashSet<>();
+        if (request.getAccountsCount() == 0) {
+            selected.addAll(allowed);
+        } else {
+            request.getAccountsList().stream().filter(allowed::contains).forEach(selected::add);
+        }
+        if (selected.isEmpty()) {
+            sendMessages(historyError(request.getRequestId(), "La cuenta solicitada no esta autorizada"));
+            return;
+        }
+
+        final java.time.LocalDate from;
+        final java.time.LocalDate to;
+        try {
+            from = parseOptionalDate(request.getFrom());
+            to = parseOptionalDate(request.getTo());
+            if (from != null && to != null && from.isAfter(to)) {
+                throw new IllegalArgumentException("La fecha desde no puede ser posterior a la fecha hasta");
+            }
+        } catch (IllegalArgumentException e) {
+            sendMessages(historyError(request.getRequestId(), e.getMessage()));
+            return;
+        }
+
+        ActorRef self = getSelf();
+        java.util.concurrent.CompletableFuture
+                .supplyAsync(() -> MongoHistoryRepository.queryHistoricalOrders(
+                        selected, request.getSymbol(), from, to, request.getLimit()))
+                .whenComplete((result, error) -> {
+                    if (error != null) {
+                        log.error("[History] consulta fallida usuario={} cuentas={}: {}",
+                                initializedUsername, selected, error.toString());
+                        self.tell(historyError(request.getRequestId(), "No se pudo consultar el historico"),
+                                ActorRef.noSender());
+                        return;
+                    }
+                    BlotterMessage.HistoricalOrdersSnapshot.Builder snapshot =
+                            BlotterMessage.HistoricalOrdersSnapshot.newBuilder()
+                                    .setRequestId(request.getRequestId())
+                                    .setTruncated(result.truncated());
+                    for (MongoHistoryRepository.HistoricalOrderBundle bundle : result.orders()) {
+                        snapshot.addOrders(BlotterMessage.HistoricalOrderGroup.newBuilder()
+                                .setSummary(bundle.summary())
+                                .addAllExecutions(bundle.executions()));
+                    }
+                    self.tell(snapshot.build(), ActorRef.noSender());
+                });
+    }
+
+    private static java.time.LocalDate parseOptionalDate(String value) {
+        if (value == null || value.isBlank()) return null;
+        try {
+            return java.time.LocalDate.parse(value.trim());
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Fecha invalida: " + value);
+        }
+    }
+
+    private static BlotterMessage.HistoricalOrdersSnapshot historyError(String requestId, String message) {
+        return BlotterMessage.HistoricalOrdersSnapshot.newBuilder()
+                .setRequestId(requestId == null ? "" : requestId)
+                .setError(message == null ? "Error consultando el historico" : message)
+                .build();
     }
 
     public void onSnapshotPositionHistory(BlotterMessage.SnapshotPositionHistory snapshotPositions) {
@@ -462,7 +578,9 @@ public class ActorPerSession extends AbstractActor {
 
             // Registrar sesión activa para gestión desde el admin (idempotente).
             if (session != null && !username.isEmpty()) {
+                sessionUsername = username;
                 MainApp.getUserActiveSessionsMap().put(username, session);
+                MainApp.getUserSessionActorsMap().put(username, getSelf());
             }
 
             // ── DEBOUNCE ───────────────────────────────────────────────────────
@@ -482,6 +600,14 @@ public class ActorPerSession extends AbstractActor {
             }
 
             log.info("onConnect - procesando usuario: {}", username);
+
+            List<BlotterMessage.ClientLogRequest> pendingLogRequests =
+                    ClientLogDiagnosticsStore.pendingRequestsFor(username);
+            pendingLogRequests.forEach(this::sendMessages);
+            if (!pendingLogRequests.isEmpty()) {
+                log.info("[ClientLogs] Se reenviaron {} solicitudes pendientes al reconectar usuario={}",
+                        pendingLogRequests.size(), username);
+            }
 
             // Primera inicialización real de esta sesión.
             if (session != null && !username.isEmpty()) {
@@ -511,6 +637,8 @@ public class ActorPerSession extends AbstractActor {
             }
 
             if (userMsg != null) {
+                sessionAccounts.clear();
+                sessionAccounts.addAll(userMsg.getAccountList());
                 userMsg.getAccountList().forEach(this::addAccount);
             }
 

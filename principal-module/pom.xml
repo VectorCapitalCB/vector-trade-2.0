@@ -6,7 +6,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.VectorCapitalCB</groupId>
     <artifactId>principal-module</artifactId>
-    <version>1.4.4</version>
+    <version>1.4.5</version>
     <name>principal-module</name>
 
     <properties>

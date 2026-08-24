@@ -12,79 +12,52 @@
     <children>
         <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
             <children>
-                <HBox spacing="20">
+                <HBox alignment="CENTER_LEFT" spacing="14">
                     <padding>
-                        <Insets top="10"/>
+                        <Insets top="5" right="10" bottom="5" left="10"/>
                     </padding>
-                    <VBox.margin>
-                        <Insets bottom="10"/>
-                    </VBox.margin>
                     <children>
 
-                        <HBox spacing="20" alignment="CENTER_LEFT">
-                            <padding><Insets left="10"/></padding>
+                        <HBox spacing="14" alignment="CENTER_LEFT">
                             <children>
-                                <VBox>
-                                    <children>
-                                        <Label text="Instrumento">
-                                            <VBox.margin><Insets bottom="5"/></VBox.margin>
-                                        </Label>
-                                        <TextField fx:id="txtSymbol" nodeOrientation="LEFT_TO_RIGHT"
-                                                   prefHeight="11.0" prefWidth="80.0" VBox.vgrow="ALWAYS"/>
-                                    </children>
-                                </VBox>
+                                <HBox alignment="CENTER_LEFT" spacing="6">
+                                    <Label text="Instrumento"/>
+                                    <TextField fx:id="txtSymbol" nodeOrientation="LEFT_TO_RIGHT"
+                                               minHeight="28" prefHeight="28" maxHeight="28" prefWidth="80"/>
+                                </HBox>
 
-                                <VBox>
-                                    <children>
-                                        <Label text="Mercado">
-                                            <VBox.margin><Insets bottom="5"/></VBox.margin>
-                                        </Label>
-                                        <ChoiceBox fx:id="cbMarket" prefWidth="80"/>
-                                    </children>
-                                </VBox>
+                                <HBox alignment="CENTER_LEFT" spacing="6">
+                                    <Label text="Mercado"/>
+                                    <ChoiceBox fx:id="cbMarket" minHeight="28" prefHeight="28" maxHeight="28" prefWidth="80"/>
+                                </HBox>
 
-                                <VBox>
-                                    <children>
-                                        <Label text="Liquidación">
-                                            <VBox.margin><Insets bottom="5"/></VBox.margin>
-                                        </Label>
-                                        <ChoiceBox fx:id="settlType" prefWidth="80"/>
-                                    </children>
-                                </VBox>
+                                <HBox fx:id="settlementControls" alignment="CENTER_LEFT" spacing="6">
+                                    <Label text="Liquidación"/>
+                                    <ChoiceBox fx:id="settlType" minHeight="28" prefHeight="28" maxHeight="28" prefWidth="80"/>
+                                </HBox>
 
-                                <VBox>
-                                    <children>
-                                        <Label text="Clase">
-                                            <VBox.margin><Insets bottom="5"/></VBox.margin>
-                                        </Label>
-                                        <ChoiceBox fx:id="securityType" prefWidth="80"/>
-                                    </children>
-                                </VBox>
+                                <HBox alignment="CENTER_LEFT" spacing="6">
+                                    <Label text="Clase"/>
+                                    <ChoiceBox fx:id="securityType" minHeight="28" prefHeight="28" maxHeight="28" prefWidth="80"/>
+                                </HBox>
 
-                                <VBox>
-                                    <children>
-                                        <Label text=""><VBox.margin><Insets bottom="5"/></VBox.margin></Label>
-                                        <Button onAction="#addSymbol" prefHeight="35" prefWidth="90" text="Agregar"/>
-                                    </children>
-                                </VBox>
-
-                                <VBox>
-                                    <children>
-                                        <Label text=""><VBox.margin><Insets bottom="5"/></VBox.margin></Label>
-                                        <Button fx:id="removeSymbol" onAction="#removeSymbol" prefHeight="35"
-                                                prefWidth="90" text="Remover"/>
-                                    </children>
-                                </VBox>
+                                <Button onAction="#addSymbol" minHeight="28" prefHeight="28" maxHeight="28"
+                                        prefWidth="90" text="Agregar"/>
+                                <Button fx:id="removeSymbol" onAction="#removeSymbol"
+                                        minHeight="28" prefHeight="28" maxHeight="28"
+                                        prefWidth="90" text="Remover"/>
                             </children>
                         </HBox>
                         <Region prefWidth="50" HBox.hgrow="ALWAYS"/>
-                        <HBox spacing="20" alignment="CENTER_RIGHT">
-                            <padding><Insets right="10"/></padding>
+                        <HBox alignment="CENTER_RIGHT">
                             <children>
                                 <Button fx:id="removePortafolio"
                                         onAction="#deletePorfolio"
-                                        prefHeight="35" prefWidth="140"
-                                        text="Eliminar Portafolio"/>
+                                        minHeight="28" prefHeight="28" maxHeight="28" prefWidth="90"
+                                        styleClass="button, portfolio-delete-button"
+                                        text="Eliminar">
+                                    <tooltip><Tooltip text="Eliminar portafolio"/></tooltip>
+                                </Button>
                             </children>
                         </HBox>
 
@@ -112,7 +85,6 @@
                                 <TableColumn fx:id="openpriceGen" prefWidth="65" text="Apertura" visible="false"/>
                                 <TableColumn fx:id="closepriceGen" prefWidth="65" text="Ultimo"/>
                                 <TableColumn fx:id="previusCloseGen" prefWidth="65" text="Cierre Ant."/>
-                                <TableColumn fx:id="ohlcvCloseGen" prefWidth="65" text="Cierre"/>
                                 <TableColumn fx:id="highpriceGen" prefWidth="65" text="Mayor"/>
                                 <TableColumn fx:id="lowpriceGen" prefWidth="65" text="Menor" visible="false"/>
                                 <TableColumn fx:id="amountGen" prefWidth="95" text="Monto"/>

@@ -9,6 +9,8 @@ import cl.vc.blotter.Repository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.*;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Properties;
 
 @Slf4j
@@ -63,6 +65,8 @@ public class ConfigManager {
                     cfg.setOfferQtyGen(getBool(jo, "offerQtyGen", true));
                     cfg.setOpenpriceGen(getBool(jo, "openpriceGen", true));
                     cfg.setClosepriceGen(getBool(jo, "closepriceGen", true));
+                    cfg.setPreviusCloseGen(getBool(jo, "previusCloseGen", true));
+                    cfg.setOhlcvCloseGen(getBool(jo, "ohlcvCloseGen", true));
                     cfg.setHighpriceGen(getBool(jo, "highpriceGen", true));
                     cfg.setLowpriceGen(getBool(jo, "lowpriceGen", true));
                     cfg.setAmountGen(getBool(jo, "amountGen", true));
@@ -71,6 +75,7 @@ public class ConfigManager {
                     cfg.setDesbalancetheoric(getBool(jo, "desbalancetheoric", true));
                     cfg.setPriceTheoric(getBool(jo, "priceTheoric", true));
                     cfg.setAmountTheoric(getBool(jo, "amountTheoric", true));
+                    cfg.setOrderColumns(getBoolMap(jo, "orderColumns"));
                     return cfg;
                 }
             } else {
@@ -100,6 +105,8 @@ public class ConfigManager {
             jo.addProperty("offerQtyGen", cfg.isOfferQtyGen());
             jo.addProperty("openpriceGen", cfg.isOpenpriceGen());
             jo.addProperty("closepriceGen", cfg.isClosepriceGen());
+            jo.addProperty("previusCloseGen", cfg.isPreviusCloseGen());
+            jo.addProperty("ohlcvCloseGen", cfg.isOhlcvCloseGen());
             jo.addProperty("highpriceGen", cfg.isHighpriceGen());
             jo.addProperty("lowpriceGen", cfg.isLowpriceGen());
             jo.addProperty("amountGen", cfg.isAmountGen());
@@ -108,6 +115,7 @@ public class ConfigManager {
             jo.addProperty("desbalancetheoric", cfg.isDesbalancetheoric());
             jo.addProperty("priceTheoric", cfg.isPriceTheoric());
             jo.addProperty("amountTheoric", cfg.isAmountTheoric());
+            jo.add("orderColumns", toJsonObject(cfg.getOrderColumns()));
 
             try (FileWriter writer = new FileWriter(file)) {
                 gson.toJson(jo, writer);
@@ -127,5 +135,30 @@ public class ConfigManager {
             }
         } catch (Exception ignored) {}
         return def;
+    }
+
+    private static Map<String, Boolean> getBoolMap(JsonObject jo, String key) {
+        Map<String, Boolean> values = new LinkedHashMap<>();
+        try {
+            if (jo != null && jo.has(key) && jo.get(key).isJsonObject()) {
+                JsonObject map = jo.getAsJsonObject(key);
+                for (Map.Entry<String, JsonElement> entry : map.entrySet()) {
+                    JsonElement element = entry.getValue();
+                    if (element != null && element.isJsonPrimitive()) {
+                        values.put(entry.getKey(), element.getAsBoolean());
+                    }
+                }
+            }
+        } catch (Exception ignored) {
+        }
+        return values;
+    }
+
+    private static JsonObject toJsonObject(Map<String, Boolean> values) {
+        JsonObject json = new JsonObject();
+        if (values != null) {
+            values.forEach(json::addProperty);
+        }
+        return json;
     }
 }

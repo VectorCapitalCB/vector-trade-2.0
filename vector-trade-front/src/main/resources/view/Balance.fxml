@@ -10,9 +10,9 @@
             <TitledPane fx:id="pane1" collapsible="false" maxHeight="Infinity" text="Saldo de cartera" HBox.hgrow="ALWAYS">
                 <ScrollPane fitToHeight="true" fitToWidth="true" HBox.hgrow="ALWAYS">
                     <AnchorPane>
-                        <VBox layoutX="5" layoutY="5" maxWidth="Infinity" spacing="15" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" VBox.vgrow="ALWAYS">
+                        <VBox layoutX="5" layoutY="5" maxWidth="Infinity" spacing="12" AnchorPane.bottomAnchor="0" AnchorPane.leftAnchor="0" AnchorPane.rightAnchor="0" AnchorPane.topAnchor="0" VBox.vgrow="ALWAYS">
 
-                            <HBox alignment="CENTER_LEFT" spacing="10.0" HBox.hgrow="ALWAYS">
+                            <HBox alignment="CENTER_LEFT" spacing="10.0" styleClass="balance-filter-bar" HBox.hgrow="ALWAYS">
                                 <Label text="Cuenta" />
                                 <TextField fx:id="accountFilter" minWidth="150" prefWidth="150" promptText="Filtra cuenta…" />
                                 <Label text="Divisa" />
@@ -23,42 +23,41 @@
                                 <VBox.margin>
                                     <Insets />
                                 </VBox.margin>
-                                <padding>
-                                    <Insets bottom="10.0" top="10.0" />
-                                </padding>
                             </HBox>
-                            <HBox maxWidth="Infinity" prefHeight="394.0" prefWidth="588.0" spacing="20" style="-fx-border-color: #161a20;" HBox.hgrow="ALWAYS">
-                                <VBox maxWidth="Infinity" spacing="5" VBox.vgrow="ALWAYS">
-                                    <StackPane alignment="CENTER">
-                                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="SALDO" />
+                            <HBox alignment="TOP_LEFT" fillHeight="true" maxWidth="Infinity" spacing="12"
+                                  styleClass="balance-overview" HBox.hgrow="ALWAYS">
+                                <VBox maxHeight="Infinity" maxWidth="Infinity" minWidth="280" spacing="8"
+                                      styleClass="balance-section" HBox.hgrow="ALWAYS">
+                                    <StackPane alignment="CENTER_LEFT">
+                                        <Label styleClass="balance-section-title" text="Saldo" />
                                     </StackPane>
-                                    <Region minHeight="3" />
-                                    <GridPane alignment="CENTER_LEFT" hgap="10" vgap="10" GridPane.hgrow="ALWAYS" GridPane.vgrow="ALWAYS">
+                                    <GridPane alignment="CENTER_LEFT" hgap="14" vgap="8"
+                                              styleClass="balance-grid" GridPane.hgrow="ALWAYS">
                                         <columnConstraints>
-                                            <ColumnConstraints halignment="LEFT" />
-                                            <ColumnConstraints hgrow="ALWAYS" minWidth="120" />
+                                            <ColumnConstraints halignment="LEFT" minWidth="90" />
+                                            <ColumnConstraints hgrow="ALWAYS" minWidth="140" />
                                         </columnConstraints>
 
-                                        <Label style="-fx-padding: 0 0 0 15;" text="Cuenta" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                        <TextField fx:id="cuentaField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" />
+                                        <Label styleClass="balance-field-label" text="Cuenta" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                        <TextField fx:id="cuentaField" editable="false" promptText="" styleClass="balance-readonly"
+                                                   GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" />
 
-                                        <Label style="-fx-padding: 0 0 0 15;" text="Cartera" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                        <TextField fx:id="carteraField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
+                                        <Label styleClass="balance-field-label" text="Cartera" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                        <TextField fx:id="carteraField" alignment="CENTER_RIGHT" editable="false" promptText="" styleClass="balance-readonly"
+                                                   GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
 
-                                        <Label style="-fx-padding: 0 0 0 15;" text="Cupo" GridPane.columnIndex="0" GridPane.rowIndex="2" />
-                                        <TextField fx:id="cupoField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="2" />
+                                        <Label styleClass="balance-field-label" text="Cupo" GridPane.columnIndex="0" GridPane.rowIndex="2" />
+                                        <TextField fx:id="cupoField" alignment="CENTER_RIGHT" editable="false" promptText="" styleClass="balance-readonly"
+                                                   GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="2" />
 
-                                        <Label style="-fx-font-weight: bold; -fx-padding: 0 0 0 15;" text="Disponible" GridPane.columnIndex="0" GridPane.rowIndex="3" />
-                                        <TextField fx:id="saldoDisponibleField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3" />
-                                        <rowConstraints>
-                                            <RowConstraints vgrow="ALWAYS" />
-                                            <RowConstraints vgrow="ALWAYS" />
-                                            <RowConstraints vgrow="ALWAYS" />
-                                            <RowConstraints vgrow="ALWAYS" />
-                                        </rowConstraints>
+                                        <Label styleClass="balance-field-label, balance-emphasis-label" text="Disponible" GridPane.columnIndex="0" GridPane.rowIndex="3" />
+                                        <TextField fx:id="saldoDisponibleField" alignment="CENTER_RIGHT" editable="false" promptText=""
+                                                   styleClass="balance-readonly, balance-available"
+                                                   GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="3" />
                                     </GridPane>
 
-                                    <VBox maxWidth="Infinity" spacing="5" VBox.vgrow="ALWAYS">
+                                    <VBox fx:id="garantiasSection" managed="false" maxWidth="Infinity"
+                                          spacing="5" visible="false" VBox.vgrow="ALWAYS">
                                         <StackPane alignment="CENTER">
                                             <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="GARANTÍAS" />
                                         </StackPane>
@@ -93,52 +92,49 @@
                                         </GridPane>
                                     </VBox>
                                 </VBox>
-                                <VBox maxWidth="Infinity" prefHeight="405.0" prefWidth="241.0" spacing="3" VBox.vgrow="ALWAYS">
-                                    <StackPane alignment="CENTER">
-                                        <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="ÓRDENES ACTIVAS" />
+                                <VBox maxHeight="Infinity" maxWidth="Infinity" minWidth="280" spacing="8"
+                                      styleClass="balance-section" HBox.hgrow="ALWAYS">
+                                    <StackPane alignment="CENTER_LEFT">
+                                        <Label styleClass="balance-section-title" text="Actividad de órdenes" />
                                     </StackPane>
-                                    <Region minHeight="5" />
-                                    <GridPane alignment="CENTER_LEFT" hgap="10" vgap="10" GridPane.hgrow="ALWAYS" GridPane.vgrow="ALWAYS">
+                                    <Label styleClass="balance-subsection-title" text="Activas" />
+                                    <GridPane alignment="CENTER_LEFT" hgap="14" vgap="8"
+                                              styleClass="balance-grid" GridPane.hgrow="ALWAYS">
                                         <columnConstraints>
-                                            <ColumnConstraints halignment="LEFT" />
-                                            <ColumnConstraints hgrow="ALWAYS" minWidth="120" />
+                                            <ColumnConstraints halignment="LEFT" minWidth="90" />
+                                            <ColumnConstraints hgrow="ALWAYS" minWidth="140" />
                                         </columnConstraints>
 
-                                        <Label style="-fx-padding: 0 0 0 0;" text="Compras" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                        <TextField fx:id="ordenesActivasComprasField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" />
+                                        <Label styleClass="balance-field-label" text="Compras" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                        <TextField fx:id="ordenesActivasComprasField" alignment="CENTER_RIGHT" editable="false" promptText=""
+                                                   styleClass="balance-readonly" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" />
 
-                                        <Label style="-fx-padding: 0 0 0 0;" text="Ventas" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                        <TextField fx:id="ordenesActivasVentasField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
-                                        <rowConstraints>
-                                            <RowConstraints vgrow="ALWAYS" />
-                                            <RowConstraints vgrow="ALWAYS" />
-                                        </rowConstraints>
+                                        <Label styleClass="balance-field-label" text="Ventas" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                        <TextField fx:id="ordenesActivasVentasField" alignment="CENTER_RIGHT" editable="false" promptText=""
+                                                   styleClass="balance-readonly" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
                                     </GridPane>
 
-                                    <VBox maxWidth="Infinity" spacing="10" VBox.vgrow="ALWAYS">
-                                        <StackPane alignment="CENTER">
-                                            <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="ÓRDENES CALZADAS" />
-                                        </StackPane>
-                                        <Region minHeight="0.0" prefHeight="0.0" prefWidth="241.0" />
-                                        <GridPane alignment="CENTER_LEFT" hgap="10" vgap="10" GridPane.hgrow="ALWAYS" GridPane.vgrow="ALWAYS">
+                                    <VBox maxWidth="Infinity" spacing="8">
+                                        <Label styleClass="balance-subsection-title" text="Calzadas" />
+                                        <GridPane alignment="CENTER_LEFT" hgap="14" vgap="8"
+                                                  styleClass="balance-grid" GridPane.hgrow="ALWAYS">
                                             <columnConstraints>
-                                                <ColumnConstraints halignment="LEFT" />
-                                                <ColumnConstraints hgrow="ALWAYS" minWidth="120" />
+                                                <ColumnConstraints halignment="LEFT" minWidth="90" />
+                                                <ColumnConstraints hgrow="ALWAYS" minWidth="140" />
                                             </columnConstraints>
 
-                                            <Label style="-fx-padding: 0 0 0 0;" text="Compras" GridPane.columnIndex="0" GridPane.rowIndex="0" />
-                                            <TextField fx:id="ordenesCalzadasComprasField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" />
+                                            <Label styleClass="balance-field-label" text="Compras" GridPane.columnIndex="0" GridPane.rowIndex="0" />
+                                            <TextField fx:id="ordenesCalzadasComprasField" alignment="CENTER_RIGHT" editable="false" promptText=""
+                                                       styleClass="balance-readonly" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="0" />
 
-                                            <Label style="-fx-padding: 0 0 0 0;" text="Ventas" GridPane.columnIndex="0" GridPane.rowIndex="1" />
-                                            <TextField fx:id="ordenesCalzadasVentasField" editable="false" promptText="" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
-                                            <rowConstraints>
-                                                <RowConstraints vgrow="ALWAYS" />
-                                                <RowConstraints vgrow="ALWAYS" />
-                                            </rowConstraints>
+                                            <Label styleClass="balance-field-label" text="Ventas" GridPane.columnIndex="0" GridPane.rowIndex="1" />
+                                            <TextField fx:id="ordenesCalzadasVentasField" alignment="CENTER_RIGHT" editable="false" promptText=""
+                                                       styleClass="balance-readonly" GridPane.columnIndex="1" GridPane.hgrow="ALWAYS" GridPane.rowIndex="1" />
                                         </GridPane>
                                     </VBox>
 
-                                    <VBox maxWidth="Infinity" spacing="10" VBox.vgrow="ALWAYS">
+                                    <VBox fx:id="ordenesCestaSection" managed="false" maxWidth="Infinity"
+                                          spacing="10" visible="false" VBox.vgrow="ALWAYS">
                                         <StackPane alignment="CENTER">
                                             <Label style="-fx-font-size: 14px; -fx-font-weight: bold;" text="ÓRDENES CESTA O ALGORITMOS" />
                                         </StackPane>

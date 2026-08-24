@@ -32,6 +32,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import java.util.ResourceBundle;
@@ -72,6 +73,24 @@ public class MultibookController implements Initializable {
     private HBox pageBar;
 
     @FXML
+    private Button renamePageButton;
+
+    @FXML
+    private HBox configControls;
+
+    @FXML
+    private ToggleButton statisticsToggle;
+
+    @FXML
+    private ToggleButton trendToggle;
+
+    @FXML
+    private ComboBox<Integer> pageBookCount;
+
+    @FXML
+    private ComboBox<Integer> pageDepth;
+
+    @FXML
     private StackPane content;
 
     /** Indice de la ventana dentro del layout local guardado. */
@@ -87,9 +106,14 @@ public class MultibookController implements Initializable {
 
     private JSONObject savedWindow;
     private boolean switchingConfig;
+    private boolean switchingPageOptions;
+    private boolean statisticsVisible = true;
+    private boolean trendVisible = true;
 
     @Override
     public void initialize(URL url, ResourceBundle resourceBundle) {
+        pageBookCount.getItems().setAll(10, 20, 30, 40, 50);
+        pageDepth.getItems().setAll(3, 5, 10, 15);
         configs.setOnAction(event -> {
             String selected = configs.getSelectionModel().getSelectedItem();
             if (!switchingConfig && selected != null && !selected.equals(layoutName)) {
@@ -104,8 +128,17 @@ public class MultibookController implements Initializable {
         this.stage = stage;
         this.windowIndex = windowIndex;
         this.savedWindow = saved;
+        statisticsVisible = saved == null || saved.optBoolean("statisticsVisible", true);
+        trendVisible = saved == null || saved.optBoolean("trendVisible", true);
+        statisticsToggle.setSelected(statisticsVisible);
+        trendToggle.setSelected(trendVisible);
 
         applyGeometry(saved);
+        stage.xProperty().addListener((observable, oldValue, newValue) -> persist());
+        stage.yProperty().addListener((observable, oldValue, newValue) -> persist());
+        stage.widthProperty().addListener((observable, oldValue, newValue) -> persist());
+        stage.heightProperty().addListener((observable, oldValue, newValue) -> persist());
+        stage.maximizedProperty().addListener((observable, oldValue, newValue) -> persist());
         stage.setOnCloseRequest(event -> close());
 
         boolean firstWindow = document == null;
@@ -140,6 +173,7 @@ public class MultibookController implements Initializable {
         if (findLayout(layoutName) == null) {
             layoutName = document.getJSONArray("layouts").getJSONObject(0).optString("name");
         }
+        normalizeOverflowingPages();
         showPage(clampPage(savedWindow == null ? 0 : savedWindow.optInt("page", 0)));
         renderConfigBar();
     }
@@ -152,6 +186,7 @@ public class MultibookController implements Initializable {
         layoutName = findLayout(layout) == null
                 ? document.getJSONArray("layouts").getJSONObject(0).optString("name")
                 : layout;
+        normalizeOverflowingPages();
         showPage(clampPage(page));
         renderConfigBar();
     }
@@ -160,7 +195,7 @@ public class MultibookController implements Initializable {
 
     private static JSONObject emptyDocument() {
         return new JSONObject()
-                .put("version", 2)
+                .put("version", 3)
                 .put("active", "Default")
                 .put("layouts", new JSONArray().put(newLayoutJson("Default")));
     }
@@ -169,7 +204,15 @@ public class MultibookController implements Initializable {
         return new JSONObject()
                 .put("name", name)
                 .put("pages", new JSONArray().put(
-                        new JSONObject().put("name", "1").put("books", new JSONArray())));
+                        newPageJson("1")));
+    }
+
+    private static JSONObject newPageJson(String name) {
+        return new JSONObject()
+                .put("name", name)
+                .put("bookCount", 10)
+                .put("depth", 5)
+                .put("books", new JSONArray());
     }
 
     private static JSONObject findLayout(String name) {
@@ -248,7 +291,18 @@ public class MultibookController implements Initializable {
         if (grid == null || currentPage < 0 || currentPage >= pages().length()) {
             return false;
         }
-        pages().getJSONObject(currentPage).put("books", grid.books());
+        JSONObject page = pages().getJSONObject(currentPage);
+        JSONArray merged = grid.books();
+        JSONArray previous = page.optJSONArray("books");
+        if (previous != null) {
+            for (int i = 0; i < previous.length(); i++) {
+                JSONObject hidden = previous.optJSONObject(i);
+                if (hidden != null && hidden.optInt("slot", -1) >= grid.getBookCount()) {
+                    merged.put(new JSONObject(hidden.toString()));
+                }
+            }
+        }
+        page.put("books", merged);
         return true;
     }
 
@@ -264,19 +318,26 @@ public class MultibookController implements Initializable {
 
             release();
 
+            JSONObject pageConfig = pages().getJSONObject(page);
+            int bookCount = pageBookCount(pageConfig);
+            int depth = pageDepth(pageConfig);
+
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/MultiLibroEmergente.fxml"));
             Parent gridPane = loader.load();
             grid = loader.getController();
 
             restoring = true;
             try {
-                grid.attach(page, pages().getJSONObject(page).optJSONArray("books"));
+                grid.attach(page, pageConfig.optJSONArray("books"), bookCount, depth);
             } finally {
                 restoring = false;
             }
+            grid.setSupplementaryVisibility(statisticsVisible, trendVisible);
+            grid.setMultibookSettingsAction(this::toggleConfigControls);
 
             content.getChildren().setAll(gridPane);
             currentPage = page;
+            renderPageOptions(pageConfig);
 
             stage.setTitle("Multi Libro - " + layoutName + " - Página " + pageName(page));
 
@@ -296,6 +357,174 @@ public class MultibookController implements Initializable {
         }
         currentPage = -1;
         content.getChildren().clear();
+    }
+
+    @FXML
+    private void toggleStatistics() {
+        statisticsVisible = statisticsToggle.isSelected();
+        applySupplementaryVisibility();
+        persist();
+    }
+
+    @FXML
+    private void toggleTrend() {
+        trendVisible = trendToggle.isSelected();
+        applySupplementaryVisibility();
+        persist();
+    }
+
+    private void applySupplementaryVisibility() {
+        if (grid != null) {
+            grid.setSupplementaryVisibility(statisticsVisible, trendVisible);
+        }
+    }
+
+    private static int pageBookCount(JSONObject page) {
+        if (page.has("bookCount")) {
+            return LibroEmergentePrincipalController.normalizeBookCount(page.optInt("bookCount", 10));
+        }
+        int highestSlot = -1;
+        JSONArray books = page.optJSONArray("books");
+        if (books != null) {
+            for (int i = 0; i < books.length(); i++) {
+                highestSlot = Math.max(highestSlot, books.getJSONObject(i).optInt("slot", -1));
+            }
+        }
+        return Math.min(50, Math.max(10, ((highestSlot + 10) / 10) * 10));
+    }
+
+    private static int pageDepth(JSONObject page) {
+        int depth = page.optInt("depth", 5);
+        return depth == 3 || depth == 10 || depth == 15 ? depth : 5;
+    }
+
+    private void renderPageOptions(JSONObject page) {
+        switchingPageOptions = true;
+        try {
+            int count = pageBookCount(page);
+            int depth = pageDepth(page);
+            page.put("bookCount", count).put("depth", depth);
+            pageBookCount.getSelectionModel().select(Integer.valueOf(count));
+            pageDepth.getSelectionModel().select(Integer.valueOf(depth));
+        } finally {
+            switchingPageOptions = false;
+        }
+    }
+
+    @FXML
+    private void changePageBookCount() {
+        Integer selected = pageBookCount.getValue();
+        if (switchingPageOptions || selected == null || currentPage < 0) {
+            return;
+        }
+        List<MultibookController> matchingWindows = Repository.getControllerMultibook().values().stream()
+                .filter(window -> layoutName.equals(window.layoutName))
+                .toList();
+        matchingWindows.forEach(MultibookController::writePage);
+        int depth = pageDepth(pages().getJSONObject(currentPage));
+        int pageToShow = Math.min(currentPage, repaginateLayout(selected, depth) - 1);
+        saveDocument();
+        matchingWindows.forEach(window -> {
+            int targetPage = window == this ? pageToShow : window.clampPage(window.currentPage);
+            window.release();
+            window.showPage(targetPage);
+        });
+    }
+
+    /** Redistribuye todos los símbolos del diseño, respetando su orden, según el tamaño elegido. */
+    private int repaginateLayout(int bookCount, int depth) {
+        JSONArray repaginated = repaginatePages(pages(), bookCount, depth);
+        layout().put("pages", repaginated);
+        return repaginated.length();
+    }
+
+    /** Migra configuraciones antiguas que guardaban más símbolos de los que alcanzaban a mostrar. */
+    private void normalizeOverflowingPages() {
+        JSONArray currentPages = pages();
+        if (currentPages.length() == 0) {
+            layout().put("pages", new JSONArray().put(newPageJson("1")));
+            return;
+        }
+        int bookCount = pageBookCount(currentPages.getJSONObject(0));
+        int depth = pageDepth(currentPages.getJSONObject(0));
+        int totalBooks = 0;
+        boolean hiddenBooks = false;
+        for (int pageIndex = 0; pageIndex < currentPages.length(); pageIndex++) {
+            JSONArray books = currentPages.getJSONObject(pageIndex).optJSONArray("books");
+            if (books == null) {
+                continue;
+            }
+            for (int bookIndex = 0; bookIndex < books.length(); bookIndex++) {
+                JSONObject book = books.optJSONObject(bookIndex);
+                if (book != null && !book.optString("symbol").isBlank()) {
+                    totalBooks++;
+                    hiddenBooks |= book.optInt("slot", -1) >= bookCount;
+                }
+            }
+        }
+        int requiredPages = Math.max(1, (totalBooks + bookCount - 1) / bookCount);
+        if (!hiddenBooks && requiredPages <= currentPages.length()) {
+            return;
+        }
+        layout().put("pages", repaginatePages(currentPages, bookCount, depth));
+        MultibookLayoutStore.saveDocument(document);
+    }
+
+    static JSONArray repaginatePages(JSONArray oldPages, int bookCount, int depth) {
+        List<JSONObject> orderedBooks = new ArrayList<>();
+        for (int pageIndex = 0; pageIndex < oldPages.length(); pageIndex++) {
+            JSONArray books = oldPages.getJSONObject(pageIndex).optJSONArray("books");
+            if (books == null) {
+                continue;
+            }
+            List<JSONObject> pageBooks = new ArrayList<>();
+            for (int bookIndex = 0; bookIndex < books.length(); bookIndex++) {
+                JSONObject book = books.optJSONObject(bookIndex);
+                if (book != null && !book.optString("symbol").isBlank()) {
+                    pageBooks.add(new JSONObject(book.toString()));
+                }
+            }
+            pageBooks.sort(Comparator.comparingInt(book -> book.optInt("slot", Integer.MAX_VALUE)));
+            orderedBooks.addAll(pageBooks);
+        }
+
+        int pageCount = Math.max(1, (orderedBooks.size() + bookCount - 1) / bookCount);
+        JSONArray repaginated = new JSONArray();
+        for (int pageIndex = 0; pageIndex < pageCount; pageIndex++) {
+            String name = pageIndex < oldPages.length()
+                    ? oldPages.getJSONObject(pageIndex).optString("name", String.valueOf(pageIndex + 1))
+                    : String.valueOf(pageIndex + 1);
+            JSONObject page = newPageJson(name)
+                    .put("bookCount", bookCount)
+                    .put("depth", depth);
+            JSONArray books = page.getJSONArray("books");
+            int from = pageIndex * bookCount;
+            int to = Math.min(from + bookCount, orderedBooks.size());
+            for (int bookIndex = from; bookIndex < to; bookIndex++) {
+                books.put(orderedBooks.get(bookIndex).put("slot", bookIndex - from));
+            }
+            repaginated.put(page);
+        }
+        return repaginated;
+    }
+
+    @FXML
+    private void changePageDepth() {
+        Integer selected = pageDepth.getValue();
+        if (switchingPageOptions || selected == null || currentPage < 0) {
+            return;
+        }
+        writePage();
+        pages().getJSONObject(currentPage).put("depth", selected);
+        saveDocument();
+        showPage(currentPage);
+    }
+
+    @FXML
+    private void toggleConfigControls() {
+        boolean visible = !configControls.isVisible();
+        configControls.setVisible(visible);
+        configControls.setManaged(visible);
     }
 
     // ------------------------------------------------------------------ configuraciones
@@ -529,19 +758,17 @@ public class MultibookController implements Initializable {
         add.getStyleClass().addAll("button", "multibook-page");
         add.setTooltip(new Tooltip("Agregar página"));
         add.setOnAction(event -> {
-            pages().put(new JSONObject()
-                    .put("name", String.valueOf(pages().length() + 1))
-                    .put("books", new JSONArray()));
+            pages().put(newPageJson(String.valueOf(pages().length() + 1)));
             showPage(pages().length() - 1);
             saveDocument();
         });
         pageBar.getChildren().add(add);
+        renamePageButton.setDisable(currentPage < 0);
+    }
 
-        Button rename = new Button("Renombrar página");
-        rename.getStyleClass().addAll("button", "multibook-page");
-        rename.setDisable(currentPage < 0);
-        rename.setOnAction(event -> renamePage(currentPage));
-        pageBar.getChildren().add(rename);
+    @FXML
+    private void renameCurrentPage() {
+        renamePage(currentPage);
     }
 
     /** Recorre el libro en circulo: en la ultima pagina, ">" vuelve a la primera. */
@@ -621,7 +848,9 @@ public class MultibookController implements Initializable {
 
             JSONObject state = new JSONObject()
                     .put("page", currentPage)
-                    .put("layout", String.valueOf(layoutName));
+                    .put("layout", String.valueOf(layoutName))
+                    .put("statisticsVisible", statisticsVisible)
+                    .put("trendVisible", trendVisible);
 
             if (stage != null) {
                 state.put("x", stage.getX())

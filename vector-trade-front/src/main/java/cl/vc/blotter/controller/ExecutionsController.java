@@ -1,6 +1,9 @@
 package cl.vc.blotter.controller;
 
 import cl.vc.blotter.Repository;
+import cl.vc.blotter.adaptor.OrderPendingQuantityTracker;
+import cl.vc.blotter.utils.ColumnConfig;
+import cl.vc.blotter.utils.I18n;
 import cl.vc.blotter.utils.Notifier;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
@@ -9,13 +12,15 @@ import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.collections.transformation.FilteredList;
 import javafx.collections.transformation.SortedList;
 import javafx.fxml.FXML;
+import javafx.scene.Node;
 import javafx.scene.control.*;
-import javafx.scene.input.MouseButton;
+import javafx.scene.input.*;
 import javafx.util.Callback;
 import javafx.util.Duration;
 import lombok.Data;
@@ -28,12 +33,18 @@ import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Locale;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Data
 @Slf4j
 public class ExecutionsController {
+
+    private static final Set<String> ALWAYS_HIDDEN_ORDER_COLUMN_KEYS = Set.of("broker", "clOrdID");
+
+    private record OrderColumnDefinition(String key, String label, TableColumn<RoutingMessage.Order, ?> column) {}
+
+    private Runnable orderColumnConfigChangeHandler;
 
     public ObservableList<RoutingMessage.Order> data;
 
@@ -104,6 +115,7 @@ public class ExecutionsController {
     private FilteredList<RoutingMessage.Order> filteredData;
     @Getter
     private SortedList<RoutingMessage.Order> sortedData;
+    private final OrderPendingQuantityTracker pendingQuantityTracker = new OrderPendingQuantityTracker();
 
 
     private static final int MAX_RETRIES = 200;
@@ -290,7 +302,7 @@ public class ExecutionsController {
             });
 
             leave.setCellValueFactory(cellData -> {
-                Double value = cellData.getValue().getLeaves();
+                Double value = pendingQuantityTracker.pendingQuantity(cellData.getValue());
                 String formattedValue = decimalFormat.format(value);
                 return new SimpleObjectProperty<>(formattedValue);
             });
@@ -313,6 +325,9 @@ public class ExecutionsController {
                 return new SimpleObjectProperty<>(formattedValue);
             });
 
+            // px/lastpx/avgPrice respetan el selector global de decimales (override gana sobre lo de arriba).
+            applyPriceFactories();
+
             this.data = FXCollections.observableArrayList(new ArrayList<>());
             this.filteredData = new FilteredList<>(this.data, p -> true);
 
@@ -322,12 +337,16 @@ public class ExecutionsController {
             this.tableExecutionReports.setItems(this.sortedData);
 
             this.tableExecutionReports.setEditable(true);
+            this.tableExecutionReports.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+            this.tableExecutionReports.getSelectionModel().setCellSelectionEnabled(true);
             this.tableExecutionReports.getSortOrder().add(this.time);
 
             this.tableExecutionReports.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
             this.tableExecutionReports.autosize();
 
             tableExecutionReports.sort();
+            installContextMenuSupport();
+            applyOrderColumnConfig();
 
             Platform.runLater(this::wireAfterParentReady);
 
@@ -369,6 +388,17 @@ public class ExecutionsController {
         PauseTransition t = new PauseTransition(Duration.millis(50));
         t.setOnFinished(e -> wireAfterParentReady());
         t.play();
+    }
+
+    public void updateOrderState(RoutingMessage.Order order) {
+        pendingQuantityTracker.accept(order);
+        if (tableExecutionReports != null) {
+            tableExecutionReports.refresh();
+        }
+    }
+
+    public void clearOrderState() {
+        pendingQuantityTracker.clear();
     }
 
 
@@ -474,7 +504,7 @@ public class ExecutionsController {
                     return;
                 }
 
-                setText(side.name());
+                setText(I18n.display(side));
 
                 switch (side) {
                     case BUY:
@@ -507,32 +537,32 @@ public class ExecutionsController {
                 switch (status) {
                     case "NEW":
                         setStyle("-fx-text-fill: #00BFFF;"); // Celeste
-                        setText("NUEVA");
+                        setText(I18n.tr("NUEVA"));
                         break;
 
                     case "FILLED":
                         setStyle("-fx-text-fill: green;"); // Verde
-                        setText("CALZADA");
+                        setText(I18n.tr("CALZADA"));
                         break;
                     case "PARTIALLY_FILLED":
                         setStyle("-fx-text-fill: #e7cb0d;"); // Verde claro
-                        setText("PARCIAL");
+                        setText(I18n.tr("PARCIAL"));
                         break;
                     case "REJECTED":
                         setStyle("-fx-text-fill: red;"); // Rojo
-                        setText("RECHAZADA");
+                        setText(I18n.tr("RECHAZADA"));
                         break;
                     case "CANCELED":
                         setStyle("-fx-text-fill: red;"); // Rojo
-                        setText("CANCELADA");
+                        setText(I18n.tr("CANCELADA"));
                         break;
                     case "REPLACED":
                         setStyle("-fx-text-fill: #ea6f08;"); // Rojo
-                        setText("REMPLAZADA");
+                        setText(I18n.tr("REMPLAZADA"));
                         break;
                     default:
                         setStyle("");
-                        setText(status);
+                        setText(I18n.tr(status));
                         break;
                 }
             }
@@ -554,45 +584,291 @@ public class ExecutionsController {
         iceberg.setVisible(false);
     }
 
+    /** (Re)asigna los factories de las columnas de PRECIO honrando el selector global de decimales. */
+    private void applyPriceFactories() {
+        px.setCellValueFactory(cd -> new SimpleObjectProperty<>(
+                Repository.priceFormatter(4).format(cd.getValue().getPrice())));
+        lastpx.setCellValueFactory(cd -> new SimpleObjectProperty<>(
+                Repository.priceFormatter(2).format(cd.getValue().getLastPx())));
+        avgPrice.setCellValueFactory(cd -> new SimpleObjectProperty<>(
+                Repository.priceFormatter(2).format(cd.getValue().getAvgPrice())));
+    }
+
+    /** Re-aplica el formato de decimales de precio a esta tabla (llamado por el selector global). */
+    public void reapplyPriceFormat() {
+        applyPriceFactories();
+        if (tableExecutionReports != null) tableExecutionReports.refresh();
+    }
+
+    public void applyOrderColumnConfig() {
+        ColumnConfig cfg = Repository.getColumnConfig();
+        for (OrderColumnDefinition definition : orderColumnDefinitions()) {
+            boolean visible = cfg.hasOrderColumn(definition.key())
+                    ? cfg.isOrderColumnVisible(definition.key(), definition.column().isVisible())
+                    : definition.column().isVisible();
+
+            if (isAlwaysHiddenOrderColumn(definition.key()) || (Repository.getIsLight() && isLightHiddenColumn(definition.key()))) {
+                visible = false;
+            }
+
+            definition.column().setVisible(visible);
+        }
+    }
+
+    private List<OrderColumnDefinition> orderColumnDefinitions() {
+        return List.of(
+                new OrderColumnDefinition("time", "Fecha Ingreso", time),
+                new OrderColumnDefinition("side", "Tipo", side),
+                new OrderColumnDefinition("symbol", "Instrumento", symbol),
+                new OrderColumnDefinition("settlType", "Condicion", settlType),
+                new OrderColumnDefinition("market", "Mercado", market),
+                new OrderColumnDefinition("broker", "Broker", broker),
+                new OrderColumnDefinition("ordType", "T Orden", ordType),
+                new OrderColumnDefinition("qty", "Cantidad", qty),
+                new OrderColumnDefinition("iceberg", "Visible", iceberg),
+                new OrderColumnDefinition("px", "Precio", px),
+                new OrderColumnDefinition("amount", "Monto", amount),
+                new OrderColumnDefinition("lastpx", "Ult. Precio", lastpx),
+                new OrderColumnDefinition("lastQty", "Ult. Cantidad", lastQty),
+                new OrderColumnDefinition("avgPrice", "Precio Promedio", avgPrice),
+                new OrderColumnDefinition("execQty", "Cantidad Ejecutada", execQty),
+                new OrderColumnDefinition("leave", "Cantidad Pendiente", leave),
+                new OrderColumnDefinition("tif", "TIF", tif),
+                new OrderColumnDefinition("handlInst", "HandlInst", handlInst),
+                new OrderColumnDefinition("id", "ID", id),
+                new OrderColumnDefinition("clOrdID", "ClOrdID", clOrdID),
+                new OrderColumnDefinition("orderID", "OrderId FIX", orderID),
+                new OrderColumnDefinition("execID", "ExecID", execID),
+                new OrderColumnDefinition("execType", "Tipo de Ejecucion", execType),
+                new OrderColumnDefinition("status", "Estado", status),
+                new OrderColumnDefinition("text", "Motivo", text),
+                new OrderColumnDefinition("account", "Cuenta", account),
+                new OrderColumnDefinition("username", "Usuario", username),
+                new OrderColumnDefinition("basket", "Basket", basket),
+                new OrderColumnDefinition("spread", "Spread", spread),
+                new OrderColumnDefinition("limit", "Limit", limit),
+                new OrderColumnDefinition("strategy", "Strategy", strategy)
+        );
+    }
+
+    private boolean isLightHiddenColumn(String key) {
+        return Set.of("id", "market", "broker", "ordType", "tif", "handlInst", "basket", "spread", "limit", "strategy", "iceberg")
+                .contains(key);
+    }
+
+    private boolean isAlwaysHiddenOrderColumn(String key) {
+        return ALWAYS_HIDDEN_ORDER_COLUMN_KEYS.contains(key);
+    }
+
+    public void setOrderColumnConfigChangeHandler(Runnable orderColumnConfigChangeHandler) {
+        this.orderColumnConfigChangeHandler = orderColumnConfigChangeHandler;
+    }
+
+    private void installContextMenuSupport() {
+        tableExecutionReports.setOnContextMenuRequested(event -> {
+            buildOrderContextMenu().show(tableExecutionReports, event.getScreenX(), event.getScreenY());
+            event.consume();
+        });
+
+        tableExecutionReports.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (event.getButton() == MouseButton.SECONDARY) {
+                selectCellUnderMouse(event);
+            }
+        });
+
+        tableExecutionReports.addEventFilter(KeyEvent.KEY_PRESSED, event -> {
+            if (event.isShortcutDown() && event.getCode() == KeyCode.C) {
+                copyToClipboard(buildSelectedCellsText());
+                event.consume();
+            }
+        });
+    }
+
+    private ContextMenu buildOrderContextMenu() {
+        MenuItem copyCell = new MenuItem("Copiar celda");
+        copyCell.setOnAction(event -> copyToClipboard(buildFirstSelectedCellText()));
+
+        MenuItem copySelection = new MenuItem("Copiar seleccion");
+        copySelection.setOnAction(event -> copyToClipboard(buildSelectedCellsText()));
+
+        MenuItem copyRow = new MenuItem("Copiar fila");
+        copyRow.setOnAction(event -> copyToClipboard(buildSelectedRowText()));
+
+        ContextMenu menu = new ContextMenu(copyCell, copySelection, copyRow, new SeparatorMenuItem());
+        ColumnConfig cfg = Repository.getColumnConfig();
+
+        for (OrderColumnDefinition definition : orderColumnDefinitions()) {
+            if (isAlwaysHiddenOrderColumn(definition.key())) {
+                continue;
+            }
+
+            CheckMenuItem item = new CheckMenuItem(definition.label());
+            item.setSelected(cfg.isOrderColumnVisible(definition.key(), definition.column().isVisible()));
+            if (Repository.getIsLight() && isLightHiddenColumn(definition.key())) {
+                item.setSelected(false);
+                item.setDisable(true);
+            }
+            item.selectedProperty().addListener((obs, oldValue, selected) -> {
+                cfg.setOrderColumnVisible(definition.key(), selected);
+                Repository.saveColumnConfig();
+                if (orderColumnConfigChangeHandler != null) {
+                    orderColumnConfigChangeHandler.run();
+                } else {
+                    applyOrderColumnConfig();
+                }
+            });
+            menu.getItems().add(item);
+        }
+
+        return menu;
+    }
+
+    @SuppressWarnings("unchecked")
+    private void selectCellUnderMouse(MouseEvent event) {
+        TableCell<?, ?> cell = findParentCell(event.getPickResult().getIntersectedNode());
+        if (cell == null || cell.isEmpty()) {
+            return;
+        }
+
+        TableColumn<RoutingMessage.Order, ?> column = (TableColumn<RoutingMessage.Order, ?>) cell.getTableColumn();
+        tableExecutionReports.getSelectionModel().clearAndSelect(cell.getIndex(), column);
+    }
+
+    private TableCell<?, ?> findParentCell(Node node) {
+        while (node != null && !(node instanceof TableCell<?, ?>)) {
+            node = node.getParent();
+        }
+        return node instanceof TableCell<?, ?> cell ? cell : null;
+    }
+
+    private String buildFirstSelectedCellText() {
+        ObservableList<TablePosition> selectedCells = tableExecutionReports.getSelectionModel().getSelectedCells();
+        if (selectedCells == null || selectedCells.isEmpty()) {
+            return buildSelectedRowText();
+        }
+
+        TablePosition position = selectedCells.get(0);
+        RoutingMessage.Order row = tableExecutionReports.getItems().get(position.getRow());
+        TableColumn<RoutingMessage.Order, ?> column = position.getTableColumn();
+        return getCellText(row, column);
+    }
+
+    private String buildSelectedCellsText() {
+        ObservableList<TablePosition> selectedCells = tableExecutionReports.getSelectionModel().getSelectedCells();
+        if (selectedCells == null || selectedCells.isEmpty()) {
+            return buildSelectedRowText();
+        }
+
+        Map<Integer, List<TablePosition>> cellsByRow = selectedCells.stream()
+                .collect(Collectors.groupingBy(TablePosition::getRow, TreeMap::new, Collectors.toList()));
+
+        return cellsByRow.values().stream()
+                .map(rowCells -> rowCells.stream()
+                        .sorted(Comparator.comparingInt(TablePosition::getColumn))
+                        .map(position -> {
+                            RoutingMessage.Order row = tableExecutionReports.getItems().get(position.getRow());
+                            return getCellText(row, position.getTableColumn());
+                        })
+                        .collect(Collectors.joining("\t")))
+                .collect(Collectors.joining(System.lineSeparator()));
+    }
+
+    private String buildSelectedRowText() {
+        RoutingMessage.Order selected = tableExecutionReports.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            return "";
+        }
+
+        return orderColumnDefinitions().stream()
+                .map(OrderColumnDefinition::column)
+                .filter(TableColumn::isVisible)
+                .map(column -> getCellText(selected, column))
+                .collect(Collectors.joining("\t"));
+    }
+
+    private String getCellText(RoutingMessage.Order row, TableColumn<RoutingMessage.Order, ?> column) {
+        if (row == null || column == null) {
+            return "";
+        }
+        ObservableValue<?> value = column.getCellObservableValue(row);
+        Object raw = value == null ? null : value.getValue();
+        return raw == null ? "" : String.valueOf(raw);
+    }
+
+    private void copyToClipboard(String text) {
+        if (text == null || text.isEmpty()) {
+            return;
+        }
+
+        ClipboardContent content = new ClipboardContent();
+        content.putString(text);
+        Clipboard.getSystemClipboard().setContent(content);
+        Notifier.INSTANCE.notifyInfo("Copiado", "Texto copiado al portapapeles");
+    }
+
     public void basketOrder() {
 
-        TableColumn<RoutingMessage.Order, Void> deleteColumn = new TableColumn<>("Delete");
-        deleteColumn.setPrefWidth(50);
-        deleteColumn.setSortable(false);
+        TableColumn<RoutingMessage.Order, Void> cancelColumn = new TableColumn<>("Cancelar");
+        cancelColumn.setPrefWidth(80);
+        cancelColumn.setSortable(false);
 
-        deleteColumn.setCellFactory(new Callback<TableColumn<RoutingMessage.Order, Void>, TableCell<RoutingMessage.Order, Void>>() {
+        cancelColumn.setCellFactory(new Callback<TableColumn<RoutingMessage.Order, Void>, TableCell<RoutingMessage.Order, Void>>() {
             @Override
             public TableCell<RoutingMessage.Order, Void> call(TableColumn<RoutingMessage.Order, Void> param) {
                 return new TableCell<RoutingMessage.Order, Void>() {
-                    private final Button deleteButton = new Button("X");
+                    private final Button cancelButton = new Button("Cancelar");
                     {
-                        deleteButton.setOnAction(event -> {
-                            RoutingMessage.Order rowData = getTableView().getItems().get(getIndex());
+                        cancelButton.getStyleClass().add("btn-cancelOrder-style");
+                        cancelButton.setOnAction(event -> {
+                            RoutingMessage.Order o = rowOrder();
+                            if (o == null) return;
+                            RoutingMessage.OrderStatus st = o.getOrdStatus();
 
-                            if (rowData.getOrdStatus().equals(RoutingMessage.OrderStatus.PENDING_NEW)) {
-                                data.remove(rowData);
-                                Notifier.INSTANCE.notifyInfo("Success", "The order has been deleted");
+                            if (st.equals(RoutingMessage.OrderStatus.PENDING_NEW)) {
+                                // Aún no salió al mercado -> solo se quita de la canasta.
+                                data.remove(o);
+                                Notifier.INSTANCE.notifyInfo("Canasta", "Orden quitada (no estaba en el mercado)");
+                            } else if (st.equals(RoutingMessage.OrderStatus.NEW)
+                                    || st.equals(RoutingMessage.OrderStatus.REPLACED)
+                                    || st.equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED)
+                                    || st.equals(RoutingMessage.OrderStatus.PENDING_REPLACE)) {
+                                // Viva en la bolsa -> cancelación real.
+                                RoutingMessage.OrderCancelRequest req = RoutingMessage.OrderCancelRequest.newBuilder()
+                                        .setId(o.getId()).build();
+                                Repository.getClientService().sendMessage(req);
+                                Notifier.INSTANCE.notifyInfo("Canasta", "Cancelación enviada: " + o.getSymbol());
                             } else {
-                                Notifier.INSTANCE.notifyError("Error", "the order should be in \"pending new\" status");
+                                Notifier.INSTANCE.notifyError("Canasta", "La orden ya está terminada (no se puede cancelar)");
                             }
                         });
+                    }
+
+                    /** Orden de la fila, con guardas de índice. */
+                    private RoutingMessage.Order rowOrder() {
+                        int i = getIndex();
+                        if (i < 0 || getTableView() == null || i >= getTableView().getItems().size()) return null;
+                        return getTableView().getItems().get(i);
                     }
 
                     @Override
                     protected void updateItem(Void item, boolean empty) {
                         super.updateItem(item, empty);
-
-                        if (empty) {
+                        RoutingMessage.Order o = empty ? null : rowOrder();
+                        if (o == null) {
                             setGraphic(null);
-                        } else {
-                            setGraphic(deleteButton);
+                            return;
                         }
+                        RoutingMessage.OrderStatus st = o.getOrdStatus();
+                        boolean terminal = st.equals(RoutingMessage.OrderStatus.FILLED)
+                                || st.equals(RoutingMessage.OrderStatus.CANCELED)
+                                || st.equals(RoutingMessage.OrderStatus.REJECTED);
+                        setGraphic(terminal ? null : cancelButton);
                     }
                 };
             }
         });
 
-        tableExecutionReports.getColumns().add(deleteColumn);
+        tableExecutionReports.getColumns().add(cancelColumn);
     }
 
     public void setMKDController() {

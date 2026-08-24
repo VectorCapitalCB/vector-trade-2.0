@@ -50,16 +50,16 @@
                 <Insets top="10" right="10" bottom="10" left="10"/>
             </padding>
             <HBox spacing="6" alignment="CENTER_LEFT">
-                <Button fx:id="btnEmojiGrin" text="😀" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiSmile" text="😃" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiBlush" text="😊" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiWink" text="😉" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiTongue" text="😜" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiThumbsup" text="👍" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiThumbsdown" text="👎" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiClap" text="👏" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiFire" text="🔥" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
-                <Button fx:id="btnEmojiHeart" text="❤️" onAction="#insertEmoji" style="-fx-font-family: 'Segoe UI Emoji'; -fx-font-size: 16px;"/>
+                <Button fx:id="btnEmojiGrin" text="😀" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiSmile" text="😃" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiBlush" text="😊" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiWink" text="😉" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiTongue" text="😜" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiThumbsup" text="👍" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiThumbsdown" text="👎" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiClap" text="👏" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiFire" text="🔥" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
+                <Button fx:id="btnEmojiHeart" text="❤️" onAction="#insertEmoji" styleClass="chat-emoji-button" minWidth="36" prefWidth="36" maxWidth="36" minHeight="32" prefHeight="32" maxHeight="32"/>
             </HBox>
             <HBox spacing="10">
                 <TextField fx:id="txtMessage" promptText="Escribe un mensaje y presiona Enter" HBox.hgrow="ALWAYS"/>

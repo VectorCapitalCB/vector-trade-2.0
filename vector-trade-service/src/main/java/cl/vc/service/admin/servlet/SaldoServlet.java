@@ -31,7 +31,8 @@ public class SaldoServlet extends HttpServlet {
         res.setContentType("application/json;charset=UTF-8");
 
         try {
-            String account = Optional.ofNullable(req.getParameter("account")).orElse("").trim();
+            String account = MainApp.resolveAccountKey(
+                    Optional.ofNullable(req.getParameter("account")).orElse(""));
             String source = Optional.ofNullable(req.getParameter("source")).orElse("effective").trim().toLowerCase();
 
             if (account.isEmpty()) {
@@ -41,7 +42,7 @@ public class SaldoServlet extends HttpServlet {
             }
 
             // Validar formato de cuenta: bloquea metacaracteres LIKE (% _ [) que fugaban datos cross-account.
-            if (!account.matches("\\d{1,9}[-/]\\d{1,3}")) {
+            if (!isValidAccount(account)) {
                 res.setStatus(400);
                 res.getWriter().write(new JSONObject().put("error", "account inválido").toString());
                 return;
@@ -73,11 +74,16 @@ public class SaldoServlet extends HttpServlet {
             String pathInfo = Optional.ofNullable(req.getPathInfo()).orElse("");
             String body = req.getReader().lines().collect(Collectors.joining());
             JSONObject json = body == null || body.isBlank() ? new JSONObject() : new JSONObject(body);
-            String account = json.optString("account", "").trim();
+            String account = MainApp.resolveAccountKey(json.optString("account", ""));
 
             if (account.isEmpty()) {
                 res.setStatus(400);
                 res.getWriter().write(new JSONObject().put("error", "account es requerido").toString());
+                return;
+            }
+            if (!isValidAccount(account)) {
+                res.setStatus(400);
+                res.getWriter().write(new JSONObject().put("error", "account invalido").toString());
                 return;
             }
 
@@ -284,6 +290,10 @@ public class SaldoServlet extends HttpServlet {
 
     private boolean approx(double left, double right) {
         return Math.abs(left - right) < 0.0001d;
+    }
+
+    private boolean isValidAccount(String account) {
+        return account != null && account.matches("\\d{1,9}[-/]\\d{1,3}");
     }
 
     private JSONObject toJson(ManualSaldoOverride data, BlotterMessage.Balance balance, BlotterMessage.Patrimonio patrimonio) {

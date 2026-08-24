@@ -348,12 +348,34 @@ class OcoTest {
         try (Harness h = new Harness()) {
             Oco s = h.strat(liveBuy(110, 90));
             RoutingMessage.Order filled = liveBuy(110, 90).toBuilder()
-                    .setOrdStatus(RoutingMessage.OrderStatus.FILLED).build();
+                    .setOrdStatus(RoutingMessage.OrderStatus.FILLED)
+                    .setCumQty(100)
+                    .setLeaves(0)
+                    .build();
             s.onOrders(filled);
 
             verify(h.strategy).tell(any(akka.actor.PoisonPill.class), any());
             verify(h.bus).unsubscribe(h.strategy, "sub");
             verify(h.group).tell(eq(filled), any());
+        }
+    }
+
+    @Test
+    void filledInconsistenteNoCierraLaEstrategia() {
+        try (Harness h = new Harness()) {
+            Oco s = h.strat(liveBuy(110, 90));
+            RoutingMessage.Order inconsistentFilled = liveBuy(110, 90).toBuilder()
+                    .setOrdStatus(RoutingMessage.OrderStatus.FILLED)
+                    .setExecType(RoutingMessage.ExecutionType.EXEC_REPLACED)
+                    .setCumQty(60)
+                    .setLeaves(40)
+                    .build();
+
+            s.onOrders(inconsistentFilled);
+
+            verify(h.strategy, never()).tell(any(akka.actor.PoisonPill.class), any());
+            verify(h.bus, never()).unsubscribe(h.strategy, "sub");
+            verify(h.group).tell(eq(inconsistentFilled), any());
         }
     }
 

@@ -4,8 +4,10 @@ import akka.actor.ActorRef;
 import cl.vc.blotter.controller.PreDigitadosController;
 import cl.vc.blotter.Repository;
 import cl.vc.blotter.model.BookVO;
+import cl.vc.blotter.model.OrderBookEntry;
 import cl.vc.blotter.model.StatisticVO;
 import cl.vc.blotter.utils.Notifier;
+import cl.vc.blotter.utils.WindowGeometryStore;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.generator.IDGenerator;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
@@ -59,7 +61,13 @@ public class PrincipalController {
     private LanzadorController lanzadorController;
 
     @FXML
+    private AnchorPane lanzador;
+
+    @FXML
     private TabPane TabPaneLanzador;
+
+    @FXML
+    private Tab tabLanzador;
 
     @FXML
     private BookHorizontalController tableViewBookHController;
@@ -171,6 +179,8 @@ public class PrincipalController {
     @FXML private Tab tabPreDigitadas;
     private boolean isLightMode = false;
     private MarketDataPortfolioViewController floatingMDTable;
+    private Stage launcherStage;
+    private LanzadorController floatingLauncherController;
 
     @FXML
     private SplitPane splid;
@@ -251,38 +261,7 @@ public class PrincipalController {
                 subscribeSymbol();
             });
 
-            tpMkData.getSelectionModel().selectedItemProperty().addListener((obs, oldTab, newTab) -> {
-                if (newTab == null || !"+".equals(newTab.getText())) return;
-                runFx(() -> {
-                    Alert alert = new Alert(Alert.AlertType.INFORMATION);
-                    alert.setTitle("Nuevo Portfolio");
-                    alert.setHeaderText("Agregar nuevo portafolio");
-
-                    TextInputDialog dialog = new TextInputDialog();
-                    dialog.setTitle("Nuevo Portafolio");
-                    dialog.setHeaderText("Agregar nuevo portafolio");
-                    dialog.setContentText("Ingrese el nombre del portafolio:");
-
-                    DialogPane dp = dialog.getDialogPane();
-                    var css = getClass().getResource(Repository.getSTYLE());
-                    if (css != null) dp.getStylesheets().add(css.toExternalForm());
-
-                    dialog.showAndWait().ifPresent(portfolioName -> {
-                        for (Tab t : tpMkData.getTabs()) {
-                            if (portfolioName.equals(t.getText())) {
-                                Notifier.INSTANCE.notifyError("Error", "El nombre del portafolio ya existe");
-                                return;
-                            }
-                        }
-                        Repository.getClientService().sendMessage(BlotterMessage.PortfolioRequest.newBuilder()
-                                .setStatusPortfolio(BlotterMessage.StatusPortfolio.NEW_PORTFOLIO)
-                                .setUsername(Repository.username)
-                                .setMarketdataControllerId(id)
-                                .setNamePortfolio(portfolioName)
-                                .build());
-                    });
-                });
-            });
+            configureAddPortfolioTab();
 
 
             SessionsMessage.Connect connect = SessionsMessage.Connect.newBuilder().setUsername(Repository.getUsername()).build();
@@ -317,6 +296,64 @@ public class PrincipalController {
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
+    }
+
+    private void configureAddPortfolioTab() {
+        if (add == null) return;
+
+        Label addLabel = new Label("+");
+        addLabel.setAlignment(Pos.CENTER);
+        addLabel.setMinSize(22, 20);
+        addLabel.setPrefSize(22, 20);
+        addLabel.setAccessibleText("Nuevo portafolio");
+        addLabel.setStyle("-fx-font-weight: bold; -fx-padding: 0 5 0 5;");
+        addLabel.setOnMouseClicked(event -> showNewPortfolioDialog());
+        Tooltip.install(addLabel, new Tooltip("Nuevo portafolio"));
+
+        // La pestana puede estar seleccionada desde el arranque cuando no hay carteras.
+        // El graphic recibe el clic aunque la seleccion no cambie, sin alterar la altura del tab.
+        add.setText(null);
+        add.setGraphic(addLabel);
+        add.setClosable(false);
+    }
+
+    public void showNewPortfolioDialog() {
+        runFx(() -> {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("Nuevo Portafolio");
+            dialog.setHeaderText("Agregar nuevo portafolio");
+            dialog.setContentText("Ingrese el nombre del portafolio:");
+
+            DialogPane dialogPane = dialog.getDialogPane();
+            var css = getClass().getResource(Repository.getSTYLE());
+            if (css != null) {
+                dialogPane.getStylesheets().add(css.toExternalForm());
+            }
+
+            dialog.showAndWait().ifPresent(rawName -> {
+                String portfolioName = rawName.trim();
+                if (portfolioName.isEmpty() || "+".equals(portfolioName)) {
+                    Notifier.INSTANCE.notifyError("Error", "Ingrese un nombre valido para el portafolio");
+                    return;
+                }
+
+                boolean duplicate = tpMkData.getTabs().stream()
+                        .map(Tab::getText)
+                        .filter(Objects::nonNull)
+                        .anyMatch(name -> portfolioName.equalsIgnoreCase(name.trim()));
+                if (duplicate) {
+                    Notifier.INSTANCE.notifyError("Error", "El nombre del portafolio ya existe");
+                    return;
+                }
+
+                Repository.getClientService().sendMessage(BlotterMessage.PortfolioRequest.newBuilder()
+                        .setStatusPortfolio(BlotterMessage.StatusPortfolio.NEW_PORTFOLIO)
+                        .setUsername(Repository.getUsername())
+                        .setMarketdataControllerId(id)
+                        .setNamePortfolio(portfolioName)
+                        .build());
+            });
+        });
     }
 
     private void applyPreDigitadosLayout() {
@@ -378,11 +415,6 @@ public class PrincipalController {
         } else {
             Repository.getPrincipalController().getPrincipal().getStylesheets().clear();
             Repository.getPrincipalController().getPrincipal().getStylesheets().add(dayModeUrl.toExternalForm());
-            Image image = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/moon.png")));
-            ImageView imageView = new ImageView(image);
-            imageView.setFitWidth(30);
-            imageView.setFitHeight(30);
-            Repository.getFooterController().getModo().setGraphic(imageView);
             isDayMode = true;
         }
     }
@@ -394,11 +426,6 @@ public class PrincipalController {
         } else {
             Repository.getPrincipalController().getPrincipal().getStylesheets().clear();
             Repository.getPrincipalController().getPrincipal().getStylesheets().add(nightModeUrl.toExternalForm());
-            Image image = new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/sun.png")));
-            ImageView imageView = new ImageView(image);
-            imageView.setFitWidth(30);
-            imageView.setFitHeight(30);
-            Repository.getFooterController().getModo().setGraphic(imageView);
             isDayMode = false;
         }
     }
@@ -436,6 +463,7 @@ public class PrincipalController {
             stage.setTitle("Trade General");
             stage.setScene(scene);
             stage.initModality(Modality.NONE);
+            WindowGeometryStore.restore(stage, "trade-general", 900, 650);
             stage.show();
 
         } catch (IOException e) {
@@ -447,8 +475,11 @@ public class PrincipalController {
 
     public void abrirTradeMKD(ActionEvent actionEvent) {
         try {
-            String id = TopicGenerator.getTopicMKD(Repository.getLastSelectedStatistic());
-            BookVO bookVO = Repository.getBookPortMaps().get(id);
+            BookVO bookVO = resolveDisplayedBook();
+            if (bookVO == null) {
+                Notifier.INSTANCE.notifyWarning("Ultimas Operaciones", "Aun no hay un instrumento cargado para desacoplar.");
+                return;
+            }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/TradeMkd.fxml"));
             AnchorPane root = loader.load();
@@ -467,18 +498,23 @@ public class PrincipalController {
             stage.setTitle("Trade " + bookVO.getSymbol());
             stage.setScene(scene);
             stage.initModality(Modality.NONE);
+            WindowGeometryStore.restore(stage, "trade", 620, 650);
             stage.show();
 
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("No se pudo abrir Ultimas Operaciones Nemo", e);
+            Notifier.INSTANCE.notifyError("Ultimas Operaciones", "No se pudo abrir la ventana.");
         }
     }
 
 
     public void abrirBoook(ActionEvent actionEvent) {
-
-
         try {
+            BookVO bookVO = resolveDisplayedBook();
+            if (bookVO == null) {
+                Notifier.INSTANCE.notifyWarning("Libro", "Aun no hay un instrumento cargado para desacoplar.");
+                return;
+            }
 
             FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/BookVerticalView.fxml"));
             AnchorPane root = loader.load();
@@ -486,9 +522,6 @@ public class PrincipalController {
 
             BookVerticalController bookControler = loader.getController();
 
-
-            String id = TopicGenerator.getTopicMKD(Repository.getLastSelectedStatistic());
-            BookVO bookVO = Repository.getBookPortMaps().get(id);
 
             bookControler.getBidViewTable().setItems(bookVO.getBidBook());
             bookControler.getOfferViewTable().setItems(bookVO.getAskBook());
@@ -503,12 +536,166 @@ public class PrincipalController {
             stage.setTitle("Book " + bookVO.getSymbol());
             stage.setScene(scene);
             stage.initModality(Modality.NONE);
+            WindowGeometryStore.restore(stage, "book", 265, 500);
             stage.show();
 
-        } catch (IOException e) {
-            throw new RuntimeException(e);
+        } catch (Exception e) {
+            log.error("No se pudo abrir el libro flotante", e);
+            Notifier.INSTANCE.notifyError("Libro", "No se pudo abrir la ventana.");
+        }
+    }
+
+    /** El desacople debe seguir al libro visible, aunque no haya una fila de mercado seleccionada. */
+    BookVO resolveDisplayedBook() {
+        BookVO book = findBook(subscribeBook);
+        if (book != null) {
+            return book;
         }
 
+        if (subscribe != null) {
+            book = findBook(subscribe.getId());
+            if (book != null) {
+                return book;
+            }
+        }
+
+        MarketDataMessage.Statistic selected = Repository.getLastSelectedStatistic();
+        return selected == null ? null : findBook(TopicGenerator.getTopicMKD(selected));
+    }
+
+    private BookVO findBook(String id) {
+        return id == null || id.isBlank() ? null : Repository.getBookPortMaps().get(id);
+    }
+
+    @FXML
+    public void abrirLanzador(ActionEvent actionEvent) {
+        LanzadorController floating = showFloatingLauncher();
+        if (floating != null) {
+            floating.setIslibrazo(false);
+            floating.setIdLibrazo(null);
+            floating.getLibroEmergenteControllerList().clear();
+            copyLauncherState(lanzadorController, floating);
+        }
+    }
+
+    public void openLauncherFromBook(OrderBookEntry dataBook, String sideOrderValue,
+                                     RoutingMessage.SettlType selectedSettlType,
+                                     LibroEmergenteController source) {
+        if (dataBook == null) {
+            return;
+        }
+        LanzadorController floating = showFloatingLauncher();
+        if (floating == null) {
+            return;
+        }
+        floating.setIslibrazo(true);
+        floating.setIdLibrazo(dataBook.getId());
+        floating.setSkipConfirmationAlert(
+                Repository.getUserEnable().contains(Repository.getUser().getUsername()));
+        floating.getLibroEmergenteControllerList().clear();
+        floating.setLibrazoController(source);
+
+        String symbol = source != null
+                ? source.resolveLauncherSymbol(dataBook.getSymbol())
+                : dataBook.getSymbol();
+        RoutingMessage.SecurityType type = source != null
+                ? source.resolveLauncherSecurityType(symbol)
+                : RoutingMessage.SecurityType.CS;
+
+        floating.getSecExchOrder().setValue(dataBook.getSecurityExchangeRouting());
+        floating.getSettltypeOrder().setValue(selectedSettlType);
+        floating.setInstrumentFromBook(symbol);
+        floating.getPriceOrder().setText(dataBook.getPrice());
+        floating.getQuantity().setText(dataBook.getSize());
+        floating.getSideOrder().setValue(sideOrderValue);
+        floating.getSpread().setText(String.format(Locale.US, "%.4f",
+                dataBook.getPriceValue() * (10 / 10_000d)));
+        floating.getSecurityType().getSelectionModel().select(type);
+        floating.getIceberg().setText(LanzadorController.MULTIBOOK_DEFAULT_VISIBLE_PERCENTAGE);
+
+        if (Repository.getUser() != null
+                && Repository.getUser().getUsername().contains("fricci")) {
+            floating.getAcAccount().getItems().setAll("47024924/0");
+            floating.getAcAccount().getSelectionModel().select("47024924/0");
+        }
+    }
+
+    private LanzadorController showFloatingLauncher() {
+        if (launcherStage != null && launcherStage.isShowing()) {
+            launcherStage.toFront();
+            launcherStage.requestFocus();
+            return floatingLauncherController;
+        }
+
+        try {
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/Lanzador.fxml"));
+            AnchorPane floatingLauncher = loader.load();
+            LanzadorController controller = loader.getController();
+            copyLauncherState(lanzadorController, controller);
+            boolean advanced = Repository.getUser() != null
+                    && Repository.getUser().getRoles().getPerfil().contains("avanzado");
+            controller.applyProfileVisualMode(advanced);
+
+            Stage stage = new Stage();
+            Scene scene = new Scene(floatingLauncher);
+            URL css = getClass().getResource(Repository.getSTYLE());
+            if (css != null) {
+                scene.getStylesheets().add(css.toExternalForm());
+            }
+            if (Repository.isDayMode()) {
+                URL dayModeCss = getClass().getResource("/blotter/css/daymode.css");
+                if (dayModeCss != null) {
+                    scene.getStylesheets().add(dayModeCss.toExternalForm());
+                }
+            }
+            stage.setTitle("Lanzador de Órdenes");
+            stage.setScene(scene);
+            stage.initModality(Modality.NONE);
+            stage.setMinWidth(700);
+            stage.setMinHeight(400);
+            WindowGeometryStore.restore(stage, "order-launcher", 760, 460);
+
+            launcherStage = stage;
+            floatingLauncherController = controller;
+            controller.setStage(stage);
+            stage.setOnHidden(event -> {
+                controller.setStage(null);
+                launcherStage = null;
+                floatingLauncherController = null;
+            });
+            stage.show();
+            return controller;
+        } catch (IOException e) {
+            log.error("No se pudo abrir el lanzador flotante", e);
+            Notifier.INSTANCE.notifyError("Lanzador", "No se pudo abrir la ventana de órdenes.");
+            return null;
+        }
+    }
+
+    private void copyLauncherState(LanzadorController source, LanzadorController target) {
+        copyCombo(source.getSideOrder(), target.getSideOrder());
+        copyCombo(source.getCurrency(), target.getCurrency());
+        copyCombo(source.getSettltypeOrder(), target.getSettltypeOrder());
+        copyCombo(source.getAcAccount(), target.getAcAccount());
+        copyCombo(source.getStrategOrder(), target.getStrategOrder());
+        copyCombo(source.getCOperador(), target.getCOperador());
+        copyCombo(source.getTypeOrder(), target.getTypeOrder());
+        copyCombo(source.getSecExchOrder(), target.getSecExchOrder());
+        copyCombo(source.getSecurityType(), target.getSecurityType());
+        copyCombo(source.getBrokerOrder(), target.getBrokerOrder());
+        copyCombo(source.getHandInstOrder(), target.getHandInstOrder());
+        copyCombo(source.getTifOrder(), target.getTifOrder());
+        target.getTicket().setText(source.getTicket().getText());
+        target.getQuantity().setText(source.getQuantity().getText());
+        target.getPriceOrder().setText(source.getPriceOrder().getText());
+        target.getIceberg().setText(source.getIceberg().getText());
+        target.getSpread().setText(source.getSpread().getText());
+        target.getLimit().setText(source.getLimit().getText());
+    }
+
+    private <T> void copyCombo(ComboBox<T> source, ComboBox<T> target) {
+        target.getItems().setAll(source.getItems());
+        target.getSelectionModel().select(source.getSelectionModel().getSelectedItem());
     }
 
     public void subscribeSymbol() {
@@ -686,9 +873,7 @@ public class PrincipalController {
             Stage stage = new Stage();
             stage.setTitle("Datos de Mercado - " + c.getPortfolioName());
             stage.setScene(scene);
-            stage.setWidth(1500);
-            stage.setHeight(800);
-            stage.centerOnScreen();
+            WindowGeometryStore.restore(stage, "market-data", 1500, 800);
 
 
             this.floatingMDTable = c;
@@ -831,6 +1016,8 @@ public class PrincipalController {
                             }
                         });
 
+                        movePlusToEnd();
+
                         MarketDataPortfolioViewController marketDataPortfolioViewController =
                                 Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
                                         .get(response.getNamePortfolio());
@@ -913,6 +1100,7 @@ public class PrincipalController {
                             Repository.getPrincipalController().getTpMkData().getTabs().add(tab);
                             Repository.getPrincipalController().getMarketDataPortfolioViewControllers()
                                     .put(statisticsViewController.getPortfolioName(), statisticsViewController);
+                            movePlusToEnd();
                             Repository.getPrincipalController().getTpMkData().getSelectionModel().select(tab);
                             statisticsViewController.getMarketDataStatisticsTable().refresh();
 
@@ -935,6 +1123,7 @@ public class PrincipalController {
                                     response.getAsset().getStatistic().getSettlType(),
                                     response.getAsset().getStatistic().getSecurityType()
                             );
+                            sss.solicitarSerieIntradia(response.getAsset().getStatistic().getSymbol());
                         }
 
                     } else if (response.getStatusPortfolio().equals(BlotterMessage.StatusPortfolio.DELETE_PORTFOLIO)) {
@@ -984,6 +1173,9 @@ public class PrincipalController {
     }
 
     private Tab findTabByText(String text) {
+        if ("+".equals(text) && add != null && tpMkData.getTabs().contains(add)) {
+            return add;
+        }
         for (Tab t : tpMkData.getTabs()) {
             if (text.equals(t.getText())) return t;
         }
@@ -1010,7 +1202,7 @@ public class PrincipalController {
                 tpMkData.getSelectionModel().select(principal);
             } else {
                 tpMkData.getTabs().stream()
-                        .filter(t -> !"+".equals(t.getText()))
+                        .filter(t -> t != add && !"+".equals(t.getText()))
                         .findFirst()
                         .ifPresent(t -> tpMkData.getSelectionModel().select(t));
             }
@@ -1020,7 +1212,7 @@ public class PrincipalController {
     private void movePlusToEnd() {
         runFx(() -> {
             if (tpMkData == null) return;
-            Tab plus = findTabByText("+");
+            Tab plus = add != null && tpMkData.getTabs().contains(add) ? add : findTabByText("+");
             if (plus != null) {
                 tpMkData.getTabs().remove(plus);
                 tpMkData.getTabs().add(plus);
@@ -1059,7 +1251,7 @@ public class PrincipalController {
     private void ensurePlusAtEnd() {
         runFx(() -> {
             if (tpMkData == null) return;
-            Tab plus = findTabByText("+");
+            Tab plus = add != null && tpMkData.getTabs().contains(add) ? add : findTabByText("+");
             if (plus == null) {
                 Tab t = new Tab("+");
                 tpMkData.getTabs().add(t);

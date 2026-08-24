@@ -11,6 +11,7 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrderStateSupport;
 import com.google.protobuf.Timestamp;
 
 import java.math.BigDecimal;
@@ -635,9 +636,7 @@ public class Vwap implements StrategyI {
                 blockOrders = false;
                 blockRejected = 0;
 
-                if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)
-                        || order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)
-                        || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED)) {
+                if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
                     childOrder = null;
                     log.info("childOrder null {}", order.getId());
                 }
@@ -812,6 +811,46 @@ public class Vwap implements StrategyI {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public boolean isTemporarilyBlocked() {
+        return blockOrders;
+    }
+
+    @Override
+    public void resumeAfterTemporaryBlock() {
+        blockOrders = false;
+    }
+
+    @Override
+    public void resetRejectRecovery() {
+        blockRejected = 0;
+    }
+
+    @Override
+    public void cancelAfterConsecutiveRejects(String orderId) {
+        if (childOrder == null) {
+            blockOrders = false;
+            return;
+        }
+        blockOrders = true;
+        RoutingMessage.OrderCancelRequest cancel = RoutingMessage.OrderCancelRequest.newBuilder()
+                .setId(childOrder.getId())
+                .build();
+        MainApp.getConnections().get(childOrder.getSecurityExchange()).sendMessage(cancel);
+        log.warn("VWAP child order cancel after consecutive rejects {}", childOrder.getId());
+    }
+
+    @Override
+    public boolean isAtConfiguredLimit() {
+        if (statistic == null || limitPrice <= 0d) {
+            return false;
+        }
+        if (parentOrder.getSide().equals(RoutingMessage.Side.BUY)) {
+            return statistic.getVwap() >= limitPrice;
+        }
+        return statistic.getVwap() <= limitPrice;
     }
 
 }

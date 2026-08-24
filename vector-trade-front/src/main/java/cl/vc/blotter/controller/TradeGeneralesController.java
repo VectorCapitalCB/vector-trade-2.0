@@ -54,9 +54,6 @@ public class TradeGeneralesController implements Initializable {
     private TableColumn<MarketDataMessage.TradeGeneral, String> idgenerado;
 
     @FXML
-    private TableColumn<MarketDataMessage.TradeGeneral, String> liquidacion;
-
-    @FXML
     private ClientActor clientActor;
 
 
@@ -140,9 +137,6 @@ public class TradeGeneralesController implements Initializable {
             seller.setCellValueFactory(new PropertyValueFactory<>("seller"));
             symboltrades.setCellValueFactory(new PropertyValueFactory<>("symbol"));
             idgenerado.setCellValueFactory(new PropertyValueFactory<>("idGenerico"));
-            liquidacion.setCellValueFactory(new PropertyValueFactory<>("settlType"));
-
-
             buyer.setCellFactory(column -> new TableCell<>() {
                 @Override
                 protected void updateItem(String item, boolean empty) {
@@ -191,5 +185,4 @@ public class TradeGeneralesController implements Initializable {
     }
 
 }
-
 

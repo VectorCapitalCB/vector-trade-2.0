@@ -42,10 +42,13 @@ public class Main {
                             .replay(config.statsReplayInputPath());
                 }
                 if (config.itchReplayEnabled()) {
-                    new ItchLogReplay(repository, config.statsMarket(), config.statsCurrency(), session)
+                    new ItchLogReplay(repository, config.statsMarket(), config.statsCurrency(), session,
+                            config.candleTimeframes(), config.itchReplayWriteDaily())
                             .replay(config.itchReplayInputPath());
                 }
-                new DailyStatsFinalizer(repository, config.statsMarket(), session).run();
+                if (config.statsReplayEnabled() || config.itchReplayWriteDaily()) {
+                    new DailyStatsFinalizer(repository, config.statsMarket(), session).run();
+                }
             } finally {
                 repository.close();
             }

@@ -23,6 +23,9 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import javafx.stage.Modality;
 import javafx.stage.Popup;
 import javafx.stage.Stage;
@@ -39,6 +42,19 @@ import javafx.util.Duration;
 @Slf4j
 @Data
 public class LibroEmergenteController implements Initializable {
+
+    static final double COMPACT_TICKET_WIDTH = 64;
+    static final double BCS_TICKET_WIDTH = 120;
+    static final double BOOK_ROW_HEIGHT = 22;
+    static final double BOOK_TABLE_HEADER_HEIGHT = 26;
+    private static final double BOOK_BASE_HEIGHT = 50;
+    private static final double STATISTICS_HEIGHT = 30;
+    private static final double TREND_HEIGHT = 18;
+    private static final double SUPPLEMENTARY_GAP = 6;
+    private static final String OWN_LIVE_ORDER_STYLE =
+            "-fx-text-fill: #ffffff; -fx-background-color: #8a6a12;"
+                    + " -fx-border-color: transparent transparent transparent #ffd45c;"
+                    + " -fx-border-width: 0 0 0 3; -fx-font-weight: bold;";
 
     @FXML
     public ChoiceBox<MarketDataMessage.SecurityExchangeMarketData> cbMarket;
@@ -89,6 +105,19 @@ public class LibroEmergenteController implements Initializable {
     private Label highpriceGen;
     @FXML
     private Canvas tendencia;
+    @FXML
+    private HBox statisticsBar;
+    @FXML
+    private Button multibookSettingsButton;
+    @FXML
+    private AnchorPane bookRoot;
+    @FXML
+    private VBox supplementaryBox;
+
+    private Runnable multibookSettingsAction;
+    private int visibleDepth = 5;
+    private boolean statisticsVisible = true;
+    private boolean trendVisible = true;
 
     private ObservableList<String> allSymbols;
 
@@ -130,8 +159,10 @@ public class LibroEmergenteController implements Initializable {
 
             cbMarket.setItems(x);
             cbMarket.getSelectionModel().select(MarketDataMessage.SecurityExchangeMarketData.BCS);
+            refreshSettlementVisibility(cbMarket.getSelectionModel().getSelectedItem());
 
             cbMarket.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+                refreshSettlementVisibility(newValue);
                 String currentSymbol = ticket.getText();
                 if (currentSymbol != null && !currentSymbol.isBlank()) {
                     updateSecurityTypeComboBox(currentSymbol.trim().toUpperCase(Locale.ROOT), newValue);
@@ -172,11 +203,13 @@ public class LibroEmergenteController implements Initializable {
 
                             setText(item);
 
-                            if (!data.getAccount().isEmpty() && Repository.getUser().getAccountList().contains(data.getAccount())) {
-                                setStyle(getStyle() + "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
+                            if (isOwnLiveOrder(data)) {
+                                setStyle(OWN_LIVE_ORDER_STYLE);
+                            } else if (!data.getAccount().isEmpty() && Repository.getUser().getAccountList().contains(data.getAccount())) {
+                                setStyle("-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
 
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
-                                setStyle(getStyle() + "-fx-border-color: #e01919; -fx-text-fill: #ffffff; -fx-background-color: #2b3178;");
+                                setStyle("-fx-border-color: #e01919; -fx-text-fill: #ffffff; -fx-background-color: #2b3178;");
 
                             } else {
                                 setStyle("-fx-text-fill: red;");
@@ -212,11 +245,13 @@ public class LibroEmergenteController implements Initializable {
 
                             setText(item);
 
-                            if (!data.getAccount().isEmpty() && Repository.getUser().getAccountList().contains(data.getAccount())) {
-                                setStyle(getStyle() + "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
+                            if (isOwnLiveOrder(data)) {
+                                setStyle(OWN_LIVE_ORDER_STYLE);
+                            } else if (!data.getAccount().isEmpty() && Repository.getUser().getAccountList().contains(data.getAccount())) {
+                                setStyle("-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;");
 
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
-                                setStyle(getStyle() + "-fx-border-color: #e01919; -fx-text-fill: #ffffff; -fx-background-color: #2b3178;");
+                                setStyle("-fx-border-color: #e01919; -fx-text-fill: #ffffff; -fx-background-color: #2b3178;");
 
                             } else {
                                 setStyle("-fx-text-fill: green;");
@@ -238,36 +273,40 @@ public class LibroEmergenteController implements Initializable {
             priceBid.setCellFactory(column -> {
 
                 TableCell<OrderBookEntry, String> cell = new TableCell<>() {
-                    private String prevItem = null;
                     private String baseStyle = "";
+                    private String displayedPrice;
+                    private long displayedPriceChangeSequence;
                     private final Timeline flash = new Timeline(
-                            new KeyFrame(Duration.millis(350), e -> setStyle(baseStyle))
+                            new KeyFrame(Duration.millis(800), e -> setStyle(baseStyle))
                     );
-
-                    @Override
-                    public void updateIndex(int i) {
-                        super.updateIndex(i);
-                        prevItem = null;
-                    }
 
                     @Override
                     protected void updateItem(String item, boolean empty) {
                         super.updateItem(item, empty);
-                        flash.stop();
                         if (empty || item == null) {
+                            flash.stop();
+                            displayedPrice = null;
                             setText(null);
                             baseStyle = "";
                             setStyle("");
-                            prevItem = null;
                         } else {
                             OrderBookEntry data = getTableRow().getItem();
                             if (data == null || data.getDecimalFormat() == null) return;
 
-                            boolean changed = prevItem != null && !item.equals(prevItem);
-                            prevItem = item;
+                            boolean firstDisplay = displayedPrice == null;
+                            boolean visiblePriceChanged = !firstDisplay && !item.equals(displayedPrice);
+                            displayedPrice = item;
+                            long changeSequence = data.getPriceChangeSequence();
+                            boolean changed = changeSequence > 0
+                                    && changeSequence != displayedPriceChangeSequence;
+                            if (changed) {
+                                displayedPriceChangeSequence = changeSequence;
+                            }
                             setText(item);
 
-                            if (Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
+                            if (isOwnLiveOrder(data)) {
+                                baseStyle = OWN_LIVE_ORDER_STYLE;
+                            } else if (Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
                                 baseStyle = "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;";
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
                                 baseStyle = "";
@@ -276,9 +315,13 @@ public class LibroEmergenteController implements Initializable {
                             }
 
                             if (changed) {
-                                setStyle(baseStyle + "; -fx-background-color: #69f0ae26; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #69f0ae; -fx-border-width: 0 0 0 3;");
+                                flash.stop();
+                                setStyle(baseStyle + "; -fx-background-color: #2e7d327a; -fx-text-fill: #effff1; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #69f0ae; -fx-border-width: 0 0 0 3;");
                                 flash.playFromStart();
-                            } else {
+                            } else if (visiblePriceChanged) {
+                                flash.stop();
+                                setStyle(baseStyle);
+                            } else if (flash.getStatus() == Timeline.Status.STOPPED) {
                                 setStyle(baseStyle);
                             }
                         }
@@ -295,36 +338,40 @@ public class LibroEmergenteController implements Initializable {
             priceOffer.setCellFactory(column -> {
 
                 TableCell<OrderBookEntry, String> cell = new TableCell<>() {
-                    private String prevItem = null;
                     private String baseStyle = "";
+                    private String displayedPrice;
+                    private long displayedPriceChangeSequence;
                     private final Timeline flash = new Timeline(
-                            new KeyFrame(Duration.millis(350), e -> setStyle(baseStyle))
+                            new KeyFrame(Duration.millis(800), e -> setStyle(baseStyle))
                     );
-
-                    @Override
-                    public void updateIndex(int i) {
-                        super.updateIndex(i);
-                        prevItem = null;
-                    }
 
                     @Override
                     protected void updateItem(String item, boolean empty) {
                         super.updateItem(item, empty);
-                        flash.stop();
                         if (empty || item == null) {
+                            flash.stop();
+                            displayedPrice = null;
                             setText(null);
                             baseStyle = "";
                             setStyle("");
-                            prevItem = null;
                         } else {
                             OrderBookEntry data = getTableRow().getItem();
                             if (data == null || data.getDecimalFormat() == null) return;
 
-                            boolean changed = prevItem != null && !item.equals(prevItem);
-                            prevItem = item;
+                            boolean firstDisplay = displayedPrice == null;
+                            boolean visiblePriceChanged = !firstDisplay && !item.equals(displayedPrice);
+                            displayedPrice = item;
+                            long changeSequence = data.getPriceChangeSequence();
+                            boolean changed = changeSequence > 0
+                                    && changeSequence != displayedPriceChangeSequence;
+                            if (changed) {
+                                displayedPriceChangeSequence = changeSequence;
+                            }
                             setText(item);
 
-                            if (Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
+                            if (isOwnLiveOrder(data)) {
+                                baseStyle = OWN_LIVE_ORDER_STYLE;
+                            } else if (Repository.getUser().getAccountList().contains(data.getAccount()) && !data.getAccount().isEmpty()) {
                                 baseStyle = "-fx-border-color: #856714; -fx-text-fill: #ffffff; -fx-background-color: #3e782b;";
                             } else if (data.getOperator().equals("041") && Repository.getUserEnable().contains(Repository.getUser().getUsername())) {
                                 baseStyle = "-fx-border-color: #e01919; -fx-text-fill: #ffffff; -fx-background-color: #2b3178;";
@@ -333,9 +380,13 @@ public class LibroEmergenteController implements Initializable {
                             }
 
                             if (changed) {
-                                setStyle(baseStyle + "; -fx-background-color: #ff525226; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #ff5252; -fx-border-width: 0 0 0 3;");
+                                flash.stop();
+                                setStyle(baseStyle + "; -fx-background-color: #b3263e7a; -fx-text-fill: #fff3f5; -fx-font-weight: bold; -fx-border-color: transparent transparent transparent #ff6b7a; -fx-border-width: 0 0 0 3;");
                                 flash.playFromStart();
-                            } else {
+                            } else if (visiblePriceChanged) {
+                                flash.stop();
+                                setStyle(baseStyle);
+                            } else if (flash.getStatus() == Timeline.Status.STOPPED) {
                                 setStyle(baseStyle);
                             }
                         }
@@ -368,84 +419,152 @@ public class LibroEmergenteController implements Initializable {
         });
     }
 
-    private void openOrderLauncher(OrderBookEntry dataBook, String sideOrderValue) {
-        try {
+    static boolean shouldShowSettlement(MarketDataMessage.SecurityExchangeMarketData market) {
+        return market != null && market != MarketDataMessage.SecurityExchangeMarketData.BCS;
+    }
 
+    static double ticketWidthForMarket(MarketDataMessage.SecurityExchangeMarketData market) {
+        return market == MarketDataMessage.SecurityExchangeMarketData.BCS
+                ? BCS_TICKET_WIDTH
+                : COMPACT_TICKET_WIDTH;
+    }
 
-            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/Lanzador.fxml"));
-            Parent root = loader.load();
+    private void refreshSettlementVisibility(MarketDataMessage.SecurityExchangeMarketData market) {
+        boolean visible = shouldShowSettlement(market);
+        settlType.setVisible(visible);
+        settlType.setManaged(visible);
 
-            LanzadorController lanzadorController = loader.getController();
-            lanzadorController.setIslibrazo(true);
-            lanzadorController.setIdLibrazo(dataBook.getId());
-            lanzadorController.setSkipConfirmationAlert(Repository.getUserEnable().contains(Repository.getUser().getUsername()));
+        double ticketWidth = ticketWidthForMarket(market);
+        ticket.setMinWidth(ticketWidth);
+        ticket.setPrefWidth(ticketWidth);
+        ticket.setMaxWidth(ticketWidth);
+    }
 
+    public void setVisibleDepth(int depth) {
+        visibleDepth = normalizeVisibleDepth(depth);
+        double tableHeight = tableHeightForDepth(visibleDepth);
+        bidViewTable.setFixedCellSize(BOOK_ROW_HEIGHT);
+        offerViewTable.setFixedCellSize(BOOK_ROW_HEIGHT);
+        setFixedHeight(bidViewTable, tableHeight);
+        setFixedHeight(offerViewTable, tableHeight);
+        updateCardHeight();
+    }
 
+    static int normalizeVisibleDepth(int depth) {
+        return switch (depth) {
+            case 3, 5, 10, 15 -> depth;
+            default -> 5;
+        };
+    }
 
-            if (Repository.getUser().getUsername().contains("fricci")) {
-                lanzadorController.getAcAccount().getItems().clear();
-                lanzadorController.getAcAccount().setItems(FXCollections.observableArrayList("47024924/0"));
-                Platform.runLater(() -> lanzadorController.getAcAccount().getSelectionModel().select("47024924/0"));
-            }
+    static double tableHeightForDepth(int depth) {
+        return BOOK_TABLE_HEADER_HEIGHT + normalizeVisibleDepth(depth) * BOOK_ROW_HEIGHT;
+    }
 
-            if (Repository.getStaticSecurityType().containsKey(dataBook.getSymbol())) {
-                lanzadorController.getSecurityType().getSelectionModel().select(RoutingMessage.SecurityType.CS);
-            } else if (dataBook.getSymbol().contains("CFI")) {
-                lanzadorController.getSecurityType().getSelectionModel().select(RoutingMessage.SecurityType.CFI);
-            } else {
-                lanzadorController.getSecurityType().getSelectionModel().select(RoutingMessage.SecurityType.CS);
-            }
+    private void updateCardHeight() {
+        boolean supplementaryVisible = statisticsVisible || trendVisible;
+        double supplementaryHeight = (statisticsVisible ? STATISTICS_HEIGHT : 0)
+                + (trendVisible ? TREND_HEIGHT : 0)
+                + (supplementaryVisible ? SUPPLEMENTARY_GAP : 0);
+        double cardHeight = BOOK_BASE_HEIGHT + tableHeightForDepth(visibleDepth) + supplementaryHeight;
+        bookRoot.setMinHeight(cardHeight);
+        bookRoot.setPrefHeight(cardHeight);
+        bookRoot.setMaxHeight(cardHeight);
+    }
 
+    private void setFixedHeight(Control control, double height) {
+        control.setMinHeight(height);
+        control.setPrefHeight(height);
+        control.setMaxHeight(height);
+    }
 
-            RoutingMessage.SettlType selectedSettlType = settlType.getSelectionModel().getSelectedItem();
-            lanzadorController.getSettltypeOrder().setValue(selectedSettlType);
+    public void setSupplementaryVisibility(boolean statisticsVisible, boolean trendVisible) {
+        this.statisticsVisible = statisticsVisible;
+        this.trendVisible = trendVisible;
+        statisticsBar.setVisible(statisticsVisible);
+        statisticsBar.setManaged(statisticsVisible);
+        tendencia.setVisible(trendVisible);
+        tendencia.setManaged(trendVisible);
+        supplementaryBox.setVisible(statisticsVisible || trendVisible);
+        supplementaryBox.setManaged(statisticsVisible || trendVisible);
+        updateCardHeight();
+    }
 
-            lanzadorController.getTicket().setText(dataBook.getSymbol());
-            lanzadorController.getPriceOrder().setText(dataBook.getPrice());
-            lanzadorController.getQuantity().setText(dataBook.getSize());
+    public void setMultibookSettingsAction(Runnable action) {
+        multibookSettingsAction = action;
+        boolean available = action != null;
+        multibookSettingsButton.setVisible(available);
+        multibookSettingsButton.setManaged(available);
+    }
 
-            lanzadorController.getSideOrder().setValue(sideOrderValue);
-
-            lanzadorController.setLibrazoController(this);
-
-
-            double px = Double.parseDouble(dataBook.getPrice().replace(",", ""));
-            double spread = px * (10 / 10_000d);
-
-            DecimalFormatSymbols usSymbols = DecimalFormatSymbols.getInstance(Locale.US);
-            DecimalFormat formatter4dec = new DecimalFormat("0.0000", usSymbols);
-
-            lanzadorController.getSpread().setText(formatter4dec.format(spread));
-
-            lanzadorController.setValues(Repository.getUser());
-            lanzadorController.getIceberg().setText("10");
-
-
-            Scene scene = new Scene(root);
-
-
-            String cssPath = "/blotter/css/style.css";
-            URL cssResource = getClass().getResource(cssPath);
-
-            if (cssResource != null) {
-                scene.getStylesheets().add(cssResource.toExternalForm());
-            } else {
-                log.error("Recurso CSS no encontrado: " + cssPath);
-            }
-
-
-            stage = new Stage();
-            stage.setTitle("Lanzador de Órdenes");
-            stage.setScene(scene);
-            stage.initModality(Modality.APPLICATION_MODAL);
-            stage.setWidth(700);
-            stage.setHeight(440);
-            stage.setResizable(true);
-            stage.show();
-
-        } catch (IOException e) {
-            log.error("Error al abrir el lanzador", e);
+    @FXML
+    private void openMultibookSettings() {
+        if (multibookSettingsAction != null) {
+            multibookSettingsAction.run();
         }
+    }
+
+    private void openOrderLauncher(OrderBookEntry dataBook, String sideOrderValue) {
+        Repository.getPrincipalController().openLauncherFromBook(dataBook, sideOrderValue,
+                settlType.getSelectionModel().getSelectedItem(), this);
+    }
+
+    String resolveLauncherSymbol(String levelSymbol) {
+        if (levelSymbol != null && !levelSymbol.isBlank()) {
+            return levelSymbol.trim().toUpperCase(Locale.ROOT);
+        }
+        if (subscribe != null && subscribe.getSymbol() != null && !subscribe.getSymbol().isBlank()) {
+            return subscribe.getSymbol().trim().toUpperCase(Locale.ROOT);
+        }
+        String selectedSymbol = ticket.getText();
+        return selectedSymbol == null ? "" : selectedSymbol.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private boolean isOwnLiveOrder(OrderBookEntry entry) {
+        if (entry == null) return false;
+        TableView<OrderBookEntry> table = entry.getSide() == RoutingMessage.Side.BUY
+                ? bidViewTable : offerViewTable;
+        boolean repeatedPrice = table.getItems().stream()
+                .filter(item -> item != null
+                        && item.getSide() == entry.getSide()
+                        && Math.abs(item.getPriceValue() - entry.getPriceValue()) < 0.0001d)
+                .limit(2)
+                .count() > 1;
+        if (!repeatedPrice) {
+            return Repository.tieneOrdenVivaEn(
+                    resolveLauncherSymbol(entry.getSymbol()), entry.getSide(), entry.getPriceValue(),
+                    entry.getSecurityExchangeRouting(), settlType.getSelectionModel().getSelectedItem());
+        }
+        return Repository.tienePosturaVivaEn(
+                resolveLauncherSymbol(entry.getSymbol()), entry.getSide(), entry.getPriceValue(),
+                entry.getSizeValue(), entry.getAccount(), entry.getOperator(),
+                entry.getSecurityExchangeRouting(), settlType.getSelectionModel().getSelectedItem());
+    }
+
+    public void refreshOwnOrderMarker(String orderSymbol) {
+        if (orderSymbol == null || !resolveLauncherSymbol("").equalsIgnoreCase(orderSymbol.trim())) {
+            return;
+        }
+        bidViewTable.refresh();
+        offerViewTable.refresh();
+    }
+
+    RoutingMessage.SecurityType resolveLauncherSecurityType(String symbol) {
+        if (subscribe != null && subscribe.getSecurityType() != null
+                && subscribe.getSecurityType() != RoutingMessage.SecurityType.UNRECOGNIZED) {
+            return subscribe.getSecurityType();
+        }
+        RoutingMessage.SecurityType selected = securityType.getSelectionModel().getSelectedItem();
+        if (selected != null && selected != RoutingMessage.SecurityType.UNRECOGNIZED) {
+            return selected;
+        }
+        RoutingMessage.SecurityType configured = Repository.getStaticSecurityType().get(symbol);
+        if (configured != null) {
+            return configured;
+        }
+        return symbol != null && symbol.contains("CFI")
+                ? RoutingMessage.SecurityType.CFI
+                : RoutingMessage.SecurityType.CS;
     }
 
 
@@ -574,7 +693,8 @@ public class LibroEmergenteController implements Initializable {
             if (serie == null || serie.length < 2) {
                 serie = bookVO.getStatisticVO().getSerieIntradia();
             }
-            Sparkline.pintar(tendencia, serie);
+            Sparkline.pintar(tendencia, serie,
+                    bookVO.getStatisticVO().getStatistic().getPreviusClose());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
@@ -691,7 +811,7 @@ public class LibroEmergenteController implements Initializable {
     }
 
     public void close() {
-        if(stage.isShowing()){
+        if (stage != null && stage.isShowing()) {
             stage.close();
         }
 

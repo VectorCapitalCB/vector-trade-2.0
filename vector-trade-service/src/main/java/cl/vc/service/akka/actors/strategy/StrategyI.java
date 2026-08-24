@@ -37,4 +37,27 @@ public interface StrategyI {
     default void rejectNoMarketData() {
     }
 
+    /** Indica que la estrategia está esperando una respuesta de alta/replace/cancel. */
+    default boolean isTemporarilyBlocked() {
+        return false;
+    }
+
+    /** Libera únicamente el candado operativo de esta estrategia. */
+    default void resumeAfterTemporaryBlock() {
+    }
+
+    /** Reinicia el contador local legado; el umbral común lo administra ActorStrategy. */
+    default void resetRejectRecovery() {
+    }
+
+    /** Cancela la orden viva después del umbral común de rechazos consecutivos. */
+    default void cancelAfterConsecutiveRejects(String orderId) {
+        onCancelRequest(RoutingMessage.OrderCancelRequest.newBuilder().setId(orderId).build());
+    }
+
+    /** true sólo cuando el precio vivo está detenido por el límite configurado. */
+    default boolean isAtConfiguredLimit() {
+        return false;
+    }
+
 }

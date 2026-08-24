@@ -7,7 +7,10 @@ import cl.vc.algos.bkt.proto.BktStrategyProtos;
 import cl.vc.blotter.Repository;
 import cl.vc.blotter.controller.*;
 import cl.vc.blotter.model.BookVO;
+import cl.vc.blotter.utils.BasketTabs;
+import cl.vc.blotter.utils.SoundPlayer;
 import cl.vc.blotter.utils.Notifier;
+import cl.vc.blotter.utils.ClientLogCollector;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.generator.TimeGenerator;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
@@ -19,15 +22,14 @@ import cl.vc.module.protocolbuff.tcp.TransportingObjects;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.fxml.FXMLLoader;
-import javafx.scene.control.Tab;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.AnchorPane;
+import javafx.scene.control.Alert;
+import javafx.scene.control.ButtonBar;
+import javafx.scene.control.ButtonType;
+import javafx.stage.StageStyle;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.IntStream;
 
 
@@ -35,6 +37,10 @@ import java.util.stream.IntStream;
 public class ClientActor extends AbstractActor {
 
     private final static HashMap<String, RoutingMessage.Order> ordersById = new HashMap<>();
+    private final static Map<String, RoutingMessage.Order> latestWorkingOrdersById = new HashMap<>();
+    private final static Set<String> pendingClientLogRequests = ConcurrentHashMap.newKeySet();
+    private final static Map<String, BlotterMessage.ClientLogResponse> completedClientLogResponses =
+            new ConcurrentHashMap<>();
 
     public static Props props() {
         return Props.create(ClientActor.class);
@@ -52,7 +58,7 @@ public class ClientActor extends AbstractActor {
                 .match(BlotterMessage.Balance.class, this::onBalance)
                 .match(NotificationMessage.Notification.class, this::onNotification)
                 .match(MarketDataMessage.Snapshot.class, this::onSnappshot)
-                .match(RoutingMessage.Order.class, this::onOrder)
+                .match(RoutingMessage.Order.class, this::onOrderReconciled)
                 .match(SessionsMessage.Connect.class, this::onConnect)
                 .match(SessionsMessage.Pong.class, this::onPong)
                 .match(SessionsMessage.Ping.class, this::onPing)
@@ -74,6 +80,9 @@ public class ClientActor extends AbstractActor {
                 .match(MarketDataMessage.SecurityList.class, this::onSecurityList)
                 .match(BlotterMessage.SnapshotPrestamos.class, this::onSnapshotPrestamos)
                 .match(MarketDataMessage.BolsaStats.class, this::onBolsaStats)
+                .match(BlotterMessage.HistoricalOrdersSnapshot.class, this::onHistoricalOrdersSnapshot)
+                .match(BlotterMessage.ClientLogRequest.class, this::onClientLogRequest)
+                .match(BlotterMessage.ClientLogResponse.class, this::sendClientLogResponse)
                 .build();
 
 
@@ -98,6 +107,79 @@ public class ClientActor extends AbstractActor {
         }
     }
 
+    private void onHistoricalOrdersSnapshot(BlotterMessage.HistoricalOrdersSnapshot snapshot) {
+        HistoricalOrdersController historicalOrders = Repository.getHistoricalOrdersController();
+        if (historicalOrders != null) {
+            historicalOrders.applySnapshot(snapshot);
+        }
+    }
+
+    private void onClientLogRequest(BlotterMessage.ClientLogRequest request) {
+        if (request == null || request.getRequestId().isBlank()) {
+            return;
+        }
+
+        ActorRef self = getSelf();
+        BlotterMessage.ClientLogResponse completed = completedClientLogResponses.get(request.getRequestId());
+        if (completed != null) {
+            self.tell(completed, ActorRef.noSender());
+            return;
+        }
+        if (!pendingClientLogRequests.add(request.getRequestId())) return;
+
+        Platform.runLater(() -> {
+            try {
+                ButtonType authorize = new ButtonType("Autorizar envio", ButtonBar.ButtonData.OK_DONE);
+                ButtonType reject = new ButtonType("Rechazar", ButtonBar.ButtonData.CANCEL_CLOSE);
+                Alert alert = new Alert(Alert.AlertType.CONFIRMATION);
+                alert.setTitle("Solicitud de diagnostico");
+                alert.setHeaderText("Soporte solicita un extracto del log de este equipo");
+                alert.setContentText("Se enviaran los ultimos " + request.getMinutes()
+                        + " minutos del log, con credenciales y tokens ocultos, junto con "
+                        + "procesador, nucleos, RAM y version de Java. "
+                        + "Nada se enviara sin tu autorizacion.");
+                alert.getButtonTypes().setAll(authorize, reject);
+                alert.initStyle(StageStyle.UTILITY);
+                try {
+                    String cssPath = ClientActor.class.getResource(Repository.getSTYLE()).toExternalForm();
+                    alert.getDialogPane().getStylesheets().add(cssPath);
+                    alert.getDialogPane().getStyleClass().add("alert-dialog");
+                } catch (Exception ignored) {
+                    log.debug("[ClientLogs] No se pudo aplicar el tema al dialogo de autorizacion");
+                }
+
+                boolean accepted = alert.showAndWait().filter(authorize::equals).isPresent();
+                if (accepted) {
+                    ClientLogCollector.collectAsync(request, Repository.getUsername())
+                            .thenAccept(response -> completeClientLogRequest(response, self));
+                } else {
+                    completeClientLogRequest(
+                            ClientLogCollector.rejectedResponse(request, Repository.getUsername()), self);
+                }
+            } catch (Exception e) {
+                log.error("[ClientLogs] No se pudo mostrar la solicitud {}: {}",
+                        request.getRequestId(), e.getMessage(), e);
+                pendingClientLogRequests.remove(request.getRequestId());
+            }
+        });
+    }
+
+    private static void completeClientLogRequest(
+            BlotterMessage.ClientLogResponse response, ActorRef actor) {
+        if (completedClientLogResponses.size() >= 256) completedClientLogResponses.clear();
+        completedClientLogResponses.put(response.getRequestId(), response);
+        pendingClientLogRequests.remove(response.getRequestId());
+        actor.tell(response, ActorRef.noSender());
+    }
+
+    private void sendClientLogResponse(BlotterMessage.ClientLogResponse response) {
+        if (Repository.getClientService() == null) {
+            log.warn("[ClientLogs] No hay conexion al core para responder request {}", response.getRequestId());
+            return;
+        }
+        Repository.getClientService().sendMessage(response);
+    }
+
     private void onSnapshotSimultaneas(BlotterMessage.SnapshotSimultaneas snapshotSimultaneas) {
         Repository.getPositionSimultaneasController().addSnapshot(snapshotSimultaneas);
     }
@@ -118,17 +200,6 @@ public class ClientActor extends AbstractActor {
 
                 Repository.setUser(user);
 
-                if (user.getIsAdmin()) {
-                    Repository.getFooterController().btnAdminUser.setDisable(false);
-                    Repository.getFooterController().btnAdminUser.setVisible(true);
-                    Repository.getFooterController().btnAdminUser.setManaged(true);
-
-                    ImageView imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/admin.png"))));
-                    imageView.setFitHeight(35);
-                    imageView.setFitWidth(35);
-                    Repository.getFooterController().btnAdminUser.setGraphic(imageView);
-                }
-
                 boolean isSmart = !user.getRoles().getPerfil().isEmpty() && user.getRoles().getPerfil().contains("avanzado");
 
                 if (isSmart) {
@@ -143,6 +214,11 @@ public class ClientActor extends AbstractActor {
                             log.warn("PrincipalController todavía no está disponible al aplicar LIGHT.");
                         }
                     });
+                }
+
+                var principalController = Repository.getPrincipalController();
+                if (principalController != null && principalController.getLanzadorController() != null) {
+                    principalController.getLanzadorController().applyProfileVisualMode(isSmart);
                 }
 
 
@@ -232,7 +308,10 @@ public class ClientActor extends AbstractActor {
                 if (lanzadorController != null) {
                     lanzadorController.getAcAccount().setItems(accountUsers);
                     lanzadorController.getAcAccount().getSelectionModel().selectFirst();
-                    Platform.runLater(() -> lanzadorController.applyDefaultRoutingFromMapOrFirst());
+                    Platform.runLater(() -> {
+                        lanzadorController.applyDefaultRoutingFromMapOrFirst();
+                        lanzadorController.applyInitialInstrumentOnce();
+                    });
                 }
 
 
@@ -327,52 +406,7 @@ public class ClientActor extends AbstractActor {
     }
 
     private synchronized void onBasketMessage(BktStrategyProtos.SnapshotBasket snapshot) {
-
-        try {
-
-            Platform.runLater(() -> {
-                try {
-
-                    if (Repository.getIsLight()) {
-                        return;
-                    }
-
-                    if (!Repository.getBasketTabController().containsKey(snapshot.getBasket().getBasketID())) {
-
-                        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/BasketMainTabView.fxml"));
-                        AnchorPane anchorPane = loader.load();
-                        BasketTabController tabBasketsController = loader.getController();
-                        Repository.getBasketTabController().put(snapshot.getBasket().getBasketID(), tabBasketsController);
-                        Tab tab = new Tab(snapshot.getBasket().getBasketID());
-                        tab.setContent(anchorPane);
-
-                        Repository.getBasketController().getTabBasket().getTabs().add(tab);
-
-                        tabBasketsController.getData().add(snapshot.getBasket());
-                        replaceBasketOrders(tabBasketsController, snapshot.getBasket().getOrdersList());
-
-                    } else {
-
-                        Repository.getBasketTabController().get(snapshot.getBasket().getBasketID()).getData().clear();
-                        Repository.getBasketTabController().get(snapshot.getBasket().getBasketID()).getData().add(snapshot.getBasket());
-                        BasketTabController tabBasketsController = Repository.getBasketTabController().get(snapshot.getBasket().getBasketID());
-
-                        replaceBasketOrders(tabBasketsController, snapshot.getBasket().getOrdersList());
-
-                        Repository.getBasketTabController().get(snapshot.getBasket().getBasketID()).getBasketMainTable().refresh();
-                        tabBasketsController.getExecutionsOrderController().getTableExecutionReports().refresh();
-                    }
-
-                } catch (IOException e) {
-                    throw new RuntimeException(e);
-                }
-            });
-
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
-        }
-
-
+        Platform.runLater(() -> BasketTabs.openOrUpdate(snapshot.getBasket()));
     }
 
     private void onSecurityList(MarketDataMessage.SecurityList securityList) {
@@ -502,14 +536,9 @@ public class ClientActor extends AbstractActor {
 
             }
 
-            if (statistic.getSymbol().equals(Repository.getDolarSymbol())) {
-                Platform.runLater(() -> {
-                    try {
-                        Repository.getFooterController().updateDollarStatistics(statistic);
-                    } catch (Exception e) {
-                        log.error(e.getMessage(), e);
-                    }
-                });
+            if (statistic.getSymbol().equals(Repository.getDolarSymbol())
+                    && statistic.getSecurityExchange().name().equals(Repository.getDolarSecurity())) {
+                Repository.updateDollarStatistic(statistic);
             }
 
 
@@ -526,8 +555,10 @@ public class ClientActor extends AbstractActor {
 
             String id = TopicGenerator.getTopicMKD(snapshot);
 
-            if(!Repository.getBookPortMaps().containsKey(id)){
-                log.error("llega informacion que no tengo onSnappshot {} ", id);
+            if (!Repository.getBookPortMaps().containsKey(id)) {
+                if (!snapshot.getSymbol().equals(Repository.getDolarSymbol())) {
+                    log.warn("Llega snapshot sin libro activo id={}", id);
+                }
                 return;
             }
 
@@ -630,6 +661,11 @@ public class ClientActor extends AbstractActor {
             Repository.getPrincipalController().getMarketDataPortfolioViewControllers().forEach((key, value) -> value.getData().clear());
             Repository.getRoutingController().getWorkingOrderController().getData().clear();
             Repository.getRoutingController().getExecutionsOrderController().getData().clear();
+            Repository.getRoutingController().getExecutionsOrderController().clearOrderState();
+            latestWorkingOrdersById.clear();
+            ordersById.clear();
+            BasketTabs.clearRuntimeOrderState();
+            Repository.clearLiveOrderLevels();
 
             Platform.runLater(() -> {
                 Repository.getPrincipalController().getMarketDataController().getTpMkData().getTabs().clear();
@@ -784,8 +820,7 @@ public class ClientActor extends AbstractActor {
 
                 if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_NEW)) {
                     if (Repository.isSound()) {
-                        Repository.getMediaPlayerNew().stop();
-                        Repository.getMediaPlayerNew().play();
+                        SoundPlayer.playNew();
                     }
 
                 } else if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE)) {
@@ -801,15 +836,13 @@ public class ClientActor extends AbstractActor {
                         }
 
                         if (Repository.isSound()) {
-                            Repository.getMediaPlayerTrade().stop();
-                            Repository.getMediaPlayerTrade().play();
+                            SoundPlayer.playTrade();
                         }
                     });
 
                 } else if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_REJECTED)) {
                     if (Repository.isSound()) {
-                        Repository.getMediaPlayerReject().stop();
-                        Repository.getMediaPlayerReject().play();
+                        SoundPlayer.playRejected();
                     }
                 }
 
@@ -818,6 +851,79 @@ public class ClientActor extends AbstractActor {
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
+        }
+    }
+
+    private void onOrderReconciled(RoutingMessage.Order order) {
+        Platform.runLater(() -> {
+            try {
+                boolean handledAsBasket = BasketTabs.route(order);
+                if (!handledAsBasket) {
+                    RoutingMessage.Order latest = rememberLatestWorkingOrder(order);
+                    ExecutionsController workingOrders = Repository.getRoutingController().getWorkingOrderController();
+                    upsertOrder(workingOrders, latest);
+                    Repository.getRoutingController().getTabRuteo()
+                            .setText("Trabajando (" + workingOrders.data.size() + ")");
+                }
+
+                processExecutionEvent(order);
+            } catch (Exception e) {
+                log.error("[OrderSync] No se pudo aplicar orden id={} basket={} status={} execType={}",
+                        order.getId(), order.getBasketID(), order.getOrdStatus(), order.getExecType(), e);
+            }
+        });
+    }
+
+    private RoutingMessage.Order rememberLatestWorkingOrder(RoutingMessage.Order incoming) {
+        RoutingMessage.Order previous = latestWorkingOrdersById.get(incoming.getId());
+        RoutingMessage.Order latest = OrderStateReconciler.latest(previous, incoming);
+        latestWorkingOrdersById.put(incoming.getId(), latest);
+
+        if (previous != null && latest == previous && previous != incoming) {
+            log.warn("[OrderSync] Evento atrasado ignorado id={} currentStatus={} incomingStatus={} currentCumQty={} incomingCumQty={}",
+                    incoming.getId(), previous.getOrdStatus(), incoming.getOrdStatus(),
+                    previous.getCumQty(), incoming.getCumQty());
+        }
+        return latest;
+    }
+
+    private void upsertOrder(ExecutionsController controller, RoutingMessage.Order order) {
+        OptionalInt index = IntStream.range(0, controller.data.size())
+                .filter(i -> controller.data.get(i).getId().equals(order.getId()))
+                .findFirst();
+        if (index.isPresent()) {
+            controller.data.set(index.getAsInt(), order);
+        } else {
+            controller.data.add(order);
+        }
+        controller.getTableExecutionReports().refresh();
+    }
+
+    private void processExecutionEvent(RoutingMessage.Order order) {
+        ExecutionsController executions = Repository.getRoutingController().getExecutionsOrderController();
+        executions.updateOrderState(order);
+
+        if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_NEW)) {
+            if (Repository.isSound()) {
+                SoundPlayer.playNew();
+            }
+        } else if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE)) {
+            boolean duplicate = executions.data.stream()
+                    .anyMatch(existing -> existing.getExecId().equals(order.getExecId()));
+            if (!duplicate) {
+                executions.data.add(order);
+                executions.getTableExecutionReports().refresh();
+            }
+            if (Repository.isSound()) {
+                SoundPlayer.playTrade();
+            }
+            HistoricalOrdersController history = Repository.getHistoricalOrdersController();
+            if (history != null) {
+                history.onLiveExecution(order);
+            }
+        } else if (order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_REJECTED)
+                && Repository.isSound()) {
+            SoundPlayer.playRejected();
         }
     }
 

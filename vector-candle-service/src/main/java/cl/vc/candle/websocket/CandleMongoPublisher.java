@@ -34,6 +34,8 @@ public class CandleMongoPublisher extends Thread {
     private final Map<CandleSubscriptionKey, Object> lastSeenByKey = new ConcurrentHashMap<>();
     private final Set<CandleSubscriptionKey> initialized = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private volatile MongoCollection<Document> dailyCollection;
+    private volatile MongoCollection<Document> closePriceCollection;
+    private volatile MongoClient closePriceClient;
 
     public CandleMongoPublisher(Properties properties) {
         this.properties = properties;
@@ -62,6 +64,7 @@ public class CandleMongoPublisher extends Thread {
             MongoDatabase database = client.getDatabase(databaseName);
             MongoCollection<Document> collection = database.getCollection(collectionName);
             dailyCollection = database.getCollection(properties.getProperty("mongo.daily.collection", "instrument_daily"));
+            connectClosePriceHistory();
             log.info("Mongo publisher iniciado pollMs={} batchSize={} bootstrapLimit={}", pollMs, batchSize, bootstrapLimit);
 
             while (!Thread.currentThread().isInterrupted()) {
@@ -77,7 +80,137 @@ public class CandleMongoPublisher extends Thread {
             log.error("Error en mongo publisher", e);
         } finally {
             dailyCollection = null;
+            closePriceCollection = null;
+            if (closePriceClient != null) {
+                try {
+                    closePriceClient.close();
+                } catch (Exception ignored) {
+                    // no-op
+                }
+                closePriceClient = null;
+            }
         }
+    }
+
+    private void connectClosePriceHistory() {
+        String uri = properties.getProperty("mongo.close.uri", "").trim();
+        if (uri.isEmpty()) {
+            log.warn("Historico close_prices deshabilitado: falta mongo.close.uri");
+            return;
+        }
+        MongoClient client = null;
+        try {
+            client = new MongoClient(new MongoClientURI(uri));
+            String databaseName = properties.getProperty("mongo.close.database", "close_prices");
+            client.getDatabase(databaseName).runCommand(new Document("ping", 1));
+            closePriceClient = client;
+            closePriceCollection = client.getDatabase(databaseName)
+                    .getCollection(properties.getProperty("mongo.close.collection", "close_prices"));
+            log.info("Historico close_prices disponible en modo lectura db={} collection={}",
+                    databaseName, properties.getProperty("mongo.close.collection", "close_prices"));
+        } catch (Exception e) {
+            closePriceCollection = null;
+            if (client != null) {
+                try {
+                    client.close();
+                } catch (Exception ignored) {
+                    // no-op
+                }
+            }
+            log.warn("No se pudo habilitar historico close_prices: {}", e.toString());
+        }
+    }
+
+    /**
+     * Serie diaria historica tomada bajo demanda desde close_prices. No escribe, no crea indices y
+     * conserva solo el documento mas reciente de cada dia por simbolo.
+     */
+    public boolean sendClosePriceHistory(Session session, String market, String symbol, int requestedLimit) {
+        MongoCollection<Document> collection = closePriceCollection;
+        if (collection == null || symbol == null || symbol.isBlank()) {
+            return false;
+        }
+
+        int limit = Math.max(1, Math.min(requestedLimit, 500));
+        Bson filter = Filters.and(
+                Filters.eq("symbol", symbol),
+                Filters.eq("securityExchange", market));
+        FindIterable<Document> docs = collection.find(filter)
+                .sort(Sorts.descending("time"))
+                .limit(limit * 3);
+
+        Map<String, JSONObject> latestByDay = new LinkedHashMap<>();
+        for (Document doc : docs) {
+            String time = doc.getString("time");
+            if (time == null || time.length() < 10) {
+                continue;
+            }
+            String day = time.substring(0, 10);
+            if (latestByDay.containsKey(day)) {
+                continue;
+            }
+            JSONObject row = closePriceRow(doc, symbol, day);
+            if (row != null) {
+                latestByDay.put(day, row);
+                if (latestByDay.size() >= limit) {
+                    break;
+                }
+            }
+        }
+
+        List<JSONObject> chronological = new ArrayList<>(latestByDay.values());
+        Collections.reverse(chronological);
+        JSONArray rows = new JSONArray();
+        chronological.forEach(rows::put);
+
+        JSONObject payload = new JSONObject()
+                .put("type", "close_price_history")
+                .put("market", market)
+                .put("symbol", symbol)
+                .put("count", rows.length())
+                .put("rows", rows);
+        log.info("close_prices historico market={} symbol={} rows={} limit={}", market, symbol, rows.length(), limit);
+        return send(session, payload.toString());
+    }
+
+    static JSONObject closePriceRow(Document doc, String symbol, String day) {
+        try {
+            String protobufData = doc.getString("protobufData");
+            if (protobufData == null || protobufData.isBlank()) {
+                return null;
+            }
+            JSONObject statistic = new JSONObject(protobufData);
+            JSONObject ohlcv = statistic.optJSONObject("ohlcv");
+            double close = positiveNumber(ohlcv, "close");
+            if (close <= 0d) close = statistic.optDouble("close", 0d);
+            if (close <= 0d) close = statistic.optDouble("last", 0d);
+            if (close <= 0d) {
+                return null;
+            }
+
+            double open = positiveNumber(ohlcv, "open");
+            double high = positiveNumber(ohlcv, "high");
+            double low = positiveNumber(ohlcv, "low");
+            double volume = ohlcv == null ? 0d : Math.max(0d, ohlcv.optDouble("volume", 0d));
+            if (open <= 0d) open = close;
+            if (high <= 0d) high = Math.max(open, close);
+            if (low <= 0d) low = Math.min(open, close);
+
+            return new JSONObject()
+                    .put("symbol", symbol)
+                    .put("date", day)
+                    .put("open", open)
+                    .put("high", Math.max(high, Math.max(open, close)))
+                    .put("low", Math.min(low, Math.min(open, close)))
+                    .put("close", close)
+                    .put("volume", volume);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private static double positiveNumber(JSONObject source, String key) {
+        return source == null ? 0d : source.optDouble(key, 0d);
     }
 
     /**

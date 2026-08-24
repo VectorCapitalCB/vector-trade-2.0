@@ -2,8 +2,10 @@ package cl.vc.blotter;
 
 import cl.vc.blotter.controller.LoginController;
 import cl.vc.blotter.utils.ConfigGenerator;
+import cl.vc.blotter.utils.I18n;
 import cl.vc.blotter.utils.NativeLibraryLoader;
 import cl.vc.blotter.utils.Notifier;
+import cl.vc.blotter.utils.SoundPlayer;
 import cl.vc.blotter.utils.VelopackUpdater;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -17,8 +19,6 @@ import javafx.scene.image.Image;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.AnchorPane;
-import javafx.scene.media.Media;
-import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import lombok.extern.slf4j.Slf4j;
@@ -55,6 +55,8 @@ public class MainApp extends Application {
 
                 try {
 
+                    I18n.install();
+
                     Repository.getProperties().load(LoginController.class.getResourceAsStream("/blotter/enviroment/application.production.properties"));
 
                     String appVer  = Repository.getProperties().getProperty("version", "dev");
@@ -70,13 +72,7 @@ public class MainApp extends Application {
                         ConfigGenerator.checkForUpdateAndGenerateConfig(principal);
                     }
 
-                    String osName = System.getProperty("os.name").toLowerCase();
-
-                    if (osName.contains("win")) {
-                        Repository.setMediaPlayerNew(new MediaPlayer(new Media(Objects.requireNonNull(MainApp.class.getResource("/sounds/new.mp3")).toExternalForm())));
-                        Repository.setMediaPlayerReject(new MediaPlayer(new Media(Objects.requireNonNull(MainApp.class.getResource("/sounds/rejected.mp3")).toExternalForm())));
-                        Repository.setMediaPlayerTrade(new MediaPlayer(new Media(Objects.requireNonNull(MainApp.class.getResource("/sounds/trade.mp3")).toExternalForm())));
-                    }
+                    SoundPlayer.initialize();
 
 
                     FXMLLoader fxmlLoader = new FXMLLoader();
@@ -95,6 +91,7 @@ public class MainApp extends Application {
                     principal.setScene(stage);
                     principal.setOnCloseRequest(t -> {
                         shutdownSchedulers();
+                        SoundPlayer.shutdown();
                         Platform.exit();
                         exit(0);
                         System.exit(0);
@@ -107,6 +104,7 @@ public class MainApp extends Application {
                     Repository.login = stage;
 
                     principal.setScene(stage);
+                    I18n.apply(stage);
                     principal.show();
 
                     Notifier.setStage(principal);

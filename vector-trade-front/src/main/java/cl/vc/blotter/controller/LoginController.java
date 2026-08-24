@@ -252,25 +252,56 @@ public class LoginController {
 
             log.error(ex.getMessage(), ex);
 
-            if (ex.getMessage().contains("401")) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setTitle("Error");
-                alert.setHeaderText("El usuario o contraseña no son válidos.");
-                alert.setContentText("reintentar o solicitar acceso");
-                DialogPane dialogPane = alert.getDialogPane();
-                dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource(Repository.getSTYLE())).toExternalForm());
-                alert.showAndWait();
+            cleanupFailedLogin();
+
+            String message = ex.getMessage() == null ? "No se pudo conectar al servicio principal" : ex.getMessage();
+            if (message.contains("401")) {
+                showLoginError("El usuario o contraseña no son válidos.", "Reintenta o solicita acceso.");
                 return;
             }
 
-            Alert alert = new Alert(Alert.AlertType.ERROR);
-            alert.setTitle("Error");
-            alert.setHeaderText("El usuario o contraseña no son válidos.");
-            alert.setContentText(ex.getMessage());
-            DialogPane dialogPane = alert.getDialogPane();
-            dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource(Repository.getSTYLE())).toExternalForm());
-            alert.showAndWait();
-            System.exit(0);
+            showLoginError("El usuario o contraseña no son válidos.", message);
+        }
+    }
+
+    private void showLoginError(String header, String content) {
+        Alert alert = new Alert(Alert.AlertType.ERROR);
+        alert.setTitle("Error");
+        alert.setHeaderText(header);
+        alert.setContentText(content);
+        DialogPane dialogPane = alert.getDialogPane();
+        dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource(Repository.getSTYLE())).toExternalForm());
+        alert.showAndWait();
+    }
+
+    private void cleanupFailedLogin() {
+        stopQuietly(simpleWebSocketListenerService);
+        stopQuietly(simpleWebSocketListenerCandle);
+        stopQuietly(simpleWebSocketListenerChat);
+        stopQuietly(simpleWebSocketListenerNews);
+        simpleWebSocketListener = null;
+        simpleWebSocketListenerService = null;
+        simpleWebSocketListenerCandle = null;
+        simpleWebSocketListenerChat = null;
+        simpleWebSocketListenerNews = null;
+        Repository.setClientService(null);
+        Repository.setCandleClientService(null);
+        Repository.setChatClientService(null);
+        Repository.setNewsClientService(null);
+        Repository.setChannelConnected("service", false);
+        Repository.setChannelConnected("candle", false);
+        Repository.setChannelConnected("chat", false);
+        Repository.setChannelConnected("news", false);
+    }
+
+    private void stopQuietly(SimpleWebSocketListener listener) {
+        if (listener == null) {
+            return;
+        }
+        try {
+            listener.stopService();
+        } catch (Exception e) {
+            log.debug("No se pudo cerrar websocket fallido", e);
         }
     }
 
@@ -382,9 +413,15 @@ public class LoginController {
         } catch (Exception e) {
             log.error("Error conectando websocket endpoint={}", endpoint, e);
             if (listener != null) {
-                listener.startAutoReconnect();
-                return listener;
+                listener.stopService();
+            } else if (client != null) {
+                try {
+                    client.stop();
+                } catch (Exception stopError) {
+                    log.debug("No se pudo detener websocket client fallido", stopError);
+                }
             }
+            Repository.setChannelConnected(channelName, false);
             return null;
         }
     }
@@ -419,7 +456,7 @@ public class LoginController {
                             DialogPane dialogPane = alert.getDialogPane();
                             dialogPane.getStylesheets().add(Objects.requireNonNull(getClass().getResource(Repository.getSTYLE())).toExternalForm());
                             alert.showAndWait();
-                            System.exit(1);
+                            label.setText("No se pudo abrir la pantalla principal.");
                         }
                     });
 
@@ -511,5 +548,4 @@ public class LoginController {
 
 
 }
-
 

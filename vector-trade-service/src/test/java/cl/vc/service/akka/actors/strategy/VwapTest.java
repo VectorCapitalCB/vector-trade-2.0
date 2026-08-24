@@ -450,6 +450,36 @@ class VwapTest {
         }
     }
 
+    @Test
+    void recoveryCancelTargetsOnlyLiveChildNeverParent() throws Exception {
+        try (Harness h = new Harness()) {
+            Vwap s = h.newStrategy(validFutureBuy());
+            try {
+                RoutingMessage.Order childNew = RoutingMessage.Order.newBuilder()
+                        .setId("child-recovery").setSymbol("ITAUCL")
+                        .setSide(RoutingMessage.Side.BUY)
+                        .setSecurityExchange(EXCH)
+                        .setOrdStatus(RoutingMessage.OrderStatus.NEW)
+                        .setExecType(RoutingMessage.ExecutionType.EXEC_NEW)
+                        .setOrderQty(9).setLeaves(9).setPrice(50)
+                        .build();
+                s.onOrders(childNew);
+
+                s.cancelAfterConsecutiveRejects("vwap1");
+
+                List<RoutingMessage.OrderCancelRequest> cancels = h.sent.stream()
+                        .filter(RoutingMessage.OrderCancelRequest.class::isInstance)
+                        .map(RoutingMessage.OrderCancelRequest.class::cast)
+                        .toList();
+                assertEquals(1, cancels.size());
+                assertEquals("child-recovery", cancels.get(0).getId());
+                assertNotEquals("vwap1", cancels.get(0).getId());
+            } finally {
+                stopScheduler(s);
+            }
+        }
+    }
+
     /**
      * Trades de la child agregan en el PADRE: cumQty/leaves/avgPrice y, al completar,
      * el padre queda FILLED.

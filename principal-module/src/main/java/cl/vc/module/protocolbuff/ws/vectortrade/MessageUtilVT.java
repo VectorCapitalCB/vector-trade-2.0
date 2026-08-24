@@ -203,6 +203,18 @@ public class MessageUtilVT {
                 case BolsaStats:
                     builder = MarketDataMessage.BolsaStats.newBuilder();
                     break;
+                case HistoricalOrdersRequest:
+                    builder = BlotterMessage.HistoricalOrdersRequest.newBuilder();
+                    break;
+                case HistoricalOrdersSnapshot:
+                    builder = BlotterMessage.HistoricalOrdersSnapshot.newBuilder();
+                    break;
+                case ClientLogRequest:
+                    builder = BlotterMessage.ClientLogRequest.newBuilder();
+                    break;
+                case ClientLogResponse:
+                    builder = BlotterMessage.ClientLogResponse.newBuilder();
+                    break;
                 default:
                     log.error("Unknown topic: " + topic);
                     return null;

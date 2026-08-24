@@ -6,17 +6,10 @@ import akka.actor.Props;
 import cl.vc.module.protocolbuff.generator.IDGenerator;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
-import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.service.MainApp;
-import com.google.protobuf.util.JsonFormat;
 import lombok.extern.slf4j.Slf4j;
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -26,11 +19,10 @@ public class ActorTradeGeneralStats extends AbstractActor {
 
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
 
-    private final Map<String, List<MarketDataMessage.TradeGeneral>> mapListAllTradeGenerales = new HashMap<>();
-
-    private final Map<String, MarketDataMessage.RankinSymbol.Builder> mapRankinSymbol = new ConcurrentHashMap<>();
-
-    private  JsonFormat.Printer printer;
+    private final Object statsLock = new Object();
+    private final Map<String, TradeAccumulator> tradeStatsByTopic = new HashMap<>();
+    private final Map<String, MarketDataMessage.RankinSymbol.Builder> mapRankinSymbol = new HashMap<>();
+    private long totalTrades;
 
     private final long emitEveryMs = 60_000;
 
@@ -46,8 +38,6 @@ public class ActorTradeGeneralStats extends AbstractActor {
     public void preStart() {
         try {
 
-            this.printer = JsonFormat.printer().includingDefaultValueFields().omittingInsignificantWhitespace();
-
             bolsaStats = MarketDataMessage.BolsaStats.newBuilder().setSecurityExchange(MarketDataMessage.SecurityExchangeMarketData.BCS)
                     .setId(IDGenerator.getID());
 
@@ -55,24 +45,15 @@ public class ActorTradeGeneralStats extends AbstractActor {
 
             scheduler.scheduleAtFixedRate(() -> {
                 try {
-
-                    calculateBolsaStats();
-
-                    // Sin horaFin el front no puede fechar el mensaje y cae a Instant.EPOCH,
-                    // que en America/Santiago se ve como 31-12-1969. El candle-service ya
-                    // publica estos campos; el OMS tiene que hacer lo mismo.
-                    bolsaStats.setHoraFin(java.time.Instant.now().toString());
-
-                    MarketDataMessage.BolsaStats bolsaStatsAux = bolsaStats.build();
-
-
-
+                    MarketDataMessage.BolsaStats bolsaStatsAux;
+                    synchronized (statsLock) {
+                        calculateBolsaStats();
+                        bolsaStats.setHoraFin(java.time.Instant.now().toString());
+                        bolsaStatsAux = bolsaStats.build();
+                    }
                     BuySideConnect.getActorPerSessionMaps().values().forEach(s->{
                         s.tell(bolsaStatsAux, ActorRef.noSender());
                     });
-
-                  //  System.out.println(printer.print(bolsaStatsAux));
-
                 } catch (Exception e) {
                     log.error("Error calculando BolsaStats", e);
                 }
@@ -105,137 +86,20 @@ public class ActorTradeGeneralStats extends AbstractActor {
 
     private void onTradeGeneral(MarketDataMessage.TradeGeneral t) {
         try {
-
             String id = TopicGenerator.getTopicMKD(t);
-
-
-            if (mapListAllTradeGenerales.containsKey(id)) {
-
-                List<MarketDataMessage.TradeGeneral> list = mapListAllTradeGenerales.get(id);
-                list.add(t);
-                mapListAllTradeGenerales.put(id, list);
-
-            } else {
-
-                List<MarketDataMessage.TradeGeneral> list = new ArrayList<>();
-                list.add(t);
-                mapListAllTradeGenerales.put(id, list);
-
+            synchronized (statsLock) {
+                TradeAccumulator accumulator = tradeStatsByTopic.computeIfAbsent(id, ignored -> new TradeAccumulator());
+                accumulator.add(t);
+                totalTrades++;
+                mapRankinSymbol.put(id, accumulator.toRankin(id, t).toBuilder());
             }
-
-            if (!mapRankinSymbol.containsKey(id)) {
-                mapRankinSymbol.put(id, MarketDataMessage.RankinSymbol.newBuilder());
-
-            }
-
-            calculateRankinSymbol(id, mapListAllTradeGenerales.get(id));
-
-
-
-
         } catch (Exception e) {
             log.error("No pude suscribirme a TradeGeneral", e);
         }
 
     }
 
-    private void calculateRankinSymbol(String id, List<MarketDataMessage.TradeGeneral> trades) {
-        if (trades == null || trades.isEmpty()) return;
-
-        double precioMax = Double.NEGATIVE_INFINITY;
-        double precioMin = Double.POSITIVE_INFINITY;
-        double sumPrecio = 0.0;
-        double sumQty = 0.0;
-        double sumAmount = 0.0;
-        double sumPrecioQty = 0.0;
-        double sumPrecioDiferencia = 0.0; // Para RSI
-        double lastPrice = trades.getLast().getPrice();
-        double firstPrice = trades.getFirst().getPrice();
-
-        // Variables para RSI, MA, MACD
-        List<Double> precios = new ArrayList<>();
-        List<Double> ganancias = new ArrayList<>();
-        List<Double> perdidas = new ArrayList<>();
-
-
-        for (MarketDataMessage.TradeGeneral t : trades) {
-            double price = t.getPrice();
-            double qty = t.getQty();
-            double amount = t.getAmount();
-
-            precioMax = Math.max(precioMax, price);
-            precioMin = Math.min(precioMin, price);
-            sumPrecio += price;
-            sumQty += qty;
-            sumAmount += amount;
-            sumPrecioQty += price * qty;
-
-            // Acumulamos precios para RSI y MA
-            precios.add(price);
-            if (precios.size() > 1) {
-                double prevPrice = precios.get(precios.size() - 2);
-                double diff = price - prevPrice;
-                if (diff > 0) {
-                    ganancias.add(diff);
-                    perdidas.add(0.0);
-                } else {
-                    ganancias.add(0.0);
-                    perdidas.add(-diff);
-                }
-            }
-
-
-        }
-
-        double precioPromedio = sumPrecio / trades.size();
-        double vwap = (sumQty != 0) ? (sumPrecioQty / sumQty) : 0.0;
-        double variacionPct = ((lastPrice - firstPrice) / firstPrice) * 100.0;
-
-        // Cálculo de RSI (simplificado)
-        double promedioGanancias = ganancias.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-        double promedioPerdidas = perdidas.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
-        double rsi = (promedioGanancias == 0 && promedioPerdidas == 0) ? 50.0 : 100 - (100 / (1 + (promedioGanancias / promedioPerdidas)));
-
-        // Cálculo de MA (Media móvil simple de los últimos 10 precios)
-        double ma = precios.stream().skip(Math.max(0, precios.size() - 10)).mapToDouble(Double::doubleValue).average().orElse(0.0);
-
-        // Cálculo de MACD (simplificado como diferencia de medias móviles)
-        double ema12 = calculateEMA(precios, 12);
-        double ema26 = calculateEMA(precios, 26);
-        double macd = ema12 - ema26;
-
-        // Cálculo de Liquidez (Volumen / Monto)
-        double liquidRatio = (sumAmount != 0) ? (sumQty / sumAmount) : 0.0;
-
-        // Crear RankinSymbol
-        MarketDataMessage.TradeGeneral lastTrade = trades.getLast();
-        MarketDataMessage.RankinSymbol.Builder rankin = mapRankinSymbol.get(id);
-        rankin
-                .setId(id)
-                .setSecurityExchange(lastTrade.getSecurityExchange())
-                .setSymbol(lastTrade.getSymbol())
-                .setSettlType(lastTrade.getSettlType())
-                .setSecurityType(lastTrade.getSecurityType())
-                .setPrecioUltimo(lastPrice)
-                .setPrecioMaximo(precioMax)
-                .setPrecioMinimo(precioMin)
-                .setPrecioPromedio(precioPromedio)
-                .setVwap(vwap)
-                .setVolumen(sumQty)
-                .setMonto(sumAmount)
-                .setVariacionPct(variacionPct)
-                .setRsi(rsi)
-                .setMa(ma)
-                .setMacd(macd)
-                .setLiquidRatio(liquidRatio)
-                // sortByVolatilidad ordena por este campo: dejarlo en 0.0 hacia que el ranking
-                // "Mas volatil" saliera en el orden arbitrario del mapa. Mismo criterio que usan
-                // CandleProtoMarketPublisher.toRankin y TradeAgg.toRank.
-                .setImpliedVolatility(Math.abs(variacionPct));
-
-    }
-
-    private double calculateEMA(List<Double> prices, int period) {
+    private static double calculateEMA(List<Double> prices, int period) {
         // Verificamos que haya suficientes precios para calcular el EMA
         if (prices.size() < period) {
             // Si no hay suficientes precios, retornamos 0.0 o alguna otra lógica de erro
@@ -353,8 +217,8 @@ public class ActorTradeGeneralStats extends AbstractActor {
 
         for (MarketDataMessage.RankinSymbol.Builder rankin : rankinSymbols) {
             String id = rankin.getId();
-            List<MarketDataMessage.TradeGeneral> trades = mapListAllTradeGenerales.getOrDefault(id, Collections.emptyList());
-            double volRealizada = realizedVolatilityFromTrades(trades); // desvío estándar de log-returns
+            TradeAccumulator accumulator = tradeStatsByTopic.get(id);
+            double volRealizada = accumulator != null ? accumulator.realizedVolatility() : 0.0;
 
             if (!Double.isNaN(volRealizada) && !Double.isInfinite(volRealizada)) {
                 double weight = Math.max(1.0, rankin.getVolumen()); // pondero por volumen (mínimo 1)
@@ -377,8 +241,7 @@ public class ActorTradeGeneralStats extends AbstractActor {
         double liquidezMedia  = (totalMonto > 0) ? (totalVolumen / totalMonto) : 0.0;
 
         // Paso 10: Número total de transacciones
-        long numeroTotalTrades = mapListAllTradeGenerales.values().stream()
-                .mapToLong(List::size).sum();
+        long numeroTotalTrades = totalTrades;
 
         bolsaStats
                 .clearMasVolatil()
@@ -415,37 +278,115 @@ public class ActorTradeGeneralStats extends AbstractActor {
                 .addAllWorseRankin(worseRankin);
     }
 
-    private double realizedVolatilityFromTrades(List<MarketDataMessage.TradeGeneral> trades) {
-        if (trades == null || trades.size() < 2) {
-            // Si no hay suficientes datos (menos de 2 precios), no podemos calcular la volatilidad
-            return 0.0;
-        }
+    static final class TradeAccumulator {
+        private static final int MAX_RECENT_PRICES = 26;
 
-        double sum = 0.0, sumSq = 0.0;
-        int n = 0;
+        private final ArrayDeque<Double> recentPrices = new ArrayDeque<>(MAX_RECENT_PRICES);
+        private long count;
+        private double firstPrice;
+        private double lastPrice;
+        private double maxPrice;
+        private double minPrice;
+        private double sumPrice;
+        private double sumQty;
+        private double sumAmount;
+        private double sumPriceQty;
+        private double gainSum;
+        private double lossSum;
+        private double logReturnSum;
+        private double logReturnSquaredSum;
+        private long logReturnCount;
 
-        // Calculamos la volatilidad realizada con los log-returns
-        double prevPrice = trades.get(0).getPrice(); // Primer precio
-        for (int i = 1; i < trades.size(); i++) {
-            double currentPrice = trades.get(i).getPrice();
-            if (prevPrice > 0 && currentPrice > 0) {
-                // Calculamos el log-return: ln(P_t / P_{t-1})
-                double logReturn = Math.log(currentPrice / prevPrice);
-                sum += logReturn;
-                sumSq += logReturn * logReturn;
-                n++;
+        void add(MarketDataMessage.TradeGeneral trade) {
+            double price = trade.getPrice();
+            if (count == 0) {
+                firstPrice = price;
+                maxPrice = price;
+                minPrice = price;
+            } else {
+                double difference = price - lastPrice;
+                if (difference > 0) {
+                    gainSum += difference;
+                } else {
+                    lossSum += -difference;
+                }
+                if (lastPrice > 0 && price > 0) {
+                    double logReturn = Math.log(price / lastPrice);
+                    logReturnSum += logReturn;
+                    logReturnSquaredSum += logReturn * logReturn;
+                    logReturnCount++;
+                }
+                maxPrice = Math.max(maxPrice, price);
+                minPrice = Math.min(minPrice, price);
             }
-            prevPrice = currentPrice; // Actualizamos el precio anterior para el siguiente cálculo
+
+            lastPrice = price;
+            sumPrice += price;
+            sumQty += trade.getQty();
+            sumAmount += trade.getAmount();
+            sumPriceQty += price * trade.getQty();
+            count++;
+
+            recentPrices.addLast(price);
+            if (recentPrices.size() > MAX_RECENT_PRICES) {
+                recentPrices.removeFirst();
+            }
         }
 
-        if (n <= 1) {
-            // Si no tenemos suficientes log-returns, retornamos 0
-            return 0.0;
+        MarketDataMessage.RankinSymbol toRankin(String id, MarketDataMessage.TradeGeneral lastTrade) {
+            List<Double> prices = new ArrayList<>(recentPrices);
+            double averagePrice = count > 0 ? sumPrice / count : 0.0;
+            double vwap = sumQty != 0 ? sumPriceQty / sumQty : 0.0;
+            double variationPct = firstPrice != 0 ? ((lastPrice - firstPrice) / firstPrice) * 100.0 : 0.0;
+            double rsi = gainSum == 0 && lossSum == 0
+                    ? 50.0
+                    : 100.0 - (100.0 / (1.0 + (gainSum / lossSum)));
+            double movingAverage = prices.stream()
+                    .skip(Math.max(0, prices.size() - 10L))
+                    .mapToDouble(Double::doubleValue)
+                    .average()
+                    .orElse(0.0);
+            double macd = calculateEMA(prices, 12) - calculateEMA(prices, 26);
+            double liquidRatio = sumAmount != 0 ? sumQty / sumAmount : 0.0;
+
+            return MarketDataMessage.RankinSymbol.newBuilder()
+                    .setId(id)
+                    .setSecurityExchange(lastTrade.getSecurityExchange())
+                    .setSymbol(lastTrade.getSymbol())
+                    .setSettlType(lastTrade.getSettlType())
+                    .setSecurityType(lastTrade.getSecurityType())
+                    .setPrecioUltimo(lastPrice)
+                    .setPrecioMaximo(maxPrice)
+                    .setPrecioMinimo(minPrice)
+                    .setPrecioPromedio(averagePrice)
+                    .setVwap(vwap)
+                    .setVolumen(sumQty)
+                    .setMonto(sumAmount)
+                    .setVariacionPct(variationPct)
+                    .setRsi(rsi)
+                    .setMa(movingAverage)
+                    .setMacd(macd)
+                    .setLiquidRatio(liquidRatio)
+                    .setImpliedVolatility(Math.abs(variationPct))
+                    .build();
         }
 
-        double mean = sum / n; // Promedio de los log-returns
-        double variance = (sumSq / n) - (mean * mean); // Varianza de los log-returns
-        return Math.sqrt(Math.max(variance, 0.0)); // Volatilidad (raíz cuadrada de la varianza)
+        double realizedVolatility() {
+            if (logReturnCount <= 1) {
+                return 0.0;
+            }
+            double mean = logReturnSum / logReturnCount;
+            double variance = (logReturnSquaredSum / logReturnCount) - (mean * mean);
+            return Math.sqrt(Math.max(variance, 0.0));
+        }
+
+        long count() {
+            return count;
+        }
+
+        int retainedPriceCount() {
+            return recentPrices.size();
+        }
     }
 
     private List<MarketDataMessage.RankinSymbol> sortByVolatilidad(List<MarketDataMessage.RankinSymbol> src) {

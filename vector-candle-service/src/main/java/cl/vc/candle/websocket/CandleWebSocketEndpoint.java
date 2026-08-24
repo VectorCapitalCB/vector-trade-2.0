@@ -23,6 +23,10 @@ public class CandleWebSocketEndpoint {
     @OnWebSocketConnect
     public void onConnect(Session session) {
         CandleSubscriptions.registerSession(session);
+        CandleProtoMarketPublisher publisher = CandleProtoMarketPublisher.getInstance();
+        if (publisher != null) {
+            publisher.sendLatestBolsaStats(session);
+        }
     }
 
     @OnWebSocketMessage
@@ -121,6 +125,39 @@ public class CandleWebSocketEndpoint {
             return;
         }
 
+        if ("load_trade_candles".equals(action)) {
+            CandleProtoMarketPublisher publisher = CandleProtoMarketPublisher.getInstance();
+            if (publisher == null) {
+                sendError(session, "publisher de mercado no disponible");
+                return;
+            }
+            String symbol = request.optString("symbol", "").trim();
+            int bucketMinutes = request.optInt("bucketMinutes", 0);
+            if (symbol.isEmpty()) {
+                sendError(session, "load_trade_candles requiere symbol");
+                return;
+            }
+            if (bucketMinutes != 1 && bucketMinutes != 5 && bucketMinutes != 15
+                    && bucketMinutes != 30 && bucketMinutes != 60 && bucketMinutes != 240) {
+                sendError(session, "bucketMinutes debe ser 1, 5, 15, 30, 60 o 240");
+                return;
+            }
+            LocalDate day = null;
+            String date = request.optString("date", "").trim();
+            if (!date.isEmpty()) {
+                if (!isValidDay(date)) {
+                    sendError(session, "date invalida, formato esperado yyyy-MM-dd");
+                    return;
+                }
+                day = LocalDate.parse(date);
+            }
+            if (!publisher.sendTradeCandles(
+                    session, day, symbol, bucketMinutes, request.optInt("historyDays", 20))) {
+                sendError(session, "no fue posible construir las velas intradia");
+            }
+            return;
+        }
+
         if ("load_instrument_daily".equals(action)) {
             CandleMongoPublisher publisher = CandleMongoPublisher.getInstance();
             if (publisher == null) {
@@ -148,6 +185,24 @@ public class CandleWebSocketEndpoint {
             }
             if (!sent) {
                 sendError(session, "no fue posible consultar instrument_daily");
+            }
+            return;
+        }
+
+        if ("load_close_history".equals(action)) {
+            CandleMongoPublisher publisher = CandleMongoPublisher.getInstance();
+            if (publisher == null) {
+                sendError(session, "publisher de close_prices no disponible");
+                return;
+            }
+            String market = request.optString("market", "BCS").trim();
+            String symbol = request.optString("symbol", "").trim();
+            if (symbol.isEmpty()) {
+                sendError(session, "load_close_history requiere symbol");
+                return;
+            }
+            if (!publisher.sendClosePriceHistory(session, market, symbol, request.optInt("limit", 180))) {
+                sendError(session, "no fue posible consultar close_prices");
             }
             return;
         }

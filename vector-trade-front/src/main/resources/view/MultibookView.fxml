@@ -11,20 +11,40 @@
         <VBox AnchorPane.topAnchor="0.0" AnchorPane.leftAnchor="0.0"
               AnchorPane.rightAnchor="0.0" AnchorPane.bottomAnchor="0.0">
             <children>
-                <HBox fx:id="configBar" alignment="CENTER_LEFT" styleClass="multibook-page-bar">
+                <HBox fx:id="configControls" alignment="CENTER_LEFT" spacing="4"
+                      visible="false" managed="false"
+                      minHeight="36" prefHeight="36" maxHeight="36"
+                      styleClass="multibook-page-bar, multibook-floating-config">
                     <children>
-                        <Label text="Configuración:" styleClass="bold-label"/>
-                        <ComboBox fx:id="configs" prefWidth="200"/>
-                        <Button text="Nueva" styleClass="button" onAction="#newLayout"/>
-                        <Button text="Guardar" styleClass="button" onAction="#saveLayout"/>
-                        <Button text="Duplicar" styleClass="button" onAction="#saveLayoutAs"/>
-                        <Button text="Renombrar" styleClass="button" onAction="#renameLayout"/>
-                        <Button text="Eliminar" styleClass="button" onAction="#deleteLayout"/>
-                        <Button text="Exportar" styleClass="button" onAction="#exportLayout"/>
-                        <Button text="Importar" styleClass="button" onAction="#importLayout"/>
+                        <Label text="DISEÑO" styleClass="multibook-section-label"/>
+                        <ComboBox fx:id="configs" prefWidth="150"/>
+                        <Button text="Nueva" styleClass="button, multibook-action-manage" onAction="#newLayout"/>
+                        <Button text="Guardar" styleClass="button, multibook-action-save" onAction="#saveLayout"/>
+                        <Button text="Duplicar" styleClass="button, multibook-action-manage" onAction="#saveLayoutAs"/>
+                        <Button text="Renombrar" styleClass="button, multibook-action-manage" onAction="#renameLayout"/>
+                        <Button text="Eliminar" styleClass="button, multibook-action-delete" onAction="#deleteLayout"/>
+                        <Separator orientation="VERTICAL" minHeight="20" prefHeight="20" maxHeight="20"/>
+                        <Button text="Exportar" styleClass="button, multibook-action-file" onAction="#exportLayout"/>
+                        <Button text="Importar" styleClass="button, multibook-action-file" onAction="#importLayout"/>
+                        <Label text="VISTA" styleClass="multibook-section-label"/>
+                        <ToggleButton fx:id="statisticsToggle" text="Estadísticas" selected="true"
+                                      styleClass="button, multibook-visibility-toggle" onAction="#toggleStatistics"/>
+                        <ToggleButton fx:id="trendToggle" text="Tendencia" selected="true"
+                                      styleClass="button, multibook-visibility-toggle" onAction="#toggleTrend"/>
+                        <Label text="LIBROS/PÁG." styleClass="multibook-section-label"/>
+                        <ComboBox fx:id="pageBookCount" minWidth="80" prefWidth="80" maxWidth="80"
+                                  onAction="#changePageBookCount"/>
+                        <Label text="PROF." styleClass="multibook-section-label"/>
+                        <ComboBox fx:id="pageDepth" minWidth="70" prefWidth="70" onAction="#changePageDepth"/>
+                        <Pane minWidth="8" HBox.hgrow="ALWAYS"/>
+                        <Separator orientation="VERTICAL" minHeight="20" prefHeight="20" maxHeight="20"/>
+                        <Label text="PÁGINAS" styleClass="multibook-section-label"/>
+                        <HBox fx:id="pageBar" alignment="CENTER_RIGHT" spacing="4"/>
+                        <Separator orientation="VERTICAL" minHeight="20" prefHeight="20" maxHeight="20"/>
+                        <Button fx:id="renamePageButton" text="Renombrar página" styleClass="button, multibook-page"
+                                onAction="#renameCurrentPage"/>
                     </children>
                 </HBox>
-                <HBox fx:id="pageBar" alignment="CENTER_LEFT" styleClass="multibook-page-bar"/>
                 <StackPane fx:id="content" VBox.vgrow="ALWAYS"/>
             </children>
         </VBox>

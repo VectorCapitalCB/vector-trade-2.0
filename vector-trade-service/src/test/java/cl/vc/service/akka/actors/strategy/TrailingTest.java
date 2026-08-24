@@ -226,7 +226,12 @@ class TrailingTest {
         try (Harness h = new Harness()) {
             Trailing t = h.newTrailing(order(RoutingMessage.Side.BUY, 10d, RoutingMessage.OrderStatus.NEW));
 
-            t.onOrders(order(RoutingMessage.Side.BUY, 10d, RoutingMessage.OrderStatus.FILLED));
+            RoutingMessage.Order filled = order(
+                    RoutingMessage.Side.BUY, 10d, RoutingMessage.OrderStatus.FILLED).toBuilder()
+                    .setCumQty(100_000)
+                    .setLeaves(0)
+                    .build();
+            t.onOrders(filled);
 
             verify(h.bus).unsubscribe(h.actorStrategy, "sub");
             verify(h.bus).unsubscribe(h.actorStrategy, "trail1");

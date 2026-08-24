@@ -64,7 +64,7 @@
 
                 <!-- LINEA 2 -->
 
-                <VBox fx:id="VboxLiquidacion" spacing="5" GridPane.columnIndex="3" GridPane.rowIndex="2">
+                <VBox fx:id="VboxLiquidacion" spacing="5" visible="false" managed="false" GridPane.columnIndex="3" GridPane.rowIndex="2">
                     <Label fx:id="lblsettltypeOrder" style="-fx-font-weight: bold;" text="Liquidación" />
                     <ComboBox fx:id="settltypeOrder" prefWidth="120" styleClass="white-background" />
                 </VBox>
@@ -160,10 +160,12 @@
                     <Pane fx:id="pane2" minWidth="28.0" prefHeight="25.0" prefWidth="28.0" />
                     <Button fx:id="clean" onAction="#cleanform" prefHeight="24.0" prefWidth="100" style="-fx-font-weight: bold;" text="Limpiar" />
                     <Pane fx:id="pane3" minWidth="5" />
-                    <Button fx:id="unlock" prefHeight="24.0" prefWidth="10" style="-fx-font-weight: bold;" text="Desbloquear" visible="false" />
-                    <Pane fx:id="pane4" minWidth="50" />
-                    <Label fx:id="lblAgreement" text="OPCI" />
-                    <CheckBox fx:id="chkIndivisible" onAction="#handleAgreeAction" prefHeight="24.0" prefWidth="110" selected="true" text="Indivisible" VBox.vgrow="ALWAYS" />
+                    <Button fx:id="unlock" managed="false" prefHeight="24.0" prefWidth="10" style="-fx-font-weight: bold;" text="Desbloquear" visible="false" />
+                    <HBox fx:id="VboxOPCI" alignment="CENTER_LEFT" managed="false" spacing="5" visible="false">
+                        <Pane minWidth="50" />
+                        <Label fx:id="lblAgreement" text="OPCI" />
+                        <CheckBox fx:id="chkIndivisible" onAction="#handleAgreeAction" prefHeight="24.0" prefWidth="110" selected="true" text="Indivisible" VBox.vgrow="ALWAYS" />
+                    </HBox>
 
                     <Label managed="false" style="-fx-font-weight: bold;" text="Broker" visible="false" />
                     <ComboBox managed="false" prefWidth="120" promptText="Seleccione" styleClass="white-background" visible="false" />

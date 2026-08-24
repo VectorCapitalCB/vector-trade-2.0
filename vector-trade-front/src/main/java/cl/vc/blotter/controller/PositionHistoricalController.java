@@ -1,6 +1,7 @@
 package cl.vc.blotter.controller;
 
 import cl.vc.blotter.Repository;
+import cl.vc.blotter.utils.FlexibleNumberParser;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import javafx.application.Platform;
 import javafx.beans.binding.Bindings;
@@ -16,7 +17,7 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.control.cell.TextFieldTableCell;
 import javafx.scene.layout.Region;
 import javafx.stage.Popup;
-import javafx.util.converter.DoubleStringConverter;
+import javafx.util.StringConverter;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
@@ -29,6 +30,17 @@ import java.util.stream.Collectors;
 @Data
 public class PositionHistoricalController {
     private static final DecimalFormat DECIMAL_FORMAT = new DecimalFormat("#,###,###,##0.0");
+    private static final StringConverter<Double> FINANCIAL_DOUBLE_CONVERTER = new StringConverter<>() {
+        @Override
+        public String toString(Double value) {
+            return value == null ? "" : DECIMAL_FORMAT.format(value);
+        }
+
+        @Override
+        public Double fromString(String value) {
+            return FlexibleNumberParser.parse(value);
+        }
+    };
 
     private static final int MAX_SUGGESTIONS = 10;
 
@@ -469,7 +481,7 @@ public class PositionHistoricalController {
 
     private void setupEditableColumn(TableColumn<BlotterMessage.PositionHistory, Double> column, String propertyName) {
         column.setEditable(true);
-        column.setCellFactory(TextFieldTableCell.forTableColumn(new DoubleStringConverter()));
+        column.setCellFactory(TextFieldTableCell.forTableColumn(FINANCIAL_DOUBLE_CONVERTER));
         column.setOnEditCommit(event -> {
             BlotterMessage.PositionHistory oldPosition = event.getRowValue();
             double newValue = event.getNewValue() != null ? event.getNewValue() : 0.0;

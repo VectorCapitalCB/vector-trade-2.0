@@ -2,7 +2,7 @@
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
 
-<AnchorPane xmlns:fx="http://javafx.com/fxml/1" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
+<AnchorPane xmlns:fx="http://javafx.com/fxml/1" minHeight="0.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
             AnchorPane.topAnchor="0.0" HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS"
             xmlns="http://javafx.com/javafx/17.0.2-ea"
             fx:controller="cl.vc.blotter.controller.BookVerticalController">
@@ -10,35 +10,41 @@
         <!-- Los anchors son obligatorios: el padre es un AnchorPane, donde HBox.hgrow y
              VBox.vgrow se ignoran. Sin ellos el SplitPane tomaba su tamano preferido y el
              libro no llegaba al fondo del panel. -->
-        <SplitPane fx:id="bookSplit" orientation="VERTICAL" dividerPositions="0.5"
+        <SplitPane fx:id="bookSplit" orientation="VERTICAL" dividerPositions="0.5" minHeight="0.0"
                    AnchorPane.topAnchor="0.0" AnchorPane.bottomAnchor="0.0"
                    AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0"
                    HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
             <items>
 
-                <TableView fx:id="offerViewTable" maxWidth="Infinity" maxHeight="Infinity"
-                           AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
-                           HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" rotate="180" style="-fx-scale-x: -1;">
-                    <columns>
-                        <TableColumn fx:id="priceOffer"/>
-                        <TableColumn fx:id="quantityOffer"/>
-                    </columns>
-                    <columnResizePolicy>
-                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
-                    </columnResizePolicy>
-                </TableView>
+                <StackPane minHeight="0.0" maxWidth="Infinity" maxHeight="Infinity">
+                    <TableView fx:id="offerViewTable" minHeight="0.0" maxWidth="Infinity" maxHeight="Infinity"
+                               HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS" rotate="180" style="-fx-scale-x: -1;">
+                        <columns>
+                            <TableColumn fx:id="priceOffer"/>
+                            <TableColumn fx:id="quantityOffer"/>
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                    </TableView>
+                    <ScrollBar fx:id="offerBookScroll" orientation="VERTICAL" minWidth="16" prefWidth="16"
+                               maxWidth="16" mouseTransparent="false" StackPane.alignment="CENTER_RIGHT"/>
+                </StackPane>
 
-                <TableView fx:id="bidViewTable"
-                           AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
-                           HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
-                    <columns>
-                        <TableColumn fx:id="priceBid"/>
-                        <TableColumn fx:id="quantityBid"/>
-                    </columns>
-                    <columnResizePolicy>
-                        <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
-                    </columnResizePolicy>
-                </TableView>
+                <StackPane minHeight="0.0" maxWidth="Infinity" maxHeight="Infinity">
+                    <TableView fx:id="bidViewTable" minHeight="0.0" maxHeight="Infinity"
+                               HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
+                        <columns>
+                            <TableColumn fx:id="priceBid"/>
+                            <TableColumn fx:id="quantityBid"/>
+                        </columns>
+                        <columnResizePolicy>
+                            <TableView fx:constant="UNCONSTRAINED_RESIZE_POLICY"/>
+                        </columnResizePolicy>
+                    </TableView>
+                    <ScrollBar fx:id="bidBookScroll" orientation="VERTICAL" minWidth="16" prefWidth="16"
+                               maxWidth="16" mouseTransparent="false" StackPane.alignment="CENTER_RIGHT"/>
+                </StackPane>
             </items>
         </SplitPane>
 

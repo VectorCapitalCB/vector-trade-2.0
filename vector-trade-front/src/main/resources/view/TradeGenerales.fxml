@@ -17,7 +17,6 @@
                 <TableColumn fx:id="buyer" text="Compra"/>
                 <TableColumn fx:id="seller" text="Venta"/>
                 <TableColumn fx:id="idgenerado" text="id" minWidth="150" visible="false"/>
-                <TableColumn fx:id="liquidacion" text="Liq." minWidth="10"/>
             </columns>
         </TableView>
     </children>

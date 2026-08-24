@@ -6,6 +6,7 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.tcp.NettyProtobufClient;
 import cl.vc.service.MainApp;
+import cl.vc.service.admin.ManualSaldoOverride;
 import cl.vc.service.util.CalculatePosition;
 import com.google.protobuf.Message;
 import org.junit.jupiter.api.AfterAll;
@@ -182,6 +183,46 @@ class ActorGroupPerAccountTest {
         return (ActorGroupPerAccount) actor;
     }
 
+    @Test
+    void saldoManualSinSqlActualizaPatrimonioYSaldoDisponible() throws Exception {
+        ActorGroupPerAccount actor = rawActor();
+        Field margin = ActorGroupPerAccount.class.getDeclaredField("marginLimit");
+        margin.setAccessible(true);
+        margin.set(actor, 0d);
+        Field leverage = ActorGroupPerAccount.class.getDeclaredField("palanca");
+        leverage.setAccessible(true);
+        leverage.set(actor, 3d);
+
+        ManualSaldoOverride override = new ManualSaldoOverride();
+        override.setCaja(100_000d);
+        override.setGarantiasDisponible(25_000d);
+        MainApp.replaceManualSaldoOverride(ACCOUNT, override);
+
+        try {
+            Method publish = ActorGroupPerAccount.class.getDeclaredMethod("publishManualSaldoWithoutSql");
+            publish.setAccessible(true);
+            publish.invoke(actor);
+
+            Field patrimonioField = ActorGroupPerAccount.class.getDeclaredField("patrimonio");
+            patrimonioField.setAccessible(true);
+            BlotterMessage.Patrimonio.Builder patrimonio =
+                    (BlotterMessage.Patrimonio.Builder) patrimonioField.get(actor);
+
+            Field balanceField = ActorGroupPerAccount.class.getDeclaredField("balance");
+            balanceField.setAccessible(true);
+            BlotterMessage.Balance.Builder balance =
+                    (BlotterMessage.Balance.Builder) balanceField.get(actor);
+
+            assertEquals(100_000d, patrimonio.getCaja().getValues(), 1e-9);
+            assertEquals(100_000d, patrimonio.getActivos().getValues(), 1e-9);
+            assertEquals(300_000d, balance.getCupo(), 1e-9);
+            assertEquals(300_000d, balance.getSaldoDisponible(), 1e-9);
+            assertEquals(25_000d, balance.getGarantiasDisponible(), 1e-9);
+        } finally {
+            MainApp.clearManualSaldoOverride(ACCOUNT);
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private RoutingMessage.Order enrichAvgPx(ActorGroupPerAccount actor, RoutingMessage.Order order) throws Exception {
         Method m = ActorGroupPerAccount.class.getDeclaredMethod("enrichAvgPx", RoutingMessage.Order.class);
@@ -356,6 +397,33 @@ class ActorGroupPerAccountTest {
                 "preserveFinalStateForLateTrade", RoutingMessage.Order.class, RoutingMessage.Order.class);
         m.setAccessible(true);
         return (RoutingMessage.Order) m.invoke(actor, previous, incoming);
+    }
+
+    private RoutingMessage.Order preserveKnownOrderQuantity(ActorGroupPerAccount actor,
+                                                              RoutingMessage.Order previous,
+                                                              RoutingMessage.Order incoming) throws Exception {
+        Method m = ActorGroupPerAccount.class.getDeclaredMethod(
+                "preserveKnownOrderQuantity", RoutingMessage.Order.class, RoutingMessage.Order.class);
+        m.setAccessible(true);
+        return (RoutingMessage.Order) m.invoke(actor, previous, incoming);
+    }
+
+    @Test
+    void fillConOrderQtyCeroConservaCantidadOriginal() throws Exception {
+        RoutingMessage.Order original = baseOrder("qty-known", RoutingMessage.Side.BUY)
+                .setOrderQty(10_000d)
+                .build();
+        RoutingMessage.Order fill = original.toBuilder()
+                .setExecType(RoutingMessage.ExecutionType.EXEC_TRADE)
+                .setOrdStatus(RoutingMessage.OrderStatus.PARTIALLY_FILLED)
+                .setOrderQty(0d)
+                .setLastQty(1_000d)
+                .setCumQty(1_000d)
+                .build();
+
+        RoutingMessage.Order merged = preserveKnownOrderQuantity(rawActor(), original, fill);
+
+        assertEquals(10_000d, merged.getOrderQty(), 1e-9);
     }
 
     @Test

@@ -62,6 +62,7 @@ public class AdminServer extends Thread {
             ctx.addServlet(new ServletHolder(new RedisServlet()),       "/api/redis/*");
             ctx.addServlet(new ServletHolder(new MongoServlet()),       "/api/mongo/*");
             ctx.addServlet(new ServletHolder(new HistoryServlet()),     "/api/history/*");
+            ctx.addServlet(new ServletHolder(new ClientLogsServlet()),  "/api/client-logs/*");
 
             // ── No-cache para index.html (evita que el browser cachee el HTML y rompa los assets) ──
             FilterHolder noCacheFilter = new FilterHolder(new Filter() {

@@ -1,6 +1,9 @@
 package cl.vc.blotter.controller;
 
+import cl.vc.blotter.utils.CandleWindow;
 import cl.vc.blotter.Repository;
+import cl.vc.blotter.utils.I18n;
+import cl.vc.blotter.utils.Language;
 import cl.vc.blotter.utils.Notifier;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.crypt.AESEncryption;
@@ -9,8 +12,6 @@ import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.notification.NotificationMessage;
 import cl.vc.module.protocolbuff.session.SessionsMessage;
 import eu.hansolo.enzo.notification.Notification;
-import javafx.animation.KeyFrame;
-import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
@@ -20,20 +21,23 @@ import javafx.fxml.FXMLLoader;
 import javafx.geometry.Rectangle2D;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.Screen;
 import javafx.stage.Stage;
-import javafx.util.Duration;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import cl.vc.blotter.controller.StadisticsController;
+import org.kordamp.ikonli.javafx.FontIcon;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
@@ -49,9 +53,12 @@ public class FooterController {
     private Button btnMarketStats;
     private Stage statsStage;
     @FXML
+    private Button btnHistoricalOrders;
+    private Stage historicalOrdersStage;
+    @FXML
     private Label lbUser;
     @FXML
-    private ImageView enviroment;
+    private FontIcon enviroment;
     @FXML
     private Button sound;
     @FXML
@@ -81,23 +88,14 @@ public class FooterController {
     private Button reconnect;
     @FXML
     private Button changePassword;
-    @FXML
-    private Label lblServiceConn;
-    @FXML
-    private Label lblCandleConn;
-    @FXML
-    private Label lblChatConn;
-    @FXML
-    private Label lblNewsConn;
     private Double lastBid = null;
     private Double lastAsk = null;
     private Double lastClose = null;
     private DoubleProperty bidProperty = new SimpleDoubleProperty();
     private DoubleProperty askProperty = new SimpleDoubleProperty();
     private DoubleProperty lastProperty = new SimpleDoubleProperty();
-    private Timeline connectionStatusTimeline;
     private Stage chatStage;
-    private Stage candleStage;
+    private Stage settingsStage;
 
 
     @FXML
@@ -121,120 +119,84 @@ public class FooterController {
 
             if (Repository.enviroment != null && (Repository.enviroment.equals(SessionsMessage.Enviroment.PRODUCTION) ||
                     Repository.enviroment.equals(SessionsMessage.Enviroment.PRODUCTION_VPN))) {
-                lbEnviroment.setText("Entorno: " + SessionsMessage.Enviroment.PRODUCTION.name());
-                ImageView imageView = new ImageView();
-                imageView.setFitHeight(35);
-                imageView.setFitWidth(35);
-                enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/prod.png"))));
+                setEnvironmentBadge("Entorno: PRODUCCIÓN", "fth-shield", "footer-environment-production");
 
             } else if (Repository.enviroment != null && Repository.enviroment.equals(SessionsMessage.Enviroment.TEST)) {
-                lbEnviroment.setText("Entorno: TEST");
-                ImageView imageView = new ImageView();
-                imageView.setFitHeight(35);
-                imageView.setFitWidth(35);
-                enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/desarrollo.png"))));
+                setEnvironmentBadge("Entorno: TEST", "fth-tool", "footer-environment-test");
 
             } else if (Repository.enviroment != null && Repository.enviroment.equals(SessionsMessage.Enviroment.QA)) {
-                lbEnviroment.setText("Entorno: QA");
-                ImageView imageView = new ImageView();
-                imageView.setFitHeight(35);
-                imageView.setFitWidth(35);
-                enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/aprobado.png"))));
-
+                setEnvironmentBadge("Entorno: QA", "fth-check-circle", "footer-environment-qa");
 
             } else if (Repository.enviroment != null && Repository.enviroment.equals(SessionsMessage.Enviroment.LOCALHOST)) {
-                lbEnviroment.setText("Entorno: LOCALHOST");
-                ImageView imageView = new ImageView();
-                imageView.setFitHeight(35);
-                imageView.setFitWidth(35);
-                enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/desarrollo.png"))));
+                setEnvironmentBadge("Entorno: LOCALHOST", "fth-monitor", "footer-environment-local");
             } else {
                 String key = Repository.getEnviromentKey();
-                lbEnviroment.setText("Entorno: " + (key != null ? key.toUpperCase() : ""));
-                enviroment.setImage(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/desarrollo.png"))));
+                setEnvironmentBadge("Entorno: " + (key != null ? key.toUpperCase() : ""),
+                        "fth-server", "footer-environment-default");
             }
 
 
-            ImageView imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/conexions.png"))));
-            imageView.setFitHeight(35);
-            imageView.setFitWidth(35);
-            this.btnConnections.setGraphic(imageView);
-
-            imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/mail_7500726.png"))));
-            imageView.setFitHeight(35);
-            imageView.setFitWidth(35);
-            this.btnNotification.setGraphic(imageView);
+            installFooterIcon(btnConnections, "fth-activity");
+            installFooterIcon(btnNotification, "fth-inbox");
             this.btnNotification.setVisible(false);
             this.btnNotification.setManaged(false);
             this.btnNotification.setDisable(true);
 
-            ImageView chatImageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/mail_7500726.png"))));
-            chatImageView.setFitHeight(35);
-            chatImageView.setFitWidth(35);
-            this.btnChat.setGraphic(chatImageView);
-
-            imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/tuerca.png"))));
-            imageView.setFitHeight(35);
-            imageView.setFitWidth(35);
-            this.changePassword.setGraphic(imageView);
-
-            imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/notification.png"))));
-            imageView.setFitHeight(35);
-            imageView.setFitWidth(35);
-            this.notifications.setGraphic(imageView);
-
-            imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/sound.png"))));
-            imageView.setFitHeight(35);
-            imageView.setFitWidth(35);
-            this.sound.setGraphic(imageView);
-
-            imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/news.png"))));
-            imageView.setFitHeight(35);
-            imageView.setFitWidth(35);
-            this.news.setGraphic(imageView);
-
-            imageView = new ImageView(new Image(Objects.requireNonNull(getClass().getResourceAsStream("/blotter/img/estadisticas.png"))));
-            imageView.setFitHeight(35);
-            imageView.setFitWidth(35);
-            this.btnMarketStats.setGraphic(imageView);
+            installFooterIcon(btnChat, "fth-message-square");
+            installFooterIcon(changePassword, "fth-settings");
+            installFooterIcon(news, "fth-file-text");
+            installFooterIcon(btnMarketStats, "fth-bar-chart-2");
+            installFooterIcon(btnHistoricalOrders, "fth-clock");
+            installFooterIcon(btnAdminUser, "fth-users");
+            installFooterIcon(reconnect, "fth-refresh-cw");
+            updateModeIcon();
+            updateSoundIcon();
+            updateNotificationIcon();
             this.btnMarketStats.setVisible(true);
             this.btnMarketStats.setManaged(true);
-
-            connectionStatusTimeline = new Timeline(new KeyFrame(Duration.seconds(1), e -> updateConnectionStatus()));
-            connectionStatusTimeline.setCycleCount(Timeline.INDEFINITE);
-            connectionStatusTimeline.play();
-            updateConnectionStatus();
-            bindConnectionStatus();
 
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
     }
 
-    private void updateConnectionStatus() {
-        updateConnectionLabel(lblServiceConn, "SERVICE", Repository.serviceConnectedProperty().get());
-        updateConnectionLabel(lblCandleConn, "CANDLE", Repository.candleConnectedProperty().get());
-        updateConnectionLabel(lblChatConn, "CHAT", Repository.chatConnectedProperty().get());
-        updateConnectionLabel(lblNewsConn, "NEWS", Repository.newsConnectedProperty().get());
-    }
-
-    private void updateConnectionLabel(Label label, String name, boolean connected) {
-        if (label == null) {
+    private void installFooterIcon(Button button, String iconLiteral) {
+        if (button == null) {
             return;
         }
-        label.setText(name + ": " + (connected ? "ON" : "OFF"));
-        label.setStyle("-fx-font-size: 11; -fx-font-weight: bold; -fx-text-fill: " + (connected ? "#39c16c" : "#ff5f5f") + ";");
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(20);
+        icon.setMouseTransparent(true);
+        button.setGraphic(icon);
     }
 
-    private void bindConnectionStatus() {
-        Repository.serviceConnectedProperty().addListener((obs, oldV, newV) ->
-                updateConnectionLabel(lblServiceConn, "SERVICE", Boolean.TRUE.equals(newV)));
-        Repository.candleConnectedProperty().addListener((obs, oldV, newV) ->
-                updateConnectionLabel(lblCandleConn, "CANDLE", Boolean.TRUE.equals(newV)));
-        Repository.chatConnectedProperty().addListener((obs, oldV, newV) ->
-                updateConnectionLabel(lblChatConn, "CHAT", Boolean.TRUE.equals(newV)));
-        Repository.newsConnectedProperty().addListener((obs, oldV, newV) ->
-                updateConnectionLabel(lblNewsConn, "NEWS", Boolean.TRUE.equals(newV)));
+    private void updateModeIcon() {
+        installFooterIcon(modo, Repository.isDayMode() ? "fth-moon" : "fth-sun");
+        modo.setTooltip(new Tooltip("Cambiar tema"));
+    }
+
+    private void updateSoundIcon() {
+        installFooterIcon(sound, Repository.isSound() ? "fth-volume-2" : "fth-volume-x");
+    }
+
+    private void updateNotificationIcon() {
+        installFooterIcon(notifications, Repository.isNotification() ? "fth-bell" : "fth-bell-off");
+    }
+
+    private void setEnvironmentBadge(String text, String iconLiteral, String toneClass) {
+        String[] toneClasses = {
+                "footer-environment-production",
+                "footer-environment-test",
+                "footer-environment-qa",
+                "footer-environment-local",
+                "footer-environment-default"
+        };
+        enviroment.getStyleClass().removeAll(toneClasses);
+        lbEnviroment.getStyleClass().removeAll(toneClasses);
+        enviroment.setIconLiteral(iconLiteral);
+        enviroment.getStyleClass().add(toneClass);
+        lbEnviroment.getStyleClass().add(toneClass);
+        lbEnviroment.setText(text);
     }
 
     @FXML
@@ -246,12 +208,14 @@ public class FooterController {
             Repository.getPrincipalController().setDayMode();
             Repository.setDayMode(true);  // Guardar en las preferencias que el modo día está activado
         }
+        updateModeIcon();
     }
 
     @FXML
     public void handleImageClick() {
 
         Repository.setSound(!Repository.isSound());
+        updateSoundIcon();
 
         if (Repository.isSound()) {
             Notifier.INSTANCE.notifyInfo("Sonido activado", "");
@@ -265,6 +229,7 @@ public class FooterController {
     public void handleImageNotification() {
 
         Repository.setNotification(!Repository.isNotification());
+        updateNotificationIcon();
 
         if (Repository.isNotification()) {
             Notifier.INSTANCE.notify(new Notification("Notificaciones", "activadas", Notification.INFO_ICON));
@@ -274,55 +239,35 @@ public class FooterController {
 
     }
 
+    /**
+     * Abre la pantalla de Configuración. Antes este metodo construia el dialogo entero a mano
+     * (~95 lineas); ahora vive en Settings.fxml + SettingsController, como el resto del modulo.
+     */
+    @FXML
     public void changePasswords(ActionEvent actionEvent) {
-        Label label = new Label("Contraseña");
-        PasswordField textField = new PasswordField();
-        Label label2 = new Label("Repetir Contraseña");
-        PasswordField textField2 = new PasswordField();
-
-        VBox contentChangePassword = new VBox(10);
-        contentChangePassword.setPadding(new Insets(20));
-
-        Button acceptButton = new Button("Aceptar");
-        acceptButton.setId("acceptButton");
-        Button cancelButton = new Button("Cancelar");
-        cancelButton.setId("cancelButton");
-        HBox buttonsBox = new HBox(10);
-        buttonsBox.getChildren().addAll(acceptButton, cancelButton);
-
-        contentChangePassword.getChildren().addAll(label, textField, label2, textField2, buttonsBox);
-
-        TabPane tabPane = new TabPane();
-        Tab tab1 = new Tab("Restablecer contraseña", contentChangePassword);
-        tab1.setClosable(false);
-        Tab tab2 = new Tab("Modo de Escritorio", new VBox());
-        setupDesktopModeTab(tab2);
-        tab2.setClosable(false);
-
-        if (Repository.getIsLight()) {
-            tabPane.getTabs().addAll(tab1);
-        } else {
-            tabPane.getTabs().addAll(tab1, tab2);
+        try {
+            if (settingsStage != null && settingsStage.isShowing()) {
+                settingsStage.toFront();
+                settingsStage.requestFocus();
+                return;
+            }
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/Settings.fxml"));
+            Parent root = loader.load();
+            settingsStage = new Stage();
+            Scene scene = new Scene(root);
+            applyCurrentStyle(scene);
+            settingsStage.setScene(scene);
+            settingsStage.setTitle("Configuración");
+            settingsStage.setOnHidden(e -> settingsStage = null);
+            cl.vc.blotter.utils.WindowGeometryStore.restore(settingsStage, "settings", 820, 560);
+            settingsStage.show();
+        } catch (Exception ex) {
+            log.error("No se pudo abrir Configuración: {}", ex.getMessage(), ex);
         }
-
-        VBox vbox = new VBox(10, tabPane);
-        vbox.setPrefHeight(400);
-        vbox.setMinHeight(400);
-
-        Scene scene = new Scene(vbox, 400, 400);
-
-        applyCurrentStyle(scene);
-
-        Stage stage = new Stage();
-        stage.setScene(scene);
-        stage.show();
-
-        Alert alert = setupAlert();
-        setupButtonListeners(acceptButton, cancelButton, textField, textField2, stage, alert);
     }
 
-    private void setupButtonListeners(Button aceptarButton, Button cancelarButton, PasswordField textField, PasswordField textField2, Stage stage, Alert alerta) {
-        aceptarButton.setOnAction(e -> {
+    private void setupButtonListeners(Button changeButton, PasswordField textField, PasswordField textField2) {
+        changeButton.setOnAction(e -> {
             if (textField.getText().isEmpty() || textField2.getText().isEmpty()) {
                 showAlert("Error", "Los campos no pueden estar vacíos", Alert.AlertType.ERROR);
             } else if (!textField.getText().equals(textField2.getText())) {
@@ -346,7 +291,6 @@ public class FooterController {
                 }
             }
         });
-        cancelarButton.setOnAction(e -> stage.close());
     }
 
     private void showAlert(String title, String content, Alert.AlertType alertType) {
@@ -502,26 +446,10 @@ public class FooterController {
     }
 
     @FXML
-    private void openCandleView() throws IOException {
-        if (candleStage != null && candleStage.isShowing()) {
-            candleStage.requestFocus();
-            return;
-        }
-        FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/view/Candle.fxml"));
-        AnchorPane mainPane = loader.load();
-        candleStage = new Stage();
-        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
-        double w = Math.min(1100, Math.max(900, bounds.getWidth() - 40));
-        double h = Math.min(700, Math.max(600, bounds.getHeight() - 40));
-        Scene scene = new Scene(mainPane, w, h);
-        applyCurrentStyle(scene);
-        candleStage.setScene(scene);
-        candleStage.setTitle("Grafico de Velas");
-        candleStage.setMaxWidth(bounds.getWidth());
-        candleStage.setMaxHeight(bounds.getHeight());
-        candleStage.setX(bounds.getMinX() + (bounds.getWidth() - w) / 2);
-        candleStage.setY(bounds.getMinY() + (bounds.getHeight() - h) / 2);
-        candleStage.show();
+    private void openCandleView() {
+        // Delegado a CandleWindow: mismo comportamiento de antes (reusa la ventana si ya esta
+        // abierta, se centra en pantalla y respeta modo dia/noche), sin la copia local.
+        CandleWindow.open(null);
     }
 
     @FXML
@@ -608,12 +536,12 @@ public class FooterController {
         }
     }
 
-    public void updateDollarStatistics(MarketDataMessage.Statistic statistic) throws Exception {
+    public void updateDollarStatistics(MarketDataMessage.Statistic statistic) {
         try {
 
             double newBid = statistic.getBidPx();
             double newAsk = statistic.getAskPx();
-            double newClose = statistic.getClose();
+            double newClose = resolveDollarReferencePrice(statistic);
 
             if ((lastBid == null || !lastBid.equals(newBid)) ||
                     (lastAsk == null || !lastAsk.equals(newAsk)) ||
@@ -628,6 +556,17 @@ public class FooterController {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    static double resolveDollarReferencePrice(MarketDataMessage.Statistic statistic) {
+        double ohlcvClose = statistic.getOhlcv().getClose();
+        if (ohlcvClose > 0d) {
+            return ohlcvClose;
+        }
+        if (statistic.getClose() > 0d) {
+            return statistic.getClose();
+        }
+        return statistic.getLast();
     }
 
     @FXML
@@ -669,6 +608,49 @@ public class FooterController {
 
         statsStage.show();
 
+    }
+
+    @FXML
+    private void openHistoricalOrders() throws IOException {
+        if (historicalOrdersStage != null && historicalOrdersStage.isShowing()) {
+            historicalOrdersStage.toFront();
+            historicalOrdersStage.requestFocus();
+            return;
+        }
+
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/HistoricalOrders.fxml"));
+        AnchorPane root = loader.load();
+        HistoricalOrdersController controller = loader.getController();
+        Repository.setHistoricalOrdersController(controller);
+
+        Rectangle2D bounds = Screen.getPrimary().getVisualBounds();
+        double width = Math.max(1100, bounds.getWidth() - 40);
+        double height = Math.max(700, bounds.getHeight() - 40);
+        Scene scene = new Scene(root, width, height);
+        applyCurrentStyle(scene);
+
+        Stage stage = new Stage();
+        historicalOrdersStage = stage;
+        stage.setScene(scene);
+        stage.setTitle("Órdenes Históricas");
+        stage.setMinWidth(1100);
+        stage.setMinHeight(650);
+        stage.setMaxWidth(bounds.getWidth());
+        stage.setMaxHeight(bounds.getHeight());
+        stage.setX(bounds.getMinX() + 20);
+        stage.setY(bounds.getMinY() + 20);
+        stage.setOnCloseRequest(event -> closeHistoricalOrders(controller));
+        stage.setOnHidden(event -> closeHistoricalOrders(controller));
+        stage.show();
+        controller.activate();
+    }
+
+    private void closeHistoricalOrders(HistoricalOrdersController controller) {
+        controller.deactivate();
+        if (Repository.getHistoricalOrdersController() == controller) {
+            Repository.setHistoricalOrdersController(null);
+        }
+        historicalOrdersStage = null;
     }
 
 

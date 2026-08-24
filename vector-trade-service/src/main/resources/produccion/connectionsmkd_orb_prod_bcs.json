@@ -1,5 +1,13 @@
 {
-  "BCS": {     "host": "172.16.0.6", "port": 9095, "status": true }
+  "BCS": {
+    "host": "172.16.0.6",
+    "port": 9095,
+    "status": true
+  },
+  "DATATEC_XBCL": {
+    "host": "10.0.1.8",
+    "port": 8113,
+    "status": true
+  }
 }
-
 

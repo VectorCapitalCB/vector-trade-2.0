@@ -1,27 +1,47 @@
 package cl.vc.blotter.controller;
 
 import cl.vc.blotter.Repository;
+import cl.vc.blotter.model.HistoricalCandle;
+import cl.vc.blotter.model.TradeCandle;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import javafx.collections.FXCollections;
-import javafx.collections.ListChangeListener;
+import javafx.animation.PauseTransition;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.control.MenuButton;
+import javafx.scene.control.MenuItem;
+import javafx.scene.control.CheckMenuItem;
+import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import cl.vc.blotter.utils.ChartIndicator;
+import cl.vc.blotter.utils.IndicatorSettings;
+import cl.vc.blotter.utils.IndicatorSettingsDialog;
+import cl.vc.blotter.utils.Indicators;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
+import org.jfree.chart.fx.ChartCanvas;
 import org.jfree.chart.fx.ChartViewer;
+import org.jfree.chart.fx.interaction.MouseHandlerFX;
+import org.jfree.chart.fx.interaction.PanHandlerFX;
+import org.jfree.chart.fx.interaction.ScrollHandlerFX;
+import org.jfree.chart.fx.interaction.ZoomHandlerFX;
 import org.jfree.chart.plot.Marker;
 import org.jfree.chart.plot.ValueMarker;
+import org.jfree.chart.plot.CombinedDomainXYPlot;
 import org.jfree.chart.plot.XYPlot;
 import org.jfree.chart.renderer.xy.CandlestickRenderer;
+import org.jfree.chart.renderer.xy.XYBarRenderer;
+import org.jfree.chart.renderer.xy.XYDifferenceRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.chart.ui.Layer;
 import org.jfree.chart.ui.RectangleAnchor;
 import org.jfree.chart.ui.TextAnchor;
+import org.jfree.data.Range;
 import org.jfree.data.xy.DefaultOHLCDataset;
 import org.jfree.data.xy.OHLCDataItem;
 import org.jfree.data.xy.OHLCDataset;
@@ -30,6 +50,7 @@ import org.jfree.data.xy.XYSeriesCollection;
 import org.jfree.data.xy.XYDataset;
 
 import java.awt.Color;
+import java.awt.Paint;
 import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.time.Duration;
@@ -37,7 +58,6 @@ import java.time.Instant;
 import java.time.LocalTime;
 import java.time.DayOfWeek;
 import java.time.ZoneId;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
@@ -58,10 +78,10 @@ public class CandleController implements Initializable {
     private static final ZoneId MARKET_ZONE = ZoneId.of("America/Santiago");
     private static final DateTimeFormatter TS_FMT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(MARKET_ZONE);
     private static final DateTimeFormatter DAY_MARKER_FMT = DateTimeFormatter.ofPattern("dd/MM");
-    private static final LocalTime MARKET_OPEN = LocalTime.of(9, 30);
-    private static final LocalTime MARKET_CLOSE = LocalTime.of(16, 0);
-    private static final LocalTime MARKET_RANGE_START = LocalTime.of(9, 0);
-    private static final LocalTime MARKET_RANGE_END = LocalTime.of(16, 30);
+    private static final LocalTime MARKET_OPEN = LocalTime.of(9, 5);
+    private static final LocalTime MARKET_CLOSE = LocalTime.of(17, 0);
+    private static final Color UP_COLOR = new Color(0x22, 0xc5, 0x5e);
+    private static final Color DOWN_COLOR = new Color(0xef, 0x44, 0x44);
 
     @FXML
     private ChartViewer chartViewer;
@@ -83,39 +103,164 @@ public class CandleController implements Initializable {
     private Label lblMacd;
     @FXML
     private Label lblTradeRange;
+    @FXML
+    private MenuButton mnuIndicadores;
+    // Rotulos de la fila numerica: llevan el periodo, asi que se reescriben al cambiar parametros.
+    @FXML
+    private Label lblSma20Cap;
+    @FXML
+    private Label lblEma20Cap;
+    @FXML
+    private Label lblRsi14Cap;
+    @FXML
+    private Label lblMacdCap;
 
-    private final ListChangeListener<MarketDataMessage.TradeGeneral> tradeListener = change -> {
-        refreshSymbolList();
-        renderChart();
-    };
+    /** Indicadores encendidos. Se lee de Preferences al abrir y se guarda en cada cambio. */
+    private final java.util.Set<ChartIndicator> activos = ChartIndicator.cargar();
+    /** Parametros de cada indicador, editables desde el menu y persistidos. */
+    private IndicatorSettings params = IndicatorSettings.cargar();
+
+    private final String initialSymbol;
+    private final Set<String> requestedSymbols = new java.util.HashSet<>();
+    private final Map<String, PauseTransition> requestTimeouts = new java.util.HashMap<>();
+    private String renderedViewKey = "";
+    private boolean renderedHasData;
+
+    public CandleController() {
+        this(null);
+    }
+
+    public CandleController(String initialSymbol) {
+        this.initialSymbol = initialSymbol == null ? "" : initialSymbol.trim().toUpperCase(Locale.ROOT);
+    }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
-        Repository.getCandleTradeGenerales().addListener(tradeListener);
+        configureChartInteractions();
+        Repository.closePriceHistoryVersionProperty().addListener((obs, oldV, newV) -> renderChart());
+        Repository.tradeCandlesVersionProperty().addListener((obs, oldV, newV) -> renderChart());
+        Repository.candleRequestErrorProperty().addListener((obs, oldV, newV) -> renderChart());
+        Repository.candleConnectedProperty().addListener((obs, wasConnected, isConnected) -> {
+            if (Boolean.TRUE.equals(isConnected)) {
+                requestedSymbols.clear();
+                requestCurrentData();
+            }
+        });
         if (cmbSymbol != null) {
-            cmbSymbol.valueProperty().addListener((obs, oldV, newV) -> renderChart());
+            cmbSymbol.valueProperty().addListener((obs, oldV, newV) -> {
+                requestCurrentData();
+                renderChart();
+            });
         }
         if (cmbTimeframe != null) {
-            cmbTimeframe.setItems(FXCollections.observableArrayList("1m", "5m", "15m", "1h", "1d"));
-            cmbTimeframe.getSelectionModel().select("1m");
-            cmbTimeframe.valueProperty().addListener((obs, oldV, newV) -> renderChart());
+            cmbTimeframe.setItems(FXCollections.observableArrayList(
+                    "1D", "4h", "1h", "30m", "15m", "5m", "1m"));
+            cmbTimeframe.getSelectionModel().select("1D");
+            cmbTimeframe.setDisable(false);
+            cmbTimeframe.valueProperty().addListener((obs, oldV, newV) -> {
+                requestCurrentData();
+                renderChart();
+            });
         }
+        buildIndicatorMenu();
         refreshSymbolList();
+        if (!initialSymbol.isBlank()) {
+            selectSymbol(initialSymbol);
+        } else {
+            requestCurrentData();
+        }
         renderChart();
+    }
+
+    /**
+     * Selector de indicadores: un MenuButton con checks agrupados (sobre el precio / paneles),
+     * mas atajos para dejar el grafico limpio o volver al default.
+     *
+     * Va como menu y no como botonera de toggles para que ocupe un solo lugar en la barra y siga
+     * escalando cuando se agreguen indicadores.
+     */
+    private void buildIndicatorMenu() {
+        if (mnuIndicadores == null) return;
+        mnuIndicadores.getItems().clear();
+
+        ChartIndicator.Grupo grupoActual = null;
+        for (ChartIndicator ind : ChartIndicator.values()) {
+            if (grupoActual != ind.grupo) {
+                grupoActual = ind.grupo;
+                // Titulo de grupo: un item deshabilitado hace de encabezado sin pelear con el CSS.
+                MenuItem cabecera = new MenuItem(grupoActual.titulo.toUpperCase(Locale.ROOT));
+                cabecera.setDisable(true);
+                if (!mnuIndicadores.getItems().isEmpty()) {
+                    mnuIndicadores.getItems().add(new SeparatorMenuItem());
+                }
+                mnuIndicadores.getItems().add(cabecera);
+            }
+            CheckMenuItem item = new CheckMenuItem(ind.etiqueta(params));
+            item.setSelected(activos.contains(ind));
+            item.setOnAction(e -> {
+                if (item.isSelected()) activos.add(ind); else activos.remove(ind);
+                ChartIndicator.guardar(activos);
+                renderChart();
+            });
+            mnuIndicadores.getItems().add(item);
+        }
+
+        mnuIndicadores.getItems().add(new SeparatorMenuItem());
+
+        MenuItem parametros = new MenuItem("Parámetros…");
+        parametros.setOnAction(e -> abrirParametros());
+        mnuIndicadores.getItems().add(parametros);
+        mnuIndicadores.getItems().add(new SeparatorMenuItem());
+
+        MenuItem soloVelas = new MenuItem("Sólo velas");
+        soloVelas.setOnAction(e -> aplicarSeleccion(java.util.Set.of()));
+        MenuItem porDefecto = new MenuItem("Restaurar por defecto");
+        porDefecto.setOnAction(e -> aplicarSeleccion(ChartIndicator.porDefectoSet()));
+        mnuIndicadores.getItems().addAll(soloVelas, porDefecto);
+    }
+
+    /** Reemplaza la seleccion completa, resincroniza los checks y redibuja. */
+    private void aplicarSeleccion(java.util.Set<ChartIndicator> seleccion) {
+        activos.clear();
+        activos.addAll(seleccion);
+        ChartIndicator.guardar(activos);
+        buildIndicatorMenu();   // los CheckMenuItem no se enteran solos del cambio
+        renderChart();
+    }
+
+    /** Abre el dialogo de parametros; si se aplica, guarda, reetiqueta el menu y redibuja. */
+    private void abrirParametros() {
+        javafx.stage.Window owner = mnuIndicadores != null && mnuIndicadores.getScene() != null
+                ? mnuIndicadores.getScene().getWindow() : null;
+        IndicatorSettingsDialog.mostrar(params, owner).ifPresent(nuevos -> {
+            params = nuevos;
+            params.guardar();
+            buildIndicatorMenu();   // las etiquetas llevan los parametros: hay que reconstruirlas
+            renderChart();
+        });
+    }
+
+    private boolean on(ChartIndicator ind) {
+        return activos.contains(ind);
     }
 
     private void renderChart() {
         String symbol = cmbSymbol != null ? cmbSymbol.getValue() : null;
-        List<MarketDataMessage.TradeGeneral> source = Repository.getCandleTradeGenerales();
-        List<MarketDataMessage.TradeGeneral> filtered = source;
-        if (symbol != null && !symbol.isBlank() && !"TODOS".equals(symbol)) {
-            filtered = source.stream()
-                    .filter(t -> symbol.equalsIgnoreCase(normalizeSymbol(t.getSymbol())))
-                    .collect(Collectors.toList());
-        }
-
         int timeframeMinutes = getTimeframeMinutes();
-        DatasetBuildResult built = buildDatasetFromTrades(filtered, timeframeMinutes);
+        boolean daily = timeframeMinutes >= 1440;
+        String viewKey = normalizeSymbol(symbol) + "|" + timeframeMinutes;
+        Range previousDomainRange = currentDomainRange(viewKey);
+        List<HistoricalCandle> history = daily ? Repository.getClosePriceHistory(symbol) : List.of();
+        List<TradeCandle> intraday = daily ? List.of() : Repository.getTradeCandles(symbol, timeframeMinutes);
+        boolean responseReceived = daily
+                ? Repository.hasClosePriceHistoryResponse(symbol)
+                : Repository.hasTradeCandlesResponse(symbol, timeframeMinutes);
+        if (responseReceived) {
+            cancelRequestTimeout(requestKey(symbol, timeframeMinutes));
+        }
+        DatasetBuildResult built = daily
+                ? buildDatasetFromHistory(history)
+                : buildDatasetFromTradeCandles(intraday);
         OHLCDataset dataset = built.dataset;
 
         DateAxis timeAxis = new DateAxis("Tiempo");
@@ -128,12 +273,20 @@ public class CandleController implements Initializable {
         timeAxis.setLabelPaint(Color.WHITE);
         timeAxis.setTickLabelPaint(Color.WHITE);
         if (built.firstBucket != null && built.lastBucket != null) {
-            Instant lower = buildSessionRangeStart(built.firstBucket, timeframeMinutes);
-            Instant upper = buildSessionRangeEnd(built.lastBucket, timeframeMinutes);
-            if (upper.isAfter(built.firstBucket)) {
+            Instant lower = daily
+                    ? buildVisibleRangeStart(built.firstBucket, built.lastBucket, timeframeMinutes)
+                    : intradayRangeStart(built.lastBucket);
+            Instant upper = daily
+                    ? buildVisibleRangeEnd(built.firstBucket, built.lastBucket, timeframeMinutes)
+                    : intradayRangeEnd(built.lastBucket);
+            if (upper.isAfter(lower)) {
                 timeAxis.setAutoRange(false);
                 timeAxis.setRange(Date.from(lower), Date.from(upper));
             }
+        }
+        if (previousDomainRange != null) {
+            timeAxis.setAutoRange(false);
+            timeAxis.setRange(previousDomainRange);
         }
 
         NumberAxis priceAxis = new NumberAxis("Precio");
@@ -141,47 +294,281 @@ public class CandleController implements Initializable {
         priceAxis.setLabelPaint(Color.WHITE);
         priceAxis.setTickLabelPaint(Color.WHITE);
 
-        CandlestickRenderer candleRenderer = new CandlestickRenderer();
+        CandlestickRenderer candleRenderer = new DirectionalCandlestickRenderer(dataset, UP_COLOR, DOWN_COLOR);
         candleRenderer.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_SMALLEST);
+        candleRenderer.setAutoWidthFactor(0.72d);
+        candleRenderer.setAutoWidthGap(1.0d);
+        candleRenderer.setMaxCandleWidthInMilliseconds(maxCandleWidthMillis(timeframeMinutes));
         candleRenderer.setDrawVolume(false);
-        candleRenderer.setUseOutlinePaint(false);
+        candleRenderer.setUpPaint(UP_COLOR);
+        candleRenderer.setDownPaint(DOWN_COLOR);
+        candleRenderer.setUseOutlinePaint(true);
 
-        XYPlot plot = new XYPlot(dataset, timeAxis, priceAxis, candleRenderer);
-        plot.setDataset(0, dataset);
-        plot.setRenderer(0, candleRenderer);
+        // Series OHLCV como arreglos para alimentar Indicators (que trabaja con double[]).
+        Ohlcv ohlcv = Ohlcv.from(built.items);
+        boolean split = !daily;   // intradia: cortar las lineas en el hueco nocturno
 
-        XYDataset sma20Dataset = buildMovingAverageDataset("SMA 20", built.items, 20, false);
-        XYLineAndShapeRenderer sma20Renderer = buildLineRenderer(new Color(0xFF, 0xD1, 0x66));
-        plot.setDataset(1, sma20Dataset);
-        plot.setRenderer(1, sma20Renderer);
+        // ---------------- panel de PRECIO ----------------
+        XYPlot pricePlot = new XYPlot(dataset, null, priceAxis, candleRenderer);
+        pricePlot.setDataset(0, dataset);
+        pricePlot.setRenderer(0, candleRenderer);
 
-        XYDataset ema20Dataset = buildMovingAverageDataset("EMA 20", built.items, 20, true);
-        XYLineAndShapeRenderer ema20Renderer = buildLineRenderer(new Color(0x6B, 0xD4, 0xFF));
-        plot.setDataset(2, ema20Dataset);
-        plot.setRenderer(2, ema20Renderer);
-        addTradingDayMarkers(plot, built.items, timeframeMinutes);
+        int idx = 1;
+        if (on(ChartIndicator.SMA20)) {
+            idx = addOverlay(pricePlot, idx, ChartIndicator.SMA20.etiqueta(params), built.items,
+                    Indicators.sma(ohlcv.close, params.smaPeriod), split, new Color(0xFF, 0xD1, 0x66), 1.8f);
+        }
+        if (on(ChartIndicator.EMA20)) {
+            idx = addOverlay(pricePlot, idx, ChartIndicator.EMA20.etiqueta(params), built.items,
+                    Indicators.ema(ohlcv.close, params.emaPeriod), split, new Color(0x6B, 0xD4, 0xFF), 1.8f);
+        }
 
-        Color bg = new Color(0x1c, 0x1c, 0x1c);
-        plot.setBackgroundPaint(bg);
-        plot.setDomainGridlinesVisible(false);
-        plot.setRangeGridlinesVisible(false);
+        if (on(ChartIndicator.BOLLINGER)) {
+            Indicators.Bollinger bb = Indicators.bollinger(ohlcv.close, params.bollingerPeriod, params.bollingerK);
+            Color bbColor = new Color(0x9C, 0xA3, 0xAF);
+            idx = addOverlay(pricePlot, idx, "BB sup", built.items, bb.upper, split, bbColor, 1.1f);
+            idx = addOverlay(pricePlot, idx, "BB inf", built.items, bb.lower, split, bbColor, 1.1f);
+        }
 
-        String tf = cmbTimeframe != null && cmbTimeframe.getValue() != null ? cmbTimeframe.getValue() : "1m";
-        String title = (symbol == null || symbol.isBlank() || "TODOS".equals(symbol))
+        if (on(ChartIndicator.VWAP)) {
+            // Referencia de ejecucion de la mesa. Se reinicia cada dia, asi que se corta por dia
+            // SIEMPRE (incluso en diario) para no unir sesiones distintas con un trazo recto.
+            idx = addOverlay(pricePlot, idx, "VWAP", built.items,
+                    Indicators.vwapSession(ohlcv.high, ohlcv.low, ohlcv.close, ohlcv.volume, ohlcv.time, MARKET_ZONE),
+                    true, new Color(0xE8, 0x79, 0xF9), 2.0f);
+        }
+
+        if (on(ChartIndicator.ICHIMOKU)) {
+            // Tenkan/Kijun alineadas al precio; Senkou A y B proyectadas 26 barras adelante forman
+            // la nube; Chikou es el cierre 26 barras atras.
+            Indicators.Ichimoku ichi = Indicators.ichimoku(ohlcv.high, ohlcv.low, ohlcv.close,
+                    params.ichimokuTenkan, params.ichimokuKijun, params.ichimokuSenkouB, params.ichimokuShift);
+            idx = addOverlay(pricePlot, idx, "Tenkan", built.items, ichi.tenkan, split,
+                    new Color(0x38, 0xBD, 0xF8), 1.2f);
+            idx = addOverlay(pricePlot, idx, "Kijun", built.items, ichi.kijun, split,
+                    new Color(0xA7, 0x8B, 0xFA), 1.2f);
+            idx = addOverlay(pricePlot, idx, "Chikou", built.items, ichi.chikou, split,
+                    new Color(0x94, 0xA3, 0xB8), 1.0f);
+
+            // La nube se rellena entre Senkou A y B con XYDifferenceRenderer: el color indica si A
+            // va sobre B (alcista) o debajo (bajista).
+            pricePlot.setDataset(idx, unionSeries(
+                    projectedSeries("Senkou A", built.items, ichi.senkouA),
+                    projectedSeries("Senkou B", built.items, ichi.senkouB)));
+            XYDifferenceRenderer nube = new XYDifferenceRenderer(
+                    new Color(0x22, 0xC5, 0x5E, 40), new Color(0xEF, 0x44, 0x44, 40), false);
+            nube.setSeriesPaint(0, new Color(0x22, 0xC5, 0x5E, 120));
+            nube.setSeriesPaint(1, new Color(0xEF, 0x44, 0x44, 120));
+            nube.setSeriesStroke(0, new java.awt.BasicStroke(1.0f));
+            nube.setSeriesStroke(1, new java.awt.BasicStroke(1.0f));
+            pricePlot.setRenderer(idx, nube);
+            idx++;
+        }
+
+        addTradingDayMarkers(pricePlot, built.items, timeframeMinutes);
+        addLastPriceMarker(pricePlot, built.items);
+
+        Color bg = new Color(0x12, 0x18, 0x20);
+        stylePlot(pricePlot, bg);
+        pricePlot.setRangeCrosshairVisible(true);
+        pricePlot.setRangeCrosshairPaint(new Color(0xb8, 0xc4, 0xd1, 140));
+
+        // ---------------- combinado, eje de tiempo compartido ----------------
+        // El precio pesa 6 y cada panel 2: los de abajo son de apoyo, no protagonistas. Los paneles
+        // apagados NO se agregan, asi el precio recupera todo el alto disponible.
+        CombinedDomainXYPlot combined = new CombinedDomainXYPlot(timeAxis);
+        combined.setGap(8d);
+        combined.setDomainPannable(true);
+        combined.setRangePannable(false);
+        combined.setBackgroundPaint(bg);
+        combined.setDomainCrosshairVisible(true);
+        combined.setDomainCrosshairPaint(new Color(0xb8, 0xc4, 0xd1, 140));
+        combined.add(pricePlot, 6);
+
+        if (on(ChartIndicator.RSI)) {
+            XYPlot rsiPlot = subPlot(ChartIndicator.RSI.etiqueta(params), bg, 0d, 100d);
+            addOverlay(rsiPlot, 0, ChartIndicator.RSI.etiqueta(params), built.items,
+                    Indicators.rsi(ohlcv.close, params.rsiPeriod), split, new Color(0xFB, 0xBF, 0x24), 1.6f);
+            // Bandas de sobrecompra/sobreventa: sin ellas el RSI no se lee de un vistazo.
+            rsiPlot.addRangeMarker(banda(70d, new Color(0xEF, 0x44, 0x44, 150)), Layer.BACKGROUND);
+            rsiPlot.addRangeMarker(banda(30d, new Color(0x22, 0xC5, 0x5E, 150)), Layer.BACKGROUND);
+            rsiPlot.addRangeMarker(banda(50d, new Color(0x66, 0x73, 0x82, 90)), Layer.BACKGROUND);
+            combined.add(rsiPlot, 2);
+        }
+
+        if (on(ChartIndicator.MACD)) {
+            Indicators.Macd macd = Indicators.macd(ohlcv.close, params.macdFast, params.macdSlow, params.macdSignal);
+            XYPlot macdPlot = subPlot("MACD", bg, Double.NaN, Double.NaN);
+            // El histograma va de fondo (dataset 0) y las lineas encima.
+            XYBarRenderer histRenderer = new XYBarRenderer(0.05d);
+            histRenderer.setShadowVisible(false);
+            histRenderer.setDrawBarOutline(false);
+            histRenderer.setDefaultPaint(new Color(0x64, 0x74, 0x8B));
+            macdPlot.setDataset(0, seriesOf("Histograma", built.items, macd.histogram, split));
+            macdPlot.setRenderer(0, histRenderer);
+            addOverlay(macdPlot, 1, "MACD", built.items, macd.line, split, new Color(0x60, 0xA5, 0xFA), 1.6f);
+            addOverlay(macdPlot, 2, "Senal", built.items, macd.signal, split, new Color(0xF9, 0x73, 0x16), 1.4f);
+            macdPlot.addRangeMarker(banda(0d, new Color(0x66, 0x73, 0x82, 110)), Layer.BACKGROUND);
+            combined.add(macdPlot, 2);
+        }
+
+        if (on(ChartIndicator.ATR)) {
+            XYPlot atrPlot = subPlot(ChartIndicator.ATR.etiqueta(params), bg, Double.NaN, Double.NaN);
+            addOverlay(atrPlot, 0, ChartIndicator.ATR.etiqueta(params), built.items,
+                    Indicators.atr(ohlcv.high, ohlcv.low, ohlcv.close, params.atrPeriod), split,
+                    new Color(0x38, 0xBD, 0xF8), 1.6f);
+            combined.add(atrPlot, 2);
+        }
+
+        String tf = cmbTimeframe == null || cmbTimeframe.getValue() == null
+                ? "1D" : cmbTimeframe.getValue();
+        String title = symbol == null || symbol.isBlank()
                 ? "Velas (" + tf + ")"
                 : "Velas (" + tf + ") - " + symbol;
-        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, plot, false);
+        JFreeChart chart = new JFreeChart(title, JFreeChart.DEFAULT_TITLE_FONT, combined, false);
         chart.setBackgroundPaint(bg);
+        chart.getTitle().setPaint(new Color(0xe7, 0xec, 0xf2));
         chartViewer.setChart(chart);
-        chartViewer.setStyle("-fx-background-color: #1c1c1c;");
+        chartViewer.setStyle("-fx-background-color: #121820;");
+        bindVisiblePriceRange(timeAxis, priceAxis, built.items);
+        renderedViewKey = viewKey;
+        renderedHasData = !built.items.isEmpty();
 
-        updateDataState(filtered);
+        if (daily) {
+            updateHistoricalDataState(history, responseReceived);
+            updateHistoricalRange(history);
+        } else {
+            updateTradeCandleState(intraday, responseReceived);
+            updateTradeRange(built.firstTradeAt, built.lastTradeAt);
+        }
         updateIndicators(built.closes);
-        updateTradeRange(built.firstTradeAt, built.lastTradeAt);
-        logRenderDebug(symbol, tf, filtered, built);
     }
 
-    private DatasetBuildResult buildDatasetFromTrades(List<MarketDataMessage.TradeGeneral> trades, int timeframeMinutes) {
+    private void configureChartInteractions() {
+        if (chartViewer == null) {
+            return;
+        }
+        ChartCanvas canvas = chartViewer.getCanvas();
+        MouseHandlerFX defaultZoom = canvas.getMouseHandler("zoom");
+        if (defaultZoom != null) {
+            canvas.removeMouseHandler(defaultZoom);
+        }
+        canvas.addMouseHandler(new ZoomHandlerFX(
+                "zoom-selection", chartViewer, false, false, false, true));
+        canvas.addMouseHandler(new PanHandlerFX("pan-direct"));
+
+        MouseHandlerFX defaultScroll = canvas.getMouseHandler("scroll");
+        if (defaultScroll != null) {
+            canvas.removeAuxiliaryMouseHandler(defaultScroll);
+        }
+        ScrollHandlerFX scroll = new ScrollHandlerFX("scroll-focus");
+        scroll.setZoomFactor(0.075d);
+        canvas.addAuxiliaryMouseHandler(scroll);
+        canvas.setDomainZoomable(true);
+        canvas.setRangeZoomable(false);
+    }
+
+    private Range currentDomainRange(String viewKey) {
+        if (!renderedHasData || !viewKey.equals(renderedViewKey)
+                || chartViewer == null || chartViewer.getChart() == null
+                || !(chartViewer.getChart().getPlot() instanceof XYPlot currentPlot)) {
+            return null;
+        }
+        return currentPlot.getDomainAxis().getRange();
+    }
+
+    private void bindVisiblePriceRange(DateAxis timeAxis, NumberAxis priceAxis, List<OHLCDataItem> items) {
+        if (items == null || items.isEmpty()) {
+            return;
+        }
+        Runnable adjustRange = () -> adjustVisiblePriceRange(timeAxis, priceAxis, items);
+        timeAxis.addChangeListener(event -> adjustRange.run());
+        adjustRange.run();
+    }
+
+    private void adjustVisiblePriceRange(DateAxis timeAxis, NumberAxis priceAxis, List<OHLCDataItem> items) {
+        Range visibleTime = timeAxis.getRange();
+        Range visiblePrice = visiblePriceRange(items, visibleTime);
+        if (visiblePrice == null || visiblePrice.equals(priceAxis.getRange())) {
+            return;
+        }
+        priceAxis.setAutoRange(false);
+        priceAxis.setRange(visiblePrice);
+    }
+
+    static Range visiblePriceRange(List<OHLCDataItem> items, Range visibleTime) {
+        if (items == null || items.isEmpty() || visibleTime == null) {
+            return null;
+        }
+        long lower = (long) visibleTime.getLowerBound();
+        long upper = (long) visibleTime.getUpperBound();
+        int from = lowerBound(items, lower);
+        double minimum = Double.POSITIVE_INFINITY;
+        double maximum = Double.NEGATIVE_INFINITY;
+        for (int i = from; i < items.size(); i++) {
+            OHLCDataItem item = items.get(i);
+            long timestamp = item.getDate().getTime();
+            if (timestamp > upper) {
+                break;
+            }
+            minimum = Math.min(minimum, item.getLow().doubleValue());
+            maximum = Math.max(maximum, item.getHigh().doubleValue());
+        }
+        if (!Double.isFinite(minimum) || !Double.isFinite(maximum)) {
+            return null;
+        }
+        double span = maximum - minimum;
+        double padding = span > 0d
+                ? span * 0.08d
+                : Math.max(Math.abs(maximum) * 0.005d, 0.0001d);
+        return new Range(minimum - padding, maximum + padding);
+    }
+
+    private static int lowerBound(List<OHLCDataItem> items, long timestamp) {
+        int low = 0;
+        int high = items.size();
+        while (low < high) {
+            int middle = (low + high) >>> 1;
+            if (items.get(middle).getDate().getTime() < timestamp) {
+                low = middle + 1;
+            } else {
+                high = middle;
+            }
+        }
+        return low;
+    }
+
+    DatasetBuildResult buildDatasetFromHistory(List<HistoricalCandle> history) {
+        if (history == null || history.isEmpty()) {
+            return DatasetBuildResult.empty();
+        }
+        List<OHLCDataItem> items = new ArrayList<>();
+        List<Double> closes = new ArrayList<>();
+        history.stream()
+                .filter(c -> c != null && c.date() != null && c.close() > 0d)
+                .sorted(Comparator.comparing(HistoricalCandle::date))
+                .forEach(candle -> {
+                    double open = candle.open() > 0d ? candle.open() : candle.close();
+                    double high = Math.max(candle.high(), Math.max(open, candle.close()));
+                    double low = candle.low() > 0d
+                            ? Math.min(candle.low(), Math.min(open, candle.close()))
+                            : Math.min(open, candle.close());
+                    Instant day = candle.date().atStartOfDay(MARKET_ZONE).toInstant();
+                    items.add(new OHLCDataItem(Date.from(day), open, high, low,
+                            candle.close(), Math.max(0d, candle.volume())));
+                    closes.add(candle.close());
+                });
+        if (items.isEmpty()) {
+            return DatasetBuildResult.empty();
+        }
+        Instant first = items.get(0).getDate().toInstant();
+        Instant last = items.get(items.size() - 1).getDate().toInstant();
+        return new DatasetBuildResult(
+                new DefaultOHLCDataset("OHLC", items.toArray(new OHLCDataItem[0])),
+                items, closes, first, last, first, last);
+    }
+
+    DatasetBuildResult buildDatasetFromTrades(List<MarketDataMessage.TradeGeneral> trades, int timeframeMinutes) {
         if (trades == null || trades.isEmpty()) {
             return DatasetBuildResult.empty();
         }
@@ -218,61 +605,58 @@ public class CandleController implements Initializable {
             return DatasetBuildResult.empty();
         }
 
-        Instant first = rawBuckets.keySet().iterator().next();
-        Instant last = rawBuckets.keySet().stream().max(Comparator.naturalOrder()).orElse(first);
-        Duration step = Duration.ofMinutes(Math.max(1, timeframeMinutes));
-        if (timeframeMinutes < 1440) {
-            first = sessionOpenInstant(first);
-            last = sessionCloseInstant(last);
-        }
-
-        Map<java.time.LocalDate, Double> firstPriceByDay = new TreeMap<>();
-        for (Map.Entry<Instant, Ohlc> e : rawBuckets.entrySet()) {
-            Instant bucket = e.getKey();
+        List<OHLCDataItem> items = new ArrayList<>();
+        List<Double> closes = new ArrayList<>();
+        for (Map.Entry<Instant, Ohlc> entry : rawBuckets.entrySet()) {
+            Instant bucket = entry.getKey();
             if (!isTradingBucket(bucket, timeframeMinutes)) {
                 continue;
             }
-            Ohlc o = e.getValue();
+            Ohlc o = entry.getValue();
             if (o == null || !o.initialized) {
                 continue;
             }
-            java.time.LocalDate day = bucket.atZone(MARKET_ZONE).toLocalDate();
-            firstPriceByDay.putIfAbsent(day, o.open);
-        }
-
-        List<OHLCDataItem> items = new ArrayList<>();
-        List<Double> closes = new ArrayList<>();
-        Instant cursor = first;
-        Double prevClose = null;
-        while (!cursor.isAfter(last)) {
-            if (!isTradingBucket(cursor, timeframeMinutes)) {
-                cursor = cursor.plus(step);
-                continue;
-            }
-            Ohlc o = rawBuckets.get(cursor);
-            if (o == null && prevClose != null) {
-                o = Ohlc.synthetic(prevClose);
-            } else if (o == null) {
-                java.time.LocalDate day = cursor.atZone(MARKET_ZONE).toLocalDate();
-                Double daySeed = firstPriceByDay.get(day);
-                if (daySeed != null && daySeed > 0) {
-                    o = Ohlc.synthetic(daySeed);
-                }
-            }
-            if (o != null && o.initialized) {
-                items.add(new OHLCDataItem(Date.from(cursor), o.open, o.high, o.low, o.close, o.volume));
-                closes.add(o.close);
-                prevClose = o.close;
-            }
-            cursor = cursor.plus(step);
+            items.add(new OHLCDataItem(Date.from(bucket), o.open, o.high, o.low, o.close, o.volume));
+            closes.add(o.close);
         }
 
         if (items.isEmpty()) {
             return DatasetBuildResult.empty();
         }
 
+        Instant first = items.get(0).getDate().toInstant();
+        Instant last = items.get(items.size() - 1).getDate().toInstant();
         OHLCDataset dataset = new DefaultOHLCDataset("OHLC", items.toArray(new OHLCDataItem[0]));
         return new DatasetBuildResult(dataset, items, closes, first, last, firstTradeAt, lastTradeAt);
+    }
+
+    DatasetBuildResult buildDatasetFromTradeCandles(List<TradeCandle> candles) {
+        if (candles == null || candles.isEmpty()) {
+            return DatasetBuildResult.empty();
+        }
+        List<OHLCDataItem> items = new ArrayList<>();
+        List<Double> closes = new ArrayList<>();
+        candles.stream()
+                .filter(c -> c != null && c.start() != null && c.close() > 0d)
+                .sorted(Comparator.comparing(TradeCandle::start))
+                .forEach(candle -> {
+                    double open = candle.open() > 0d ? candle.open() : candle.close();
+                    double high = Math.max(candle.high(), Math.max(open, candle.close()));
+                    double low = candle.low() > 0d
+                            ? Math.min(candle.low(), Math.min(open, candle.close()))
+                            : Math.min(open, candle.close());
+                    items.add(new OHLCDataItem(Date.from(candle.start()), open, high, low,
+                            candle.close(), Math.max(0d, candle.volume())));
+                    closes.add(candle.close());
+                });
+        if (items.isEmpty()) {
+            return DatasetBuildResult.empty();
+        }
+        Instant first = items.get(0).getDate().toInstant();
+        Instant last = items.get(items.size() - 1).getDate().toInstant();
+        return new DatasetBuildResult(
+                new DefaultOHLCDataset("OHLC", items.toArray(new OHLCDataItem[0])),
+                items, closes, first, last, first, last);
     }
 
     private void refreshSymbolList() {
@@ -285,25 +669,149 @@ public class CandleController implements Initializable {
                 .map(this::normalizeSymbol)
                 .filter(s -> !s.isBlank())
                 .collect(Collectors.toCollection(java.util.TreeSet::new));
+        symbols.addAll(Repository.getClosePriceHistorySymbols());
+        if (!initialSymbol.isBlank()) {
+            symbols.add(initialSymbol);
+        }
+        MarketDataMessage.BolsaStats stats = Repository.getStats();
+        if (stats != null) {
+            stats.getMasTranzadoList().forEach(row -> symbols.add(normalizeSymbol(row.getSymbol())));
+            stats.getMasVolatilList().forEach(row -> symbols.add(normalizeSymbol(row.getSymbol())));
+            stats.getBestRankinList().forEach(row -> symbols.add(normalizeSymbol(row.getSymbol())));
+            stats.getWorseRankinList().forEach(row -> symbols.add(normalizeSymbol(row.getSymbol())));
+        }
+        symbols.remove("");
 
-        var items = FXCollections.<String>observableArrayList();
-        items.add("TODOS");
-        items.addAll(symbols);
+        var items = FXCollections.observableArrayList(symbols);
         cmbSymbol.setItems(items);
 
-        String preferred = Repository.getSelectedCandleSymbol();
-        if (preferred != null && items.contains(preferred)) {
-            cmbSymbol.getSelectionModel().select(preferred);
-            Repository.setSelectedCandleSymbol(null);
-            return;
-        }
         if (current != null && items.contains(current)) {
             cmbSymbol.getSelectionModel().select(current);
-        } else if (items.size() > 1) {
-            cmbSymbol.getSelectionModel().select(1);
+        } else if (!initialSymbol.isBlank() && items.contains(initialSymbol)) {
+            cmbSymbol.getSelectionModel().select(initialSymbol);
         } else {
             cmbSymbol.getSelectionModel().selectFirst();
         }
+    }
+
+    public void selectSymbol(String symbol) {
+        String normalized = normalizeSymbol(symbol);
+        if (normalized.isBlank() || cmbSymbol == null) {
+            return;
+        }
+        if (!cmbSymbol.getItems().contains(normalized)) {
+            cmbSymbol.getItems().add(normalized);
+            FXCollections.sort(cmbSymbol.getItems());
+        }
+        cmbSymbol.getSelectionModel().select(normalized);
+        requestCurrentData();
+        renderChart();
+    }
+
+    private void requestCurrentData() {
+        requestData(cmbSymbol == null ? null : cmbSymbol.getValue(), getTimeframeMinutes());
+    }
+
+    private void requestData(String symbol, int timeframeMinutes) {
+        String normalized = normalizeSymbol(symbol);
+        String key = requestKey(normalized, timeframeMinutes);
+        if (normalized.isBlank() || !requestedSymbols.add(key)) {
+            return;
+        }
+        if (Repository.getCandleClientService() == null || !Repository.candleConnectedProperty().get()) {
+            requestedSymbols.remove(key);
+            return;
+        }
+        Repository.setCandleRequestError("");
+        JSONObject request = new JSONObject().put("market", "BCS").put("symbol", normalized);
+        if (timeframeMinutes >= 1440) {
+            request.put("action", "load_close_history").put("limit", 180);
+        } else {
+            request.put("action", "load_trade_candles")
+                    .put("bucketMinutes", timeframeMinutes)
+                    .put("historyDays", 20);
+        }
+        Repository.getCandleClientService().sendMessage(request.toString());
+        scheduleRequestTimeout(key);
+    }
+
+    private void scheduleRequestTimeout(String key) {
+        cancelRequestTimeout(key);
+        PauseTransition timeout = new PauseTransition(javafx.util.Duration.seconds(12));
+        timeout.setOnFinished(event -> {
+            requestTimeouts.remove(key);
+            requestedSymbols.remove(key);
+            Repository.setCandleRequestError("Candle no respondió dentro del tiempo esperado");
+            renderChart();
+        });
+        requestTimeouts.put(key, timeout);
+        timeout.play();
+    }
+
+    private void cancelRequestTimeout(String key) {
+        PauseTransition timeout = requestTimeouts.remove(key);
+        if (timeout != null) timeout.stop();
+    }
+
+    private String requestKey(String symbol, int timeframeMinutes) {
+        String normalized = normalizeSymbol(symbol);
+        return (timeframeMinutes >= 1440 ? "daily" : "intraday-" + timeframeMinutes)
+                + "|" + normalized;
+    }
+
+    private void updateTradeCandleState(List<TradeCandle> candles, boolean responseReceived) {
+        if (lblDataState == null || lblLastTradeAt == null) {
+            return;
+        }
+        if (candles == null || candles.isEmpty()) {
+            updateEmptyState(responseReceived, "SIN TRADES DISPONIBLES", "CARGANDO TRADES");
+            lblLastTradeAt.setText("-");
+            return;
+        }
+        TradeCandle last = candles.get(candles.size() - 1);
+        lblDataState.setText("TRADES DEL DÍA");
+        lblDataState.setStyle("-fx-text-fill: #39c16c; -fx-font-weight: bold;");
+        lblLastTradeAt.setText(TS_FMT.format(last.start()) + " CL");
+    }
+
+    private void updateHistoricalDataState(List<HistoricalCandle> history, boolean responseReceived) {
+        if (lblDataState == null || lblLastTradeAt == null) {
+            return;
+        }
+        if (history == null || history.isEmpty()) {
+            updateEmptyState(responseReceived, "SIN HISTÓRICO DISPONIBLE", "CARGANDO HISTÓRICO");
+            lblLastTradeAt.setText("-");
+            return;
+        }
+        HistoricalCandle last = history.get(history.size() - 1);
+        lblDataState.setText("HISTÓRICO MONGO");
+        lblDataState.setStyle("-fx-text-fill: #39c16c; -fx-font-weight: bold;");
+        lblLastTradeAt.setText(last.date().toString());
+    }
+
+    private void updateEmptyState(boolean responseReceived, String emptyText, String loadingText) {
+        String error = Repository.getCandleRequestError();
+        if (error != null && !error.isBlank()) {
+            lblDataState.setText("ERROR DE DATOS");
+            lblDataState.setStyle("-fx-text-fill: #ff5f5f; -fx-font-weight: bold;");
+        } else if (responseReceived) {
+            lblDataState.setText(emptyText);
+            lblDataState.setStyle("-fx-text-fill: #ffb347; -fx-font-weight: bold;");
+        } else {
+            lblDataState.setText(loadingText);
+            lblDataState.setStyle("-fx-text-fill: #ffb347; -fx-font-weight: bold;");
+        }
+    }
+
+    private void updateHistoricalRange(List<HistoricalCandle> history) {
+        if (lblTradeRange == null) {
+            return;
+        }
+        if (history == null || history.isEmpty()) {
+            lblTradeRange.setText("-");
+            return;
+        }
+        lblTradeRange.setText(history.get(0).date() + " -> " + history.get(history.size() - 1).date());
     }
 
     private void updateDataState(List<MarketDataMessage.TradeGeneral> filtered) {
@@ -354,16 +862,32 @@ public class CandleController implements Initializable {
             return;
         }
 
-        Double sma20 = sma(closes, 20);
-        Double ema20 = ema(closes, 20);
-        Double rsi14 = rsi(closes, 14);
-        MacdValue macd = macd(closes);
+        // Misma matematica que la del grafico: Indicators es la unica fuente. Antes esta clase
+        // tenia su propia copia (y buildMovingAverageDataset una tercera), asi que el numero del
+        // label podia no coincidir con la linea dibujada.
+        double[] c = new double[closes.size()];
+        for (int i = 0; i < c.length; i++) {
+            Double v = closes.get(i);
+            c[i] = v == null ? Double.NaN : v;
+        }
 
-        lblSma20.setText(formatVal(sma20));
-        lblEma20.setText(formatVal(ema20));
-        lblRsi14.setText(formatVal(rsi14));
-        lblMacd.setText(macd == null ? "-" : String.format(Locale.US, "M:%s S:%s H:%s",
-                formatVal(macd.line), formatVal(macd.signal), formatVal(macd.histogram)));
+        if (lblSma20Cap != null) lblSma20Cap.setText("SMA" + params.smaPeriod + ":");
+        if (lblEma20Cap != null) lblEma20Cap.setText("EMA" + params.emaPeriod + ":");
+        if (lblRsi14Cap != null) lblRsi14Cap.setText("RSI" + params.rsiPeriod + ":");
+        if (lblMacdCap != null) {
+            lblMacdCap.setText("MACD(" + params.macdFast + "," + params.macdSlow + "," + params.macdSignal + "):");
+        }
+
+        lblSma20.setText(formatVal(Indicators.last(Indicators.sma(c, params.smaPeriod))));
+        lblEma20.setText(formatVal(Indicators.last(Indicators.ema(c, params.emaPeriod))));
+        lblRsi14.setText(formatVal(Indicators.last(Indicators.rsi(c, params.rsiPeriod))));
+
+        Indicators.Macd macd = Indicators.macd(c, params.macdFast, params.macdSlow, params.macdSignal);
+        Double line = Indicators.last(macd.line);
+        Double signal = Indicators.last(macd.signal);
+        Double hist = Indicators.last(macd.histogram);
+        lblMacd.setText(line == null ? "-" : String.format(Locale.US, "M:%s S:%s H:%s",
+                formatVal(line), formatVal(signal), formatVal(hist)));
     }
 
     private void updateTradeRange(Instant firstTradeAt, Instant lastTradeAt) {
@@ -384,185 +908,172 @@ public class CandleController implements Initializable {
         return String.format(Locale.US, "%.4f", value);
     }
 
-    private Double sma(List<Double> values, int period) {
-        if (values == null || values.size() < period || period <= 0) {
-            return null;
-        }
-        double sum = 0d;
-        for (int i = values.size() - period; i < values.size(); i++) {
-            sum += values.get(i);
-        }
-        return sum / period;
-    }
-
-    private Double ema(List<Double> values, int period) {
-        if (values == null || values.size() < period || period <= 0) {
-            return null;
-        }
-        Double ema = sma(values.subList(0, period), period);
-        double multiplier = 2.0d / (period + 1.0d);
-        for (int i = period; i < values.size(); i++) {
-            ema = ((values.get(i) - ema) * multiplier) + ema;
-        }
-        return ema;
-    }
-
-    private Double rsi(List<Double> values, int period) {
-        if (values == null || values.size() <= period || period <= 0) {
-            return null;
-        }
-
-        double gain = 0d;
-        double loss = 0d;
-        for (int i = 1; i <= period; i++) {
-            double delta = values.get(i) - values.get(i - 1);
-            if (delta >= 0) {
-                gain += delta;
-            } else {
-                loss += -delta;
-            }
-        }
-
-        double avgGain = gain / period;
-        double avgLoss = loss / period;
-
-        for (int i = period + 1; i < values.size(); i++) {
-            double delta = values.get(i) - values.get(i - 1);
-            double currentGain = Math.max(delta, 0);
-            double currentLoss = Math.max(-delta, 0);
-            avgGain = ((avgGain * (period - 1)) + currentGain) / period;
-            avgLoss = ((avgLoss * (period - 1)) + currentLoss) / period;
-        }
-
-        if (avgLoss == 0d) {
-            return 100d;
-        }
-        double rs = avgGain / avgLoss;
-        return 100d - (100d / (1d + rs));
-    }
-
-    private MacdValue macd(List<Double> values) {
-        List<Double> ema12 = emaSeries(values, 12);
-        List<Double> ema26 = emaSeries(values, 26);
-        if (ema12.isEmpty() || ema26.isEmpty()) {
-            return null;
-        }
-
-        List<Double> macdSeries = new ArrayList<>();
-        for (int i = 0; i < values.size(); i++) {
-            Double a = ema12.get(i);
-            Double b = ema26.get(i);
-            if (a != null && b != null) {
-                macdSeries.add(a - b);
-            }
-        }
-
-        if (macdSeries.size() < 9) {
-            return null;
-        }
-
-        Double signal = ema(macdSeries, 9);
-        if (signal == null) {
-            return null;
-        }
-
-        Double line = macdSeries.get(macdSeries.size() - 1);
-        Double histogram = line - signal;
-        return new MacdValue(line, signal, histogram);
-    }
-
-    private List<Double> emaSeries(List<Double> values, int period) {
-        List<Double> series = new ArrayList<>();
-        if (values == null || values.isEmpty() || period <= 0) {
-            return series;
-        }
-
-        for (int i = 0; i < values.size(); i++) {
-            series.add(null);
-        }
-
-        if (values.size() < period) {
-            return series;
-        }
-
-        double first = 0d;
-        for (int i = 0; i < period; i++) {
-            first += values.get(i);
-        }
-        double ema = first / period;
-        series.set(period - 1, ema);
-
-        double multiplier = 2.0d / (period + 1.0d);
-        for (int i = period; i < values.size(); i++) {
-            ema = ((values.get(i) - ema) * multiplier) + ema;
-            series.set(i, ema);
-        }
-        return series;
-    }
-
     private int getTimeframeMinutes() {
-        String tf = cmbTimeframe != null ? cmbTimeframe.getValue() : "1m";
-        if (tf == null) return 1;
+        String tf = cmbTimeframe != null ? cmbTimeframe.getValue() : "1D";
+        if (tf == null) return 1440;
         return switch (tf) {
+            case "1m" -> 1;
             case "5m" -> 5;
             case "15m" -> 15;
+            case "30m" -> 30;
             case "1h" -> 60;
-            case "1d" -> 1440;
-            default -> 1;
+            case "4h" -> 240;
+            case "1D" -> 1440;
+            default -> 1440;
         };
     }
 
-    private XYDataset buildMovingAverageDataset(String name, List<OHLCDataItem> items, int period, boolean emaMode) {
+    // =====================================================================
+    //  Indicadores: OHLCV -> arreglos -> series de JFreeChart
+    // =====================================================================
+
+    /** Vista de las velas como arreglos, que es lo que consume {@link Indicators}. */
+    private static final class Ohlcv {
+        final double[] high;
+        final double[] low;
+        final double[] close;
+        final double[] volume;
+        final long[] time;
+
+        private Ohlcv(int n) {
+            high = new double[n];
+            low = new double[n];
+            close = new double[n];
+            volume = new double[n];
+            time = new long[n];
+        }
+
+        static Ohlcv from(List<OHLCDataItem> items) {
+            int n = items == null ? 0 : items.size();
+            Ohlcv o = new Ohlcv(n);
+            for (int i = 0; i < n; i++) {
+                OHLCDataItem it = items.get(i);
+                o.high[i] = num(it.getHigh());
+                o.low[i] = num(it.getLow());
+                o.close[i] = num(it.getClose());
+                o.volume[i] = num(it.getVolume());
+                o.time[i] = it.getDate().getTime();
+            }
+            return o;
+        }
+
+        private static double num(Number v) {
+            return v == null ? Double.NaN : v.doubleValue();
+        }
+    }
+
+    /**
+     * Convierte una serie de indicador en datos graficables.
+     *
+     * Dos cosas que importan:
+     *  - Los NaN del warm-up se saltan; no se dibuja un 0 que parezca un dato.
+     *  - Con splitByTradingDay se abre una serie nueva por dia de mercado, para que la linea no
+     *    cruce el hueco nocturno con un trazo recto que no existio.
+     */
+    private XYSeriesCollection seriesOf(String name, List<OHLCDataItem> items,
+                                        double[] values, boolean splitByTradingDay) {
+        XYSeriesCollection out = new XYSeriesCollection();
+        int n = Math.min(items == null ? 0 : items.size(), values == null ? 0 : values.length);
+        XYSeries series = null;
+        java.time.LocalDate seriesDate = null;
+        for (int i = 0; i < n; i++) {
+            if (Double.isNaN(values[i])) continue;
+            java.time.LocalDate day = items.get(i).getDate().toInstant().atZone(MARKET_ZONE).toLocalDate();
+            if (series == null || (splitByTradingDay && !day.equals(seriesDate))) {
+                seriesDate = day;
+                series = new XYSeries(splitByTradingDay ? name + " " + day : name);
+                out.addSeries(series);
+            }
+            series.add(items.get(i).getDate().getTime(), values[i]);
+        }
+        if (out.getSeriesCount() == 0) out.addSeries(new XYSeries(name));
+        return out;
+    }
+
+    /** Agrega una serie de linea al plot en el slot indicado y devuelve el siguiente slot libre. */
+    private int addOverlay(XYPlot plot, int index, String name, List<OHLCDataItem> items,
+                           double[] values, boolean split, Color color, float width) {
+        plot.setDataset(index, seriesOf(name, items, values, split));
+        XYLineAndShapeRenderer r = new XYLineAndShapeRenderer(true, false);
+        r.setDefaultPaint(color);
+        r.setDefaultStroke(new java.awt.BasicStroke(width));
+        plot.setRenderer(index, r);
+        return index + 1;
+    }
+
+    /**
+     * Serie de Ichimoku proyectada hacia adelante: los ultimos `shift` puntos van mas alla de la
+     * ultima vela, asi que sus timestamps se extrapolan con el paso de la ultima barra conocida.
+     *
+     * Es una aproximacion a proposito: en intradia el paso real salta el cierre de sesion. Sirve
+     * para que la nube se vea adelantada, que es su unico objetivo; no son barras reales.
+     */
+    private XYSeriesCollection projectedSeries(String name, List<OHLCDataItem> items, double[] values) {
+        XYSeriesCollection out = new XYSeriesCollection();
         XYSeries series = new XYSeries(name);
-        if (items == null || items.size() < period || period <= 0) {
-            XYSeriesCollection out = new XYSeriesCollection();
+        int n = items == null ? 0 : items.size();
+        if (n == 0 || values == null) {
             out.addSeries(series);
             return out;
         }
-
-        double emaValue = 0d;
-        double multiplier = 2.0d / (period + 1.0d);
-
-        for (int i = 0; i < items.size(); i++) {
-            double close = items.get(i).getClose().doubleValue();
-            if (!emaMode) {
-                if (i < period - 1) {
-                    continue;
-                }
-                double sum = 0d;
-                for (int j = i - period + 1; j <= i; j++) {
-                    sum += items.get(j).getClose().doubleValue();
-                }
-                double value = sum / period;
-                series.add(items.get(i).getDate().getTime(), value);
-                continue;
-            }
-
-            if (i == period - 1) {
-                double seed = 0d;
-                for (int j = 0; j < period; j++) {
-                    seed += items.get(j).getClose().doubleValue();
-                }
-                emaValue = seed / period;
-                series.add(items.get(i).getDate().getTime(), emaValue);
-                continue;
-            }
-            if (i >= period) {
-                emaValue = ((close - emaValue) * multiplier) + emaValue;
-                series.add(items.get(i).getDate().getTime(), emaValue);
-            }
+        long step = n >= 2
+                ? items.get(n - 1).getDate().getTime() - items.get(n - 2).getDate().getTime()
+                : 60_000L;
+        if (step <= 0) step = 60_000L;
+        long lastTs = items.get(n - 1).getDate().getTime();
+        for (int i = 0; i < values.length; i++) {
+            if (Double.isNaN(values[i])) continue;
+            long ts = i < n ? items.get(i).getDate().getTime() : lastTs + (long) (i - n + 1) * step;
+            series.add(ts, values[i]);
         }
-
-        XYSeriesCollection out = new XYSeriesCollection();
         out.addSeries(series);
         return out;
     }
 
-    private XYLineAndShapeRenderer buildLineRenderer(Color color) {
-        XYLineAndShapeRenderer renderer = new XYLineAndShapeRenderer(true, false);
-        renderer.setDefaultPaint(color);
-        renderer.setDefaultStroke(new java.awt.BasicStroke(1.8f));
-        return renderer;
+    /**
+     * Junta dos colecciones en una sola, en orden. XYDifferenceRenderer exige las dos series
+     * (A y B) en el MISMO dataset, en los indices 0 y 1, para poder rellenar entre ambas.
+     */
+    private XYSeriesCollection unionSeries(XYSeriesCollection a, XYSeriesCollection b) {
+        XYSeriesCollection out = new XYSeriesCollection();
+        for (int i = 0; i < a.getSeriesCount(); i++) out.addSeries(a.getSeries(i));
+        for (int i = 0; i < b.getSeriesCount(); i++) out.addSeries(b.getSeries(i));
+        return out;
+    }
+
+    /** Panel de indicador: eje propio, sin eje de tiempo (lo aporta el plot combinado). */
+    private XYPlot subPlot(String axisLabel, Color bg, double lower, double upper) {
+        NumberAxis axis = new NumberAxis(axisLabel);
+        axis.setAutoRangeIncludesZero(false);
+        axis.setLabelPaint(Color.WHITE);
+        axis.setTickLabelPaint(Color.WHITE);
+        axis.setLabelFont(axis.getLabelFont().deriveFont(10f));
+        if (!Double.isNaN(lower) && !Double.isNaN(upper)) {
+            axis.setAutoRange(false);
+            axis.setRange(lower, upper);
+        }
+        XYPlot plot = new XYPlot(null, null, axis, null);
+        stylePlot(plot, bg);
+        return plot;
+    }
+
+    /** Marcador horizontal (niveles 30/70 del RSI, cero del MACD). */
+    private ValueMarker banda(double value, Color color) {
+        ValueMarker m = new ValueMarker(value);
+        m.setPaint(color);
+        m.setStroke(new java.awt.BasicStroke(1.0f, java.awt.BasicStroke.CAP_BUTT,
+                java.awt.BasicStroke.JOIN_MITER, 10f, new float[]{4f, 4f}, 0f));
+        return m;
+    }
+
+    /** Fondo, grillas y borde comunes a todos los paneles. */
+    private void stylePlot(XYPlot plot, Color bg) {
+        plot.setBackgroundPaint(bg);
+        plot.setDomainGridlinesVisible(true);
+        plot.setRangeGridlinesVisible(true);
+        plot.setDomainGridlinePaint(new Color(0x66, 0x73, 0x82, 65));
+        plot.setRangeGridlinePaint(new Color(0x66, 0x73, 0x82, 65));
+        plot.setOutlinePaint(new Color(0x3a, 0x47, 0x55));
     }
 
     private Instant bucketize(Instant instant, int minutes) {
@@ -573,20 +1084,19 @@ public class CandleController implements Initializable {
         if (minutes >= 1440) {
             return z.truncatedTo(ChronoUnit.DAYS).toInstant();
         }
-        int minute = z.getMinute();
-        int bucketMinute = (minute / minutes) * minutes;
-        ZonedDateTime bucket = z.withMinute(bucketMinute).withSecond(0).withNano(0);
-        return bucket.toInstant();
+        ZonedDateTime sessionStart = z.toLocalDate().atTime(MARKET_OPEN).atZone(MARKET_ZONE);
+        long minutesFromOpen = Math.max(0L, ChronoUnit.MINUTES.between(sessionStart, z));
+        return sessionStart.plusMinutes((minutesFromOpen / minutes) * minutes).toInstant();
     }
 
     private boolean isTradingBucket(Instant instant, int timeframeMinutes) {
-        if (timeframeMinutes >= 1440) {
-            return isWithinMarketSession(instant);
-        }
         ZonedDateTime z = instant.atZone(MARKET_ZONE);
         DayOfWeek day = z.getDayOfWeek();
         if (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) {
             return false;
+        }
+        if (timeframeMinutes >= 1440) {
+            return true;
         }
         LocalTime t = z.toLocalTime();
         return !t.isBefore(MARKET_OPEN) && !t.isAfter(MARKET_CLOSE);
@@ -602,32 +1112,65 @@ public class CandleController implements Initializable {
         return !t.isBefore(MARKET_OPEN) && !t.isAfter(MARKET_CLOSE);
     }
 
-    private Instant buildSessionRangeStart(Instant firstBucket, int timeframeMinutes) {
+    private Instant buildVisibleRangeStart(Instant firstBucket, Instant lastBucket, int timeframeMinutes) {
         if (timeframeMinutes >= 1440) {
-            return firstBucket;
+            return firstBucket.minus(Duration.ofDays(1));
         }
-        ZonedDateTime z = firstBucket.atZone(MARKET_ZONE);
-        ZonedDateTime start = z.toLocalDate().atTime(MARKET_RANGE_START).atZone(MARKET_ZONE);
-        return start.toInstant();
+        return firstBucket.minusSeconds(visibleRangePaddingSeconds(firstBucket, lastBucket, timeframeMinutes));
     }
 
-    private Instant buildSessionRangeEnd(Instant lastBucket, int timeframeMinutes) {
+    private Instant buildVisibleRangeEnd(Instant firstBucket, Instant lastBucket, int timeframeMinutes) {
         if (timeframeMinutes >= 1440) {
-            return lastBucket.plus(Duration.ofDays(1));
+            return lastBucket.plus(Duration.ofDays(2));
         }
-        ZonedDateTime z = lastBucket.atZone(MARKET_ZONE);
-        ZonedDateTime end = z.toLocalDate().atTime(MARKET_RANGE_END).atZone(MARKET_ZONE);
-        return end.toInstant();
+        long stepSeconds = Duration.ofMinutes(Math.max(1, timeframeMinutes)).toSeconds();
+        long paddingSeconds = visibleRangePaddingSeconds(firstBucket, lastBucket, timeframeMinutes);
+        return lastBucket.plusSeconds(stepSeconds + paddingSeconds);
     }
 
-    private Instant sessionOpenInstant(Instant any) {
-        ZonedDateTime z = any.atZone(MARKET_ZONE);
-        return z.toLocalDate().atTime(MARKET_OPEN).atZone(MARKET_ZONE).toInstant();
+    Instant intradayRangeStart(Instant referenceBucket) {
+        return referenceBucket.atZone(MARKET_ZONE).toLocalDate()
+                .atTime(MARKET_OPEN.minusMinutes(15))
+                .atZone(MARKET_ZONE)
+                .toInstant();
     }
 
-    private Instant sessionCloseInstant(Instant any) {
-        ZonedDateTime z = any.atZone(MARKET_ZONE);
-        return z.toLocalDate().atTime(MARKET_CLOSE).atZone(MARKET_ZONE).toInstant();
+    Instant intradayRangeEnd(Instant referenceBucket) {
+        return referenceBucket.atZone(MARKET_ZONE).toLocalDate()
+                .atTime(MARKET_CLOSE.plusMinutes(15))
+                .atZone(MARKET_ZONE)
+                .toInstant();
+    }
+
+    private long maxCandleWidthMillis(int timeframeMinutes) {
+        if (timeframeMinutes >= 1440) {
+            return Duration.ofHours(18).toMillis();
+        }
+        if (timeframeMinutes >= 240) {
+            return Duration.ofMinutes(45).toMillis();
+        }
+        if (timeframeMinutes >= 60) {
+            return Duration.ofMinutes(30).toMillis();
+        }
+        if (timeframeMinutes >= 30) {
+            return Duration.ofMinutes(15).toMillis();
+        }
+        if (timeframeMinutes >= 15) {
+            return Duration.ofMinutes(5).toMillis();
+        }
+        if (timeframeMinutes >= 5) {
+            return Duration.ofMinutes(3).toMillis();
+        }
+        return Duration.ofSeconds(45).toMillis();
+    }
+
+    private long visibleRangePaddingSeconds(Instant firstBucket, Instant lastBucket, int timeframeMinutes) {
+        long stepSeconds = Duration.ofMinutes(Math.max(1, timeframeMinutes)).toSeconds();
+        long spanSeconds = Math.max(stepSeconds, Duration.between(firstBucket, lastBucket).abs().toSeconds());
+        if (firstBucket.equals(lastBucket)) {
+            return Math.max(600L, stepSeconds / 2L);
+        }
+        return Math.max(stepSeconds / 2L, Math.min(1800L, Math.max(600L, spanSeconds / 20L)));
     }
 
     private void addTradingDayMarkers(XYPlot plot, List<OHLCDataItem> items, int timeframeMinutes) {
@@ -657,6 +1200,28 @@ public class CandleController implements Initializable {
             marker.setLabelTextAnchor(TextAnchor.TOP_LEFT);
             plot.addDomainMarker(marker, Layer.BACKGROUND);
         }
+    }
+
+    private void addLastPriceMarker(XYPlot plot, List<OHLCDataItem> items) {
+        if (plot == null || items == null || items.isEmpty()) {
+            return;
+        }
+        double lastPrice = items.get(items.size() - 1).getClose().doubleValue();
+        Marker marker = new ValueMarker(lastPrice);
+        marker.setPaint(new Color(0x9c, 0xa9, 0xb8));
+        marker.setStroke(new java.awt.BasicStroke(
+                0.9f,
+                java.awt.BasicStroke.CAP_BUTT,
+                java.awt.BasicStroke.JOIN_MITER,
+                1f,
+                new float[]{5f, 4f},
+                0f
+        ));
+        marker.setLabel("Último " + String.format(Locale.US, "%,.4f", lastPrice));
+        marker.setLabelPaint(new Color(0xd7, 0xdf, 0xe8));
+        marker.setLabelAnchor(RectangleAnchor.TOP_RIGHT);
+        marker.setLabelTextAnchor(TextAnchor.BOTTOM_RIGHT);
+        plot.addRangeMarker(marker, Layer.FOREGROUND);
     }
 
     private String normalizeSymbol(String symbol) {
@@ -695,20 +1260,34 @@ public class CandleController implements Initializable {
             volume += qty;
         }
 
-        static Ohlc synthetic(double closeValue) {
-            Ohlc o = new Ohlc();
-            o.open = closeValue;
-            double eps = Math.max(Math.abs(closeValue) * 0.00005d, 0.0001d);
-            o.high = closeValue + eps;
-            o.low = Math.max(0.0d, closeValue - eps);
-            o.close = closeValue;
-            o.volume = 0d;
-            o.initialized = true;
-            return o;
+    }
+
+    static final class DirectionalCandlestickRenderer extends CandlestickRenderer {
+        private final OHLCDataset dataset;
+        private final Paint upPaint;
+        private final Paint downPaint;
+
+        DirectionalCandlestickRenderer(OHLCDataset dataset, Paint upPaint, Paint downPaint) {
+            this.dataset = dataset;
+            this.upPaint = upPaint;
+            this.downPaint = downPaint;
+        }
+
+        @Override
+        public Paint getItemOutlinePaint(int row, int column) {
+            if (dataset == null || column < 0 || column >= dataset.getItemCount(row)) {
+                return super.getItemOutlinePaint(row, column);
+            }
+            Number open = dataset.getOpen(row, column);
+            Number close = dataset.getClose(row, column);
+            if (open == null || close == null) {
+                return super.getItemOutlinePaint(row, column);
+            }
+            return close.doubleValue() >= open.doubleValue() ? upPaint : downPaint;
         }
     }
 
-    private static class DatasetBuildResult {
+    static class DatasetBuildResult {
         final OHLCDataset dataset;
         final List<OHLCDataItem> items;
         final List<Double> closes;
@@ -748,15 +1327,4 @@ public class CandleController implements Initializable {
         }
     }
 
-    private static class MacdValue {
-        final Double line;
-        final Double signal;
-        final Double histogram;
-
-        MacdValue(Double line, Double signal, Double histogram) {
-            this.line = line;
-            this.signal = signal;
-            this.histogram = histogram;
-        }
-    }
 }

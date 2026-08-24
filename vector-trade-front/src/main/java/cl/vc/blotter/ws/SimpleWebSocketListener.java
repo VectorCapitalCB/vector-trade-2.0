@@ -5,6 +5,8 @@ import akka.actor.ActorSystem;
 import akka.routing.RoundRobinPool;
 import cl.vc.blotter.Repository;
 import cl.vc.blotter.adaptor.ParseMessageActor;
+import cl.vc.blotter.model.HistoricalCandle;
+import cl.vc.blotter.model.TradeCandle;
 import cl.vc.blotter.utils.Notifier;
 import cl.vc.module.protocolbuff.generator.TimeGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
@@ -20,8 +22,13 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.json.JSONObject;
+import org.json.JSONArray;
 
+import java.time.LocalDate;
+import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketAdapter;
@@ -42,6 +49,7 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
     private static final int RECONNECT_DELAY_DEFAULT = 7;
     private static final int RECONNECT_DELAY_CHAT = 3;
     private static final int CHAT_HEARTBEAT_SECONDS = 3;
+    private static final int NEWS_HEARTBEAT_SECONDS = 60;
 
     private static final int CONNECTION_TIMEOUT = 600000;  // 5 minutos
     private static final int CHAT_CONNECTION_TIMEOUT = 15000; // 15 segundos
@@ -67,7 +75,7 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
     private boolean closeFailure = false;
 
     private ScheduledExecutorService scheduler;
-    private ScheduledExecutorService chatHeartbeatScheduler;
+    private ScheduledExecutorService channelHeartbeatScheduler;
 
     private WebSocketClient client;
 
@@ -161,10 +169,11 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
             }
 
             if ("chat".equals(channelName)) {
-                startChatHeartbeat();
+                startChannelHeartbeat();
                 sendChatConnectEvent();
                 requestChatSnapshot();
             } else if ("news".equals(channelName)) {
+                startChannelHeartbeat();
                 requestNewsSnapshot();
             }
         });
@@ -193,7 +202,7 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
         super.onWebSocketClose(statusCode, reason);
         channelConnected = false;
         Repository.setChannelConnected(channelName, false);
-        stopChatHeartbeat();
+        stopChannelHeartbeat();
 
         log.error("######## DESCONEXION reason {} {}", reason, statusCode);
 
@@ -429,7 +438,7 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
 
         channelConnected = false;
         Repository.setChannelConnected(channelName, false);
-        stopChatHeartbeat();
+        stopChannelHeartbeat();
         if (autoReconnect) {
             initiateReconnection();
         }
@@ -471,7 +480,7 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
     public void stopService() {
         try {
             autoReconnect = false;
-            stopChatHeartbeat();
+            stopChannelHeartbeat();
             shutdownSoundScheduler();
             if (scheduler != null) {
                 scheduler.shutdownNow();
@@ -479,6 +488,9 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
             }
             if (getSession() != null && getSession().isOpen()) {
                 getSession().close();
+            }
+            if (client != null && client.isStarted()) {
+                client.stop();
             }
         } catch (Exception e) {
             log.error("Unexpected error while closing WebSocket session: {}", e.getMessage(), e);
@@ -569,28 +581,31 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
         }
     }
 
-    private void startChatHeartbeat() {
-        if (!"chat".equals(channelName)) {
+    private void startChannelHeartbeat() {
+        if (!"chat".equals(channelName) && !"news".equals(channelName)) {
             return;
         }
-        stopChatHeartbeat();
-        chatHeartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
-        chatHeartbeatScheduler.scheduleWithFixedDelay(() -> {
+        stopChannelHeartbeat();
+        int heartbeatSeconds = "chat".equals(channelName)
+                ? CHAT_HEARTBEAT_SECONDS
+                : NEWS_HEARTBEAT_SECONDS;
+        channelHeartbeatScheduler = Executors.newSingleThreadScheduledExecutor();
+        channelHeartbeatScheduler.scheduleWithFixedDelay(() -> {
             try {
                 Session s = getSession();
                 if (s != null && s.isOpen()) {
                     s.getRemote().sendPing(ByteBuffer.wrap(new byte[]{1}));
                 }
             } catch (Exception e) {
-                log.debug("Heartbeat chat ping failed: {}", e.getMessage());
+                log.debug("Heartbeat {} ping failed: {}", channelName, e.getMessage());
             }
-        }, CHAT_HEARTBEAT_SECONDS, CHAT_HEARTBEAT_SECONDS, TimeUnit.SECONDS);
+        }, heartbeatSeconds, heartbeatSeconds, TimeUnit.SECONDS);
     }
 
-    private void stopChatHeartbeat() {
-        if (chatHeartbeatScheduler != null) {
-            chatHeartbeatScheduler.shutdownNow();
-            chatHeartbeatScheduler = null;
+    private void stopChannelHeartbeat() {
+        if (channelHeartbeatScheduler != null) {
+            channelHeartbeatScheduler.shutdownNow();
+            channelHeartbeatScheduler = null;
         }
     }
 
@@ -627,18 +642,54 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
     private void handleCandleMessage(String raw) {
         try {
             JSONObject json = new JSONObject(raw);
+            if ("close_price_history".equals(json.optString("type"))) {
+                handleClosePriceHistory(json);
+                return;
+            }
+            if ("trade_candles".equals(json.optString("type"))) {
+                handleTradeCandles(json);
+                return;
+            }
+            if ("error".equals(json.optString("type"))) {
+                String message = json.optString("message", "Error consultando Candle");
+                log.warn("Respuesta de error del canal candle: {}", message);
+                Platform.runLater(() -> Repository.setCandleRequestError(message));
+                return;
+            }
             if (!"intraday_series".equals(json.optString("type"))) {
                 return;
             }
+            // El candle-service resuelve el dia como "el ultimo con trades en Mongo"
+            // (resolveLatestTradeDayByEventTime). Si la ingesta se detuvo, devuelve la serie de ese
+            // dia viejo SIN avisar, y la columna Tendencia la dibuja como si fuera la de hoy: el
+            // papel sale rojo aunque en vivo este subiendo. Se descarta y queda el buffer local,
+            // que se llena con los ticks en vivo y por definicion es de hoy.
+            String diaSerie = json.optString("date", "");
+            String hoy = java.time.LocalDate.now(java.time.ZoneId.of("America/Santiago")).toString();
+            if (!diaSerie.isEmpty() && !diaSerie.equals(hoy)) {
+                log.warn("[Tendencia] serie intradia DESCARTADA: viene del {} y hoy es {}."
+                        + " Revisar la ingesta (inyectorcandle) que alimenta la coleccion de trades.",
+                        diaSerie, hoy);
+                return;
+            }
+
             var series = json.optJSONArray("series");
             if (series == null) return;
 
             Map<String, double[]> acumulado = new HashMap<>();
+            java.util.Set<String> sinTrades = new java.util.HashSet<>();
             for (int i = 0; i < series.length(); i++) {
                 JSONObject s = series.getJSONObject(i);
                 String key = s.optString("key", "");
+                String symbol = s.optString("symbol", "").trim();
                 var puntos = s.optJSONArray("points");
-                if (key.isEmpty() || puntos == null || puntos.length() == 0) continue;
+                if (puntos == null || puntos.length() == 0) {
+                    if ("no_trades".equals(s.optString("status")) && !symbol.isEmpty()) {
+                        sinTrades.add(symbol);
+                    }
+                    continue;
+                }
+                if (key.isEmpty()) continue;
 
                 double[] serie = new double[puntos.length()];
                 for (int p = 0; p < puntos.length(); p++) {
@@ -646,13 +697,84 @@ public class SimpleWebSocketListener extends WebSocketAdapter implements Interfa
                 }
                 acumulado.put(key, serie);
             }
-            if (!acumulado.isEmpty()) {
-                Platform.runLater(() -> Repository.setSeriesIntradia(acumulado));
-                log.info("[Tendencia] series intradia recibidas: {}", acumulado.size());
+            if (!acumulado.isEmpty() || !sinTrades.isEmpty()) {
+                Platform.runLater(() -> {
+                    Repository.clearSeriesIntradia(sinTrades);
+                    Repository.setSeriesIntradia(acumulado);
+                    var principalController = Repository.getPrincipalController();
+                    if (principalController != null) {
+                        principalController.getMarketDataPortfolioViewControllers().values()
+                                .forEach(controller -> controller.refreshTrendColumn());
+                    }
+                });
+                log.info("[Tendencia] series recibidas={} sinTrades={}",
+                        acumulado.size(), sinTrades.size());
             }
         } catch (Exception e) {
             log.error("No se pudo procesar el mensaje del canal candle", e);
         }
+    }
+
+    private void handleClosePriceHistory(JSONObject json) {
+        String symbol = json.optString("symbol", "").trim().toUpperCase();
+        JSONArray rows = json.optJSONArray("rows");
+        if (symbol.isEmpty() || rows == null) {
+            return;
+        }
+
+        List<HistoricalCandle> candles = new ArrayList<>();
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.optJSONObject(i);
+            if (row == null) continue;
+            try {
+                double close = row.optDouble("close", 0d);
+                if (close <= 0d) continue;
+                candles.add(new HistoricalCandle(
+                        symbol,
+                        LocalDate.parse(row.getString("date")),
+                        row.optDouble("open", close),
+                        row.optDouble("high", close),
+                        row.optDouble("low", close),
+                        close,
+                        Math.max(0d, row.optDouble("volume", 0d))));
+            } catch (Exception e) {
+                log.warn("Fila close_prices invalida para {}: {}", symbol, e.getMessage());
+            }
+        }
+        candles.sort(java.util.Comparator.comparing(HistoricalCandle::date));
+        Platform.runLater(() -> Repository.setClosePriceHistory(symbol, candles));
+    }
+
+    private void handleTradeCandles(JSONObject json) {
+        String symbol = json.optString("symbol", "").trim().toUpperCase();
+        int bucketMinutes = json.optInt("bucketMinutes", 0);
+        JSONArray rows = json.optJSONArray("rows");
+        if (symbol.isEmpty() || bucketMinutes <= 0 || rows == null) {
+            return;
+        }
+
+        List<TradeCandle> candles = new ArrayList<>();
+        for (int i = 0; i < rows.length(); i++) {
+            JSONObject row = rows.optJSONObject(i);
+            if (row == null) continue;
+            try {
+                double last = row.optDouble("last", row.optDouble("close", 0d));
+                if (last <= 0d) continue;
+                candles.add(new TradeCandle(
+                        symbol,
+                        bucketMinutes,
+                        Instant.ofEpochMilli(row.getLong("timestamp")),
+                        row.optDouble("open", last),
+                        row.optDouble("high", last),
+                        row.optDouble("low", last),
+                        last,
+                        Math.max(0d, row.optDouble("volume", 0d))));
+            } catch (Exception e) {
+                log.warn("Fila trade_candles invalida para {}: {}", symbol, e.getMessage());
+            }
+        }
+        candles.sort(java.util.Comparator.comparing(TradeCandle::start));
+        Platform.runLater(() -> Repository.setTradeCandles(symbol, bucketMinutes, candles));
     }
 
     private void handleNewsMessage(String raw) {

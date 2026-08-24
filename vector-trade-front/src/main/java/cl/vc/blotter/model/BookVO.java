@@ -16,7 +16,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.text.DecimalFormat;
+import java.util.ArrayList;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 @Data
@@ -43,6 +45,10 @@ public class BookVO {
     private ObservableList<OrderBookEntry> askBook = FXCollections.observableArrayList();
 
     private StatisticVO statisticVO;
+
+    /** Cantidades de la mejor punta; NaN hasta recibir profundidad real. */
+    private double topBidQty = Double.NaN;
+    private double topAskQty = Double.NaN;
 
     private ObservableList<MarketDataMessage.Trade> tradesVO = FXCollections.observableArrayList();
 
@@ -95,6 +101,7 @@ public class BookVO {
             this.settlType.set(snapshot.getSettlType().name());
             this.securityExchange.set(snapshot.getSecurityExchange().name());
             this.securityType.set(snapshot.getSecurityType().name());
+            this.symbol.set(snapshot.getStatistic().getSymbol());
 
             statisticVO = new StatisticVO(snapshot.getStatistic());
 
@@ -139,6 +146,7 @@ public class BookVO {
             this.settlType.set(subscribe.getSettlType().name());
             this.securityExchange.set(subscribe.getSecurityExchange().name());
             this.securityType.set(subscribe.getSecurityType().name());
+            this.symbol.set(subscribe.getSymbol());
 
             this.securityExchangeObj = subscribe.getSecurityExchange();
 
@@ -162,6 +170,9 @@ public class BookVO {
 
         Runnable addTrade = () -> {
             tradesVO.add(trade);
+            if (statisticVO != null && trade.getPrice() > 0d) {
+                statisticVO.registrarTradeIntradia(trade.getPrice());
+            }
             trimTrades();
         };
 
@@ -200,36 +211,53 @@ public class BookVO {
 
             Runnable r = () -> {
 
-                bidBook.clear();
-                askBook.clear();
+                PriceSnapshot previousBidPrices = pricesOf(bidBook);
+                PriceSnapshot previousAskPrices = pricesOf(askBook);
 
-                incremental.getBidsList().forEach(bid -> {
-                    bidBook.add(new OrderBookEntry(id,
+                topBidQty = incremental.getBidsList().isEmpty()
+                        ? 0d : incremental.getBidsList().get(0).getSize();
+                topAskQty = incremental.getAsksList().isEmpty()
+                        ? 0d : incremental.getAsksList().get(0).getSize();
+
+                List<OrderBookEntry> nextBidBook = new ArrayList<>(incremental.getBidsCount());
+                List<OrderBookEntry> nextAskBook = new ArrayList<>(incremental.getAsksCount());
+
+                for (int level = 0; level < incremental.getBidsCount(); level++) {
+                    MarketDataMessage.DataBook bid = incremental.getBids(level);
+                    OrderBookEntry entry = new OrderBookEntry(id,
                             bid.getPrice(),
                             bid.getSize(),
                             decimalFormat,
-                            bid.getSymbol(),
+                            resolveEntrySymbol(bid.getSymbol()),
                             bid.getAccount(),
                             bid.getOperator(),
-                            bid.getSecurityExchange()));
-                });
+                            bid.getSecurityExchange());
+                    markPriceChange(entry, previousBidPrices, level, bid.getPrice());
+                    nextBidBook.add(entry);
+                }
 
-                incremental.getAsksList().forEach(ask -> {
-                    askBook.add(new OrderBookEntry(id,
+                for (int level = 0; level < incremental.getAsksCount(); level++) {
+                    MarketDataMessage.DataBook ask = incremental.getAsks(level);
+                    OrderBookEntry entry = new OrderBookEntry(id,
                             ask.getPrice(),
                             ask.getSize(),
                             decimalFormat,
-                            ask.getSymbol(),
+                            resolveEntrySymbol(ask.getSymbol()),
                             ask.getAccount(),
                             ask.getOperator(),
-                            ask.getSecurityExchange()));
-                });
+                            ask.getSecurityExchange());
+                    markPriceChange(entry, previousAskPrices, level, ask.getPrice());
+                    nextAskBook.add(entry);
+                }
 
                 // El lado no viene en la entrada: se deduce de la lista a la que pertenece.
                 // Lo necesita el libro para marcar los niveles donde el usuario tiene una
                 // orden viva (Repository.tieneOrdenVivaEn).
-                bidBook.forEach(e -> e.setSide(RoutingMessage.Side.BUY));
-                askBook.forEach(e -> e.setSide(RoutingMessage.Side.SELL));
+                nextBidBook.forEach(e -> e.setSide(RoutingMessage.Side.BUY));
+                nextAskBook.forEach(e -> e.setSide(RoutingMessage.Side.SELL));
+                bidBook.setAll(nextBidBook);
+                askBook.setAll(nextAskBook);
+                applyTopOfBookQuantities();
             };
 
             if (Platform.isFxApplicationThread()) {
@@ -274,6 +302,7 @@ public class BookVO {
             } else {
                 this.statisticVO.update(statistic);
             }
+            applyTopOfBookQuantities();
 
         } catch (Exception e) {
             log.error(e.getMessage(), e);
@@ -325,24 +354,44 @@ public class BookVO {
                     log.error(e.getMessage(), e);
                 }
 
-                bidBook.clear();
-                askBook.clear();
+                PriceSnapshot previousBidPrices = pricesOf(bidBook);
+                PriceSnapshot previousAskPrices = pricesOf(askBook);
+                List<OrderBookEntry> nextBidBook = new ArrayList<>(snapshot.getBidsCount());
+                List<OrderBookEntry> nextAskBook = new ArrayList<>(snapshot.getAsksCount());
 
-                snapshot.getBidsList().forEach(bid -> {
+                topBidQty = snapshot.getBidsList().isEmpty()
+                        ? 0d : snapshot.getBidsList().get(0).getSize();
+                topAskQty = snapshot.getAsksList().isEmpty()
+                        ? 0d : snapshot.getAsksList().get(0).getSize();
+
+                for (int level = 0; level < snapshot.getBidsCount(); level++) {
+                    MarketDataMessage.DataBook bid = snapshot.getBids(level);
                     try {
-                        bidBook.add(new OrderBookEntry(id, bid.getPrice(), bid.getSize(), decimalFormat, bid.getSymbol(), bid.getAccount(), bid.getOperator(), bid.getSecurityExchange()));
+                        OrderBookEntry entry = new OrderBookEntry(id, bid.getPrice(), bid.getSize(), decimalFormat,
+                                resolveEntrySymbol(bid.getSymbol()), bid.getAccount(), bid.getOperator(), bid.getSecurityExchange());
+                        markPriceChange(entry, previousBidPrices, level, bid.getPrice());
+                        nextBidBook.add(entry);
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }
-                });
+                }
 
-                snapshot.getAsksList().forEach(ask -> {
+                for (int level = 0; level < snapshot.getAsksCount(); level++) {
+                    MarketDataMessage.DataBook ask = snapshot.getAsks(level);
                     try {
-                        askBook.add(new OrderBookEntry(id, ask.getPrice(), ask.getSize(), decimalFormat, ask.getSymbol(), ask.getAccount(), ask.getOperator(), ask.getSecurityExchange()));
+                        OrderBookEntry entry = new OrderBookEntry(id, ask.getPrice(), ask.getSize(), decimalFormat,
+                                resolveEntrySymbol(ask.getSymbol()), ask.getAccount(), ask.getOperator(), ask.getSecurityExchange());
+                        markPriceChange(entry, previousAskPrices, level, ask.getPrice());
+                        nextAskBook.add(entry);
                     } catch (Exception e) {
                         log.error(e.getMessage(), e);
                     }
-                });
+                }
+
+                nextBidBook.forEach(e -> e.setSide(RoutingMessage.Side.BUY));
+                nextAskBook.forEach(e -> e.setSide(RoutingMessage.Side.SELL));
+                bidBook.setAll(nextBidBook);
+                askBook.setAll(nextAskBook);
 
                 // statistic may update UI-bound properties as well
                 try {
@@ -352,6 +401,7 @@ public class BookVO {
                         } else {
                             statisticVO.update(snapshot.getStatistic());
                         }
+                        applyTopOfBookQuantities();
                     }
                 } catch (Exception e) {
                     log.error(e.getMessage(), e);
@@ -364,6 +414,16 @@ public class BookVO {
             log.error(e.getMessage(), e);
         }
 
+    }
+
+    private void applyTopOfBookQuantities() {
+        Runnable apply = () -> {
+            if (statisticVO == null) return;
+            if (!Double.isNaN(topBidQty)) statisticVO.setBidQty(topBidQty);
+            if (!Double.isNaN(topAskQty)) statisticVO.setAskQty(topAskQty);
+        };
+        if (Platform.isFxApplicationThread()) apply.run();
+        else Platform.runLater(apply);
     }
 
 
@@ -419,6 +479,37 @@ public class BookVO {
             bidBook.clear();
         });
 
+    }
+
+    static boolean shouldFlashPriceChange(List<Double> previousLevels, Set<Double> previousPrices,
+                                          int level, double currentPrice) {
+        if (previousLevels == null || previousLevels.isEmpty() || level < 0) {
+            return false;
+        }
+        if (level == 0) {
+            return Double.compare(previousLevels.get(0), currentPrice) != 0;
+        }
+        return previousPrices != null && !previousPrices.contains(currentPrice);
+    }
+
+    private static PriceSnapshot pricesOf(List<OrderBookEntry> entries) {
+        List<Double> levels = new ArrayList<>(entries.size());
+        entries.forEach(entry -> levels.add(entry.getPriceValue()));
+        return new PriceSnapshot(levels, new LinkedHashSet<>(levels));
+    }
+
+    private static void markPriceChange(OrderBookEntry entry, PriceSnapshot previousPrices,
+                                        int level, double currentPrice) {
+        if (shouldFlashPriceChange(previousPrices.levels(), previousPrices.values(), level, currentPrice)) {
+            entry.markPriceChanged();
+        }
+    }
+
+    private record PriceSnapshot(List<Double> levels, Set<Double> values) {
+    }
+
+    private String resolveEntrySymbol(String levelSymbol) {
+        return levelSymbol == null || levelSymbol.isBlank() ? getSymbol() : levelSymbol;
     }
 
     public void setSymbol(String value) {

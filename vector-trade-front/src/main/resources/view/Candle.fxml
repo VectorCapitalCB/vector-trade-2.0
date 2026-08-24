@@ -1,6 +1,7 @@
 ﻿<?xml version="1.0" encoding="UTF-8"?>
 <?import javafx.scene.control.ComboBox?>
 <?import javafx.scene.control.Label?>
+<?import javafx.scene.control.MenuButton?>
 <?import javafx.scene.layout.AnchorPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.VBox?>
@@ -18,19 +19,20 @@
             <ComboBox fx:id="cmbSymbol" prefWidth="200"/>
             <Label text="Temporalidad:"/>
             <ComboBox fx:id="cmbTimeframe" prefWidth="120"/>
-            <Label text="SMA20:"/>
+            <MenuButton fx:id="mnuIndicadores" text="Indicadores" prefWidth="150"/>
+            <Label fx:id="lblSma20Cap" text="SMA20:"/>
             <Label fx:id="lblSma20" text="-"/>
-            <Label text="EMA20:"/>
+            <Label fx:id="lblEma20Cap" text="EMA20:"/>
             <Label fx:id="lblEma20" text="-"/>
-            <Label text="RSI14:"/>
+            <Label fx:id="lblRsi14Cap" text="RSI14:"/>
             <Label fx:id="lblRsi14" text="-"/>
-            <Label text="MACD:"/>
+            <Label fx:id="lblMacdCap" text="MACD:"/>
             <Label fx:id="lblMacd" text="-"/>
             <Label text="Estado:"/>
             <Label fx:id="lblDataState" text="SIN DATOS"/>
-            <Label text="Último trade:"/>
+            <Label text="Último cierre:"/>
             <Label fx:id="lblLastTradeAt" text="-"/>
-            <Label text="Rango:"/>
+            <Label text="Período:"/>
             <Label fx:id="lblTradeRange" text="-"/>
         </FlowPane>
         <ChartViewer fx:id="chartViewer" prefWidth="1000" prefHeight="600" VBox.vgrow="ALWAYS"/>

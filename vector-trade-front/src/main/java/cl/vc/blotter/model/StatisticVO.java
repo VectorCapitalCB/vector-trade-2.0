@@ -7,7 +7,9 @@ import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import javafx.application.Platform;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.LongProperty;
 import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.property.SimpleLongProperty;
 import javafx.beans.property.SimpleStringProperty;
 import javafx.beans.property.StringProperty;
 import lombok.Data;
@@ -32,6 +34,7 @@ public class StatisticVO {
     private final double[] historialPrecio = new double[PUNTOS_INTRADIA];
     private int histIdx = 0;
     private int histLen = 0;
+    private final SimpleLongProperty tendenciaVersion = new SimpleLongProperty();
 
     private MarketDataMessage.Statistic statistic;
     private BigDecimal tick = BigDecimal.ZERO;
@@ -153,7 +156,7 @@ public class StatisticVO {
                 final DecimalFormat fmt = safeClone(this.decimalFormat);
                 runOnFx(() -> {
                     this.bidPx.set(fmt.format(px));
-                    this.bidQty.set(statistic.getBidQty());
+                    this.bidQty.set(size);
                 });
             }
 
@@ -167,7 +170,7 @@ public class StatisticVO {
                 final DecimalFormat fmt = safeClone(this.decimalFormat);
                 runOnFx(() -> {
                     this.askPx.set(fmt.format(px));
-                    this.askQty.set(statistic.getAskQty());
+                    this.askQty.set(size);
 
 
                 });
@@ -218,6 +221,7 @@ public class StatisticVO {
         histIdx = (histIdx + 1) % PUNTOS_INTRADIA;
         if (histLen < PUNTOS_INTRADIA) histLen++;
         ultimaMuestraMs = ahora;
+        tendenciaVersion.set(tendenciaVersion.get() + 1L);
 
         // Traza unica por instrumento: confirma que el acumulador recibe datos. Si esta
         // linea no aparece para un papel, el problema esta en el camino de actualizacion,
@@ -227,15 +231,44 @@ public class StatisticVO {
         }
     }
 
-    /** Copia la serie en orden cronologico. Devuelve array vacio si aun no hay 2 puntos. */
+    /** Registra exclusivamente precios de trades reales recibidos por el libro. */
+    public void registrarTradeIntradia(double precio) {
+        runOnFx(() -> registrarPrecioIntradia(precio));
+    }
+
+    /** Copia la serie cronologica y antepone el cierre anterior como referencia. */
     public double[] getSerieIntradia() {
-        if (histLen < 2) return new double[0];
-        double[] out = new double[histLen];
+        double referencia = getReferenciaTendencia();
+        if (histLen == 0) {
+            return referencia > 0d ? new double[]{referencia, referencia} : new double[0];
+        }
+        int offset = referencia > 0d ? 1 : 0;
+        double[] out = new double[histLen + offset];
+        if (offset == 1) out[0] = referencia;
         int inicio = (histIdx - histLen + PUNTOS_INTRADIA) % PUNTOS_INTRADIA;
         for (int i = 0; i < histLen; i++) {
-            out[i] = historialPrecio[(inicio + i) % PUNTOS_INTRADIA];
+            out[i + offset] = historialPrecio[(inicio + i) % PUNTOS_INTRADIA];
         }
         return out;
+    }
+
+    public double getReferenciaTendencia() {
+        if (statistic != null && statistic.getPreviusClose() > 0d) {
+            return statistic.getPreviusClose();
+        }
+        if (histLen > 0) {
+            int inicio = (histIdx - histLen + PUNTOS_INTRADIA) % PUNTOS_INTRADIA;
+            return historialPrecio[inicio];
+        }
+        return 0d;
+    }
+
+    public LongProperty tendenciaVersionProperty() {
+        return tendenciaVersion;
+    }
+
+    public boolean hasIntradayTrades() {
+        return histLen > 0;
     }
 
     public void update(MarketDataMessage.Statistic statistic) {
@@ -322,7 +355,12 @@ public class StatisticVO {
 
             try {
                 this.close.set(resolveLastPrice(statistic));
-                registrarPrecioIntradia(this.close.get());
+                if (statistic.getLast() > 0d) {
+                    registrarPrecioIntradia(statistic.getLast());
+                } else if (histLen == 0 && statistic.getPreviusClose() > 0d
+                        && tendenciaVersion.get() == 0L) {
+                    tendenciaVersion.set(1L);
+                }
                 this.open.set(resolveOpenPrice(statistic));
                 this.high.set(resolveHighPrice(statistic));
                 this.low.set(resolveLowPrice(statistic));
@@ -439,11 +477,17 @@ public class StatisticVO {
     }
 
     private double resolveOpenPrice(MarketDataMessage.Statistic statistic) {
+        double ohlcvOpen = statistic.getOhlcv().getOpen();
+        if (ohlcvOpen > 0d) {
+            return ohlcvOpen;
+        }
         if (statistic.getOpen() > 0d) {
             return statistic.getOpen();
         }
 
-        return 0d;
+        // Algunos updates incrementales no repiten OHLCV. No borrar una apertura valida
+        // que ya recibimos para este mismo instrumento.
+        return open.get() > 0d ? open.get() : 0d;
     }
 
     private double resolveLastPrice(MarketDataMessage.Statistic statistic) {
@@ -463,6 +507,14 @@ public class StatisticVO {
     }
 
     private double resolveHighPrice(MarketDataMessage.Statistic statistic) {
+        double ohlcvHigh = statistic.getOhlcv().getHigh();
+        if (ohlcvHigh > 0d) {
+            return ohlcvHigh;
+        }
+        if (high.get() > 0d) {
+            return high.get();
+        }
+
         double high = 0d;
         high = maxPositive(high, statistic.getLast());
         high = maxPositive(high, statistic.getIndicativeOpening());
@@ -474,6 +526,14 @@ public class StatisticVO {
     }
 
     private double resolveLowPrice(MarketDataMessage.Statistic statistic) {
+        double ohlcvLow = statistic.getOhlcv().getLow();
+        if (ohlcvLow > 0d) {
+            return ohlcvLow;
+        }
+        if (low.get() > 0d) {
+            return low.get();
+        }
+
         double low = minPositive(
                 statistic.getLast(),
                 statistic.getIndicativeOpening(),

@@ -6,6 +6,7 @@ import cl.vc.blotter.Repository;
 import cl.vc.blotter.model.BookVO;
 import cl.vc.blotter.model.StatisticVO;
 import cl.vc.blotter.utils.Notifier;
+import cl.vc.blotter.utils.CandleWindow;
 import cl.vc.blotter.utils.Sparkline;
 // === ADDED
 import cl.vc.blotter.utils.ColumnConfig;
@@ -16,10 +17,12 @@ import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import javafx.animation.KeyFrame;
+import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
 import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.scene.canvas.Canvas;
 import javafx.collections.transformation.FilteredList;
@@ -47,6 +50,7 @@ import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.HashSet;
 
@@ -54,6 +58,7 @@ import java.util.HashSet;
 @Slf4j
 public class MarketDataPortfolioViewController {
     private static final Duration UI_REFRESH_DELAY = Duration.millis(80);
+    private static final Duration INTRADAY_REQUEST_DEBOUNCE = Duration.millis(250);
     private static final KeyCodeCombination COPIAR = new KeyCodeCombination(KeyCode.C, KeyCombination.SHORTCUT_DOWN);
     private final DecimalFormat dfCopia = new DecimalFormat("#,##0.####");
 
@@ -63,6 +68,8 @@ public class MarketDataPortfolioViewController {
     public ChoiceBox<RoutingMessage.SettlType> settlType;
     @FXML
     public ChoiceBox<RoutingMessage.SecurityType> securityType;
+    @FXML
+    private HBox settlementControls;
 
     private final Set<String> loadedKeys = new HashSet<>();
 
@@ -100,8 +107,6 @@ public class MarketDataPortfolioViewController {
     @FXML
     private TableColumn<StatisticVO, String> previusCloseGen;
     @FXML
-    private TableColumn<StatisticVO, String> ohlcvCloseGen;
-    @FXML
     private TableColumn<StatisticVO, String> bidpriceGen;
     @FXML
     private TableColumn<StatisticVO, Double> bidQtyGen;
@@ -135,6 +140,7 @@ public class MarketDataPortfolioViewController {
     private HBox newsHBox;
     private String id = IDGenerator.getID();
     private final Timeline statisticsRefreshTimeline = new Timeline(new KeyFrame(UI_REFRESH_DELAY, e -> marketDataStatisticsTable.refresh()));
+    private final PauseTransition intradayRequestDebounce = new PauseTransition(INTRADAY_REQUEST_DEBOUNCE);
 
 
     /**
@@ -206,7 +212,6 @@ public class MarketDataPortfolioViewController {
                 openpriceGen.setVisible(cfg.isOpenpriceGen());
                 closepriceGen.setVisible(cfg.isClosepriceGen());
                 previusCloseGen.setVisible(cfg.isPreviusCloseGen());
-                ohlcvCloseGen.setVisible(cfg.isOhlcvCloseGen());
                 highpriceGen.setVisible(cfg.isHighpriceGen());
                 lowpriceGen.setVisible(cfg.isLowpriceGen());
                 amountGen.setVisible(cfg.isAmountGen());
@@ -239,7 +244,6 @@ public class MarketDataPortfolioViewController {
                         else if (column == openpriceGen) cfg.setOpenpriceGen(isSelected);
                         else if (column == closepriceGen) cfg.setClosepriceGen(isSelected);
                         else if (column == previusCloseGen) cfg.setPreviusCloseGen(isSelected);
-                        else if (column == ohlcvCloseGen) cfg.setOhlcvCloseGen(isSelected);
                         else if (column == highpriceGen) cfg.setHighpriceGen(isSelected);
                         else if (column == lowpriceGen) cfg.setLowpriceGen(isSelected);
                         else if (column == amountGen) cfg.setAmountGen(isSelected);
@@ -272,7 +276,6 @@ public class MarketDataPortfolioViewController {
                         else if (column == openpriceGen) cfg.setOpenpriceGen(newV);
                         else if (column == closepriceGen) cfg.setClosepriceGen(newV);
                         else if (column == previusCloseGen) cfg.setPreviusCloseGen(newV);
-                        else if (column == ohlcvCloseGen) cfg.setOhlcvCloseGen(newV);
                         else if (column == highpriceGen) cfg.setHighpriceGen(newV);
                         else if (column == lowpriceGen) cfg.setLowpriceGen(newV);
                         else if (column == amountGen) cfg.setAmountGen(newV);
@@ -307,11 +310,13 @@ public class MarketDataPortfolioViewController {
             cbMarket.getSelectionModel().select(MarketDataMessage.SecurityExchangeMarketData.BCS);
 
             cbMarket.getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
+                updateSettlementVisibility(newValue);
                 if (newValue != null && newValue.toString().equals("DATATEC_XBCL")) {
                     txtSymbol.setText("USD/CLP");
                     txtSymbol.setDisable(true);
                 } else {
                     txtSymbol.setDisable(false);
+                    selectRegisteredSecurityType(txtSymbol.getText(), newValue);
                 }
             });
 
@@ -322,6 +327,7 @@ public class MarketDataPortfolioViewController {
             settlType.getItems().remove(RoutingMessage.SettlType.REGULAR);
 
             settlType.getSelectionModel().select(RoutingMessage.SettlType.T2);
+            updateSettlementVisibility(cbMarket.getSelectionModel().getSelectedItem());
 
             securityType.setItems(FXCollections.observableArrayList(RoutingMessage.SecurityType.values()));
             securityType.getItems().remove(RoutingMessage.SecurityType.UNRECOGNIZED);
@@ -331,6 +337,13 @@ public class MarketDataPortfolioViewController {
             securityType.getSelectionModel().selectFirst();
 
             data = FXCollections.observableArrayList();
+            intradayRequestDebounce.setOnFinished(e -> solicitarSeriesIntradia());
+            data.addListener((ListChangeListener<StatisticVO>) change -> programarSolicitudSeriesIntradia());
+            Repository.candleConnectedProperty().addListener((obs, oldValue, connected) -> {
+                if (connected) {
+                    programarSolicitudSeriesIntradia();
+                }
+            });
 
             // El campo de simbolo tambien filtra la tabla mientras se escribe. data sigue
             // recibiendo los updates de mercado; la vista filtrada se recalcula sola.
@@ -343,6 +356,7 @@ public class MarketDataPortfolioViewController {
             txtSymbol.textProperty().addListener((ov, oldValue, newValue) -> {
                 txtSymbol.setText(newValue.toUpperCase());
                 String filtro = txtSymbol.getText().trim();
+                selectRegisteredSecurityType(filtro, cbMarket.getSelectionModel().getSelectedItem());
                 datosFiltrados.setPredicate(filtro.isEmpty()
                         ? vo -> true
                         : vo -> vo.getSymbol() != null && vo.getSymbol().contains(filtro));
@@ -600,9 +614,8 @@ public class MarketDataPortfolioViewController {
             this.vwapGen.setCellValueFactory(new PropertyValueFactory<>("vwap"));
             configurarColumnaTendencia();
 
-            // Primera peticion cuando ya hay papeles, y refresco periodico.
+            // El arranque lo dispara la llegada real de simbolos. Este timer es solo respaldo.
             Timeline seriesIntradia = new Timeline(
-                    new KeyFrame(Duration.seconds(6),  e -> solicitarSeriesIntradia()),
                     new KeyFrame(Duration.seconds(60), e -> solicitarSeriesIntradia()));
             seriesIntradia.setCycleCount(Timeline.INDEFINITE);
             seriesIntradia.play();
@@ -628,8 +641,6 @@ public class MarketDataPortfolioViewController {
             this.closepriceGen.setCellValueFactory(new PropertyValueFactory<>("close"));
 
             this.previusCloseGen.setCellValueFactory(new PropertyValueFactory<>("previusClose"));
-
-            this.ohlcvCloseGen.setCellValueFactory(new PropertyValueFactory<>("ohlcvClose"));
 
 
 
@@ -845,10 +856,27 @@ public class MarketDataPortfolioViewController {
 
     @FXML
     private void addSymbol() {
+        String symbolToAdd = txtSymbol.getText().trim().toUpperCase(Locale.ROOT);
+        if (symbolToAdd.isEmpty()) {
+            Notifier.INSTANCE.notifyError("Error", "Ingrese un instrumento");
+            return;
+        }
 
+        MarketDataMessage.SecurityExchangeMarketData selectedMarket =
+                cbMarket.getSelectionModel().getSelectedItem();
+        MarketDataMessage.Security registeredSecurity =
+                getRegisteredSecurity(symbolToAdd, selectedMarket);
+        if (registeredSecurity == null) {
+            Notifier.INSTANCE.notifyError(
+                    "Instrumento no encontrado",
+                    symbolToAdd + " no está registrado en " + selectedMarket
+            );
+            return;
+        }
+        selectRegisteredSecurityType(symbolToAdd, selectedMarket);
 
         boolean existeObjeto = data.stream()
-                .anyMatch(stock -> txtSymbol.getText().equals(stock.getSymbol())
+                .anyMatch(stock -> symbolToAdd.equalsIgnoreCase(stock.getSymbol())
                         && settlType.getSelectionModel().getSelectedItem().equals(RoutingMessage.SettlType.valueOf(stock.getSettlType()))
                         && cbMarket.getSelectionModel().getSelectedItem().equals(MarketDataMessage.SecurityExchangeMarketData.valueOf(stock.getSecurityExchange())));
 
@@ -861,7 +889,7 @@ public class MarketDataPortfolioViewController {
 
             MarketDataMessage.Statistic statistic1 = MarketDataMessage.Statistic
                     .newBuilder()
-                    .setSymbol(txtSymbol.getText().trim())
+                    .setSymbol(symbolToAdd)
                     .setId(IDGenerator.getID())
                     .setSecurityExchange(cbMarket.getSelectionModel().getSelectedItem())
                     .setSettlType(settlType.getSelectionModel().getSelectedItem())
@@ -869,7 +897,7 @@ public class MarketDataPortfolioViewController {
                     .build();
 
             BlotterMessage.Asset asset = BlotterMessage.Asset.newBuilder()
-                    .setSymbol(txtSymbol.getText().trim())
+                    .setSymbol(symbolToAdd)
                     .setStatistic(statistic1)
                     .setSecurityexchange(cbMarket.getSelectionModel().getSelectedItem())
                     .build();
@@ -881,11 +909,42 @@ public class MarketDataPortfolioViewController {
                     .setUsername(Repository.username).build();
 
             Repository.getClientService().sendMessage(addSymbol);
+            txtSymbol.clear();
 
         } else {
 
             Notifier.INSTANCE.notifyError("Error", "Symbol exists");
         }
+    }
+
+    private void selectRegisteredSecurityType(
+            String symbol,
+            MarketDataMessage.SecurityExchangeMarketData market) {
+        MarketDataMessage.Security registeredSecurity = getRegisteredSecurity(symbol, market);
+        if (registeredSecurity == null || securityType == null || securityType.getItems() == null) {
+            return;
+        }
+
+        try {
+            RoutingMessage.SecurityType registeredType =
+                    RoutingMessage.SecurityType.valueOf(registeredSecurity.getSecurityType());
+            if (securityType.getItems().contains(registeredType)) {
+                securityType.getSelectionModel().select(registeredType);
+            }
+        } catch (IllegalArgumentException e) {
+            log.warn("Clase desconocida para instrumento {} en {}: {}",
+                    symbol, market, registeredSecurity.getSecurityType());
+        }
+    }
+
+    private MarketDataMessage.Security getRegisteredSecurity(
+            String symbol,
+            MarketDataMessage.SecurityExchangeMarketData market) {
+        if (symbol == null || symbol.isBlank() || market == null) {
+            return null;
+        }
+        return Repository.getSecurityListMaps()
+                .get(symbol.trim().toUpperCase(Locale.ROOT), market.name());
     }
 
     @FXML
@@ -952,13 +1011,59 @@ public class MarketDataPortfolioViewController {
         }
     }
 
+    private void programarSolicitudSeriesIntradia() {
+        if (!Platform.isFxApplicationThread()) {
+            Platform.runLater(this::programarSolicitudSeriesIntradia);
+            return;
+        }
+        intradayRequestDebounce.playFromStart();
+    }
+
+    public void solicitarSerieIntradia(String symbol) {
+        try {
+            if (Repository.getCandleClientService() == null || symbol == null || symbol.isBlank()) {
+                return;
+            }
+            org.json.JSONObject peticion = new org.json.JSONObject()
+                    .put("action", "load_intraday_series")
+                    .put("symbols", new org.json.JSONArray().put(symbol.trim().toUpperCase(Locale.ROOT)));
+            Repository.getCandleClientService().sendMessage(peticion.toString());
+        } catch (Exception e) {
+            log.error("No se pudo pedir la serie intradia de {}", symbol, e);
+        }
+    }
+
+    public void refreshTrendColumn() {
+        runFx(() -> {
+            if (marketDataStatisticsTable != null) {
+                marketDataStatisticsTable.refresh();
+            }
+        });
+    }
+
     private void configurarColumnaTendencia() {
         if (sparklineGen == null) return;
 
-        sparklineGen.setCellValueFactory(cd -> cd.getValue().closeProperty());
+        sparklineGen.setCellValueFactory(cd -> cd.getValue().tendenciaVersionProperty());
 
         sparklineGen.setCellFactory(col -> new TableCell<>() {
             private final Canvas lienzo = new Canvas(62, 18);
+
+            {
+                // Doble click sobre la tendencia abre el grafico de velas del papel de esa fila.
+                // El handler va en la CELDA y no en la tabla para que solo dispare en esta columna.
+                // No se consume el evento: el setOnMouseClicked de la tabla sigue haciendo su
+                // seleccion y su tell al ClientActor como hasta ahora.
+                setOnMouseClicked(e -> {
+                    if (e.getButton() != MouseButton.PRIMARY || e.getClickCount() != 2) return;
+                    StatisticVO fila = (getTableRow() == null) ? null : (StatisticVO) getTableRow().getItem();
+                    if (fila == null || fila.getStatistic() == null) return;
+                    String symbol = fila.getStatistic().getSymbol();
+                    if (symbol == null || symbol.isBlank()) return;
+                    CandleWindow.open(symbol);
+                });
+                setTooltip(new Tooltip("Doble click: abrir grafico de velas"));
+            }
 
             @Override
             protected void updateItem(Number valor, boolean vacio) {
@@ -968,16 +1073,40 @@ public class MarketDataPortfolioViewController {
                     setGraphic(null);
                     return;
                 }
-                // Primero la serie del backend (llega completa al abrir el portafolio);
-                // si todavia no llego, el buffer local que se acumula con los ticks.
-                double[] serie = Repository.getSerieIntradia(TopicGenerator.getTopicMKD(vo.getStatistic()));
-                if (serie == null || serie.length < 2) {
-                    serie = vo.getSerieIntradia();
+                // Los trades del core son la fuente viva. Mongo solo gana cuando trae una
+                // serie mas completa y termina cerca del ultimo precio actual.
+                double[] serie = vo.getSerieIntradia();
+                double[] backend = Repository.getSerieIntradia(TopicGenerator.getTopicMKD(vo.getStatistic()));
+                if (contarPuntosValidos(backend) > contarPuntosValidos(serie)
+                        && serieBackendCompatible(backend, vo)) {
+                    serie = backend;
                 }
-                Sparkline.pintar(lienzo, serie);
+                Sparkline.pintar(lienzo, serie, vo.getReferenciaTendencia());
                 setGraphic(lienzo);
             }
         });
+    }
+
+    private static int contarPuntosValidos(double[] serie) {
+        if (serie == null) return 0;
+        int validos = 0;
+        for (double value : serie) {
+            if (Double.isFinite(value) && value > 0d) validos++;
+        }
+        return validos;
+    }
+
+    private static boolean serieBackendCompatible(double[] serie, StatisticVO vo) {
+        if (serie == null || vo == null || vo.getStatistic() == null) return false;
+        double actual = vo.getStatistic().getLast();
+        if (actual <= 0d) actual = vo.getClose();
+        if (actual <= 0d) return true;
+
+        double ultimo = 0d;
+        for (double value : serie) {
+            if (Double.isFinite(value) && value > 0d) ultimo = value;
+        }
+        return ultimo > 0d && Math.abs(ultimo - actual) / actual <= 0.01d;
     }
 
     public void addModelVo(BookVO bookVO) {
@@ -1011,6 +1140,12 @@ public class MarketDataPortfolioViewController {
         } catch (Exception e) {
             log.error("removeModelVo error", e);
         }
+    }
+
+    private void updateSettlementVisibility(MarketDataMessage.SecurityExchangeMarketData selectedMarket) {
+        boolean showSettlement = selectedMarket != MarketDataMessage.SecurityExchangeMarketData.BCS;
+        settlementControls.setVisible(showSettlement);
+        settlementControls.setManaged(showSettlement);
     }
 
     @FXML

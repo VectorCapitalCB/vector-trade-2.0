@@ -17,9 +17,12 @@ import java.text.DecimalFormatSymbols;
 import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.Locale;
+import java.util.concurrent.atomic.AtomicLong;
 
 @Slf4j
 public class OrderBookEntry {
+
+    private static final AtomicLong PRICE_CHANGE_SEQUENCE = new AtomicLong();
 
     private StringProperty price = new SimpleStringProperty();
     private StringProperty size = new SimpleStringProperty();
@@ -41,12 +44,19 @@ public class OrderBookEntry {
     /** Precio numerico: getPrice() devuelve el string ya formateado y no sirve para comparar. */
     @Getter private double priceValue;
 
+    /** Cantidad numerica original, sin el formato aplicado para mostrarla en la tabla. */
+    @Getter private double sizeValue;
+
+    /** Evento compartido: cada vista del mismo libro puede animarlo una vez sin consumirlo. */
+    @Getter private long priceChangeSequence;
+
     /** Lado del libro. Lo fija BookVO segun la lista a la que pertenece la entrada. */
     @Getter @Setter private RoutingMessage.Side side;
 
 
     public OrderBookEntry(String id , double price, double size, DecimalFormat decimalFormat, String symbol, String account, String operator, MarketDataMessage.SecurityExchangeMarketData securityExchangeMarketData) {
         this.priceValue = price;
+        this.sizeValue = size;
 
         try {
 
@@ -113,6 +123,15 @@ public class OrderBookEntry {
     public OrderBookEntry setSideAnd(RoutingMessage.Side side) {
         this.side = side;
         return this;
+    }
+
+    public void markPriceChanged() {
+        priceChangeSequence = PRICE_CHANGE_SEQUENCE.incrementAndGet();
+    }
+
+    /** Cada tabla debe poder observar la misma marca cuando un simbolo esta repetido. */
+    public boolean hasPriceChanged() {
+        return priceChangeSequence > 0;
     }
 
     public String getPrice() {

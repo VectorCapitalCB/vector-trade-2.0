@@ -28,6 +28,8 @@ import java.util.Properties;
 @Slf4j
 public class WebSocketServer extends Thread {
 
+    static final int MAX_BINARY_MESSAGE_SIZE = 1024 * 1024;
+
     @Getter
     @Setter
     private Properties properties;
@@ -166,7 +168,7 @@ public class WebSocketServer extends Thread {
             context.addServlet(new ServletHolder(new Multibook2Servlet()), "/api/multibook2/*");
 
             WebSocketUpgradeFilter wsFilter = WebSocketUpgradeFilter.configureContext(context);
-            wsFilter.getFactory().getPolicy().setMaxBinaryMessageSize(100 * 1024 * 1024);
+            wsFilter.getFactory().getPolicy().setMaxBinaryMessageSize(MAX_BINARY_MESSAGE_SIZE);
             wsFilter.getFactory().getPolicy().setIdleTimeout(300000);
             if (MainApp.isWebSocketCompressionEnabled()) {
                 wsFilter.getFactory().getExtensionFactory().register("permessage-deflate", PerMessageDeflateExtension.class);

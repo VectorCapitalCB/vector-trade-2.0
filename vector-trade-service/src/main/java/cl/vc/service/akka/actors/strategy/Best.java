@@ -11,6 +11,7 @@ import cl.vc.module.protocolbuff.session.SessionsMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrderStateSupport;
 
 import java.math.BigDecimal;
 
@@ -432,7 +433,7 @@ public class Best implements StrategyI {
             blog("CUM_QTY_REGRESSION incoming=" + incomingCumQty + " previous=" + maxCumQty);
         }
         maxCumQty = Math.max(maxCumQty, incomingCumQty);
-        if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)) {
+        if (OrderStateSupport.isConclusiveFilled(order)) {
             maxCumQty = Math.max(maxCumQty, targetQty);
         }
 
@@ -466,9 +467,7 @@ public class Best implements StrategyI {
         } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED)) {
             blockOrders = replacePending || cumQtyRegression;
             blockrejected = 0;
-        } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED) ||
-                order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED) ||
-                order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)) {
+        } else if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
             replacePending = false;
             blockOrders = true;
 
@@ -506,6 +505,28 @@ public class Best implements StrategyI {
     @Override
     public void onStatistic(MarketDataMessage.Statistic statistic) {
 
+    }
+
+    @Override
+    public boolean isTemporarilyBlocked() {
+        return blockOrders || replacePending;
+    }
+
+    @Override
+    public void resumeAfterTemporaryBlock() {
+        blockOrders = false;
+        replacePending = false;
+        pendingTargetQty = null;
+    }
+
+    @Override
+    public void resetRejectRecovery() {
+        blockrejected = 0;
+    }
+
+    @Override
+    public boolean isAtConfiguredLimit() {
+        return limit > 0d && Math.abs(order.getPrice() - limit) < 0.0000001d;
     }
 
 }

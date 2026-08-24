@@ -183,6 +183,10 @@ public class MongoMarketRepository implements AutoCloseable {
     }
 
     public void upsertCandle(Candle candle) {
+        upsertCandle(candle, null);
+    }
+
+    public void upsertCandle(Candle candle, String source) {
         String id = candle.key().id() + "|" + candle.timeframe() + "|" + candle.bucketStart();
         Document doc = new Document("_id", id)
                 .append("instrumentId", candle.key().id())
@@ -202,9 +206,16 @@ public class MongoMarketRepository implements AutoCloseable {
                 .append("turnover", toDouble(candle.turnover()))
                 .append("trades", candle.trades())
                 .append("updatedAt", Instant.now().toString());
+        if (source != null && !source.isBlank()) {
+            doc.append("source", source);
+        }
 
         enqueue(candlesCollection, id, doc, false);
         logProgress("candles.upsert", upsertedCandles.incrementAndGet());
+    }
+
+    public void flushWrites() {
+        writeQueue.flush();
     }
 
     public void upsertInstrumentStats(InstrumentStats stats) {

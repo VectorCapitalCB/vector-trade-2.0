@@ -35,10 +35,10 @@ import java.util.TreeMap;
 @Slf4j
 public final class Multibook2Repository {
 
-    public static final int BOOKS_PER_PAGE = 10;
+    public static final int PAGE_POSITION_STRIDE = 50;
 
     private static final String DEFAULT_LAYOUT = "Default";
-    private static final int VERSION = 2;
+    private static final int VERSION = 3;
 
     private Multibook2Repository() {
     }
@@ -160,7 +160,7 @@ public final class Multibook2Repository {
                     continue;
                 }
                 rows.add(BlotterMessage.SubMultibook.newBuilder()
-                        .setPositions(page * BOOKS_PER_PAGE + book.optInt("slot"))
+                        .setPositions(page * PAGE_POSITION_STRIDE + book.optInt("slot"))
                         .setSubscribeBook(toSubscribe(book))
                         .build());
             }
@@ -211,14 +211,14 @@ public final class Multibook2Repository {
         return toRows(layout);
     }
 
-    /** Reparte filas por posicion global en paginas de {@value #BOOKS_PER_PAGE}. */
+    /** Reparte filas por posicion global usando 50 posiciones reservadas por página. */
     public static JSONArray toPages(List<BlotterMessage.SubMultibook> rows, JSONArray existing) {
 
         TreeMap<Integer, BlotterMessage.SubMultibook> byPosition = new TreeMap<>();
         rows.forEach(row -> byPosition.put(row.getPositions(), row));
 
         int pageCount = Math.max(
-                byPosition.isEmpty() ? 1 : (byPosition.lastKey() / BOOKS_PER_PAGE) + 1,
+                byPosition.isEmpty() ? 1 : (byPosition.lastKey() / PAGE_POSITION_STRIDE) + 1,
                 existing == null ? 1 : existing.length());
 
         JSONArray pages = new JSONArray();
@@ -226,14 +226,25 @@ public final class Multibook2Repository {
             String name = (existing != null && page < existing.length())
                     ? existing.getJSONObject(page).optString("name", String.valueOf(page + 1))
                     : String.valueOf(page + 1);
-            pages.put(new JSONObject().put("name", name).put("books", new JSONArray()));
+            JSONObject previous = existing != null && page < existing.length()
+                    ? existing.getJSONObject(page)
+                    : null;
+            pages.put(new JSONObject()
+                    .put("name", name)
+                    .put("bookCount", previous == null ? 10 : normalizeBookCount(previous.optInt("bookCount", 10)))
+                    .put("depth", previous == null ? 5 : normalizeDepth(previous.optInt("depth", 5)))
+                    .put("books", new JSONArray()));
         }
 
         for (Map.Entry<Integer, BlotterMessage.SubMultibook> entry : byPosition.entrySet()) {
             int position = entry.getKey();
             JSONObject book = toJson(entry.getValue().getSubscribeBook());
-            book.put("slot", position % BOOKS_PER_PAGE);
-            pages.getJSONObject(position / BOOKS_PER_PAGE).getJSONArray("books").put(book);
+            int pageIndex = position / PAGE_POSITION_STRIDE;
+            int slot = position % PAGE_POSITION_STRIDE;
+            book.put("slot", slot);
+            JSONObject page = pages.getJSONObject(pageIndex);
+            page.put("bookCount", Math.max(page.optInt("bookCount", 10), roundedBookCount(slot + 1)));
+            page.getJSONArray("books").put(book);
         }
 
         return pages;
@@ -286,7 +297,7 @@ public final class Multibook2Repository {
                 : MainApp.getMultiBookMaps().get(username);
 
         JSONArray pages = legacy == null || legacy.isEmpty()
-                ? new JSONArray().put(new JSONObject().put("name", "1").put("books", new JSONArray()))
+                ? new JSONArray().put(defaultPage("1"))
                 : toPages(legacy, null);
 
         if (legacy != null && !legacy.isEmpty()) {
@@ -314,8 +325,31 @@ public final class Multibook2Repository {
                     .put("name", DEFAULT_LAYOUT)
                     .put("updated", Instant.now().toString())
                     .put("pages", new JSONArray().put(
-                            new JSONObject().put("name", "1").put("books", new JSONArray()))));
+                            defaultPage("1"))));
             document.put("layouts", layouts);
+        }
+
+        for (int layoutIndex = 0; layoutIndex < layouts.length(); layoutIndex++) {
+            JSONArray pages = layouts.getJSONObject(layoutIndex).optJSONArray("pages");
+            if (pages == null || pages.isEmpty()) {
+                pages = new JSONArray().put(defaultPage("1"));
+                layouts.getJSONObject(layoutIndex).put("pages", pages);
+            }
+            for (int pageIndex = 0; pageIndex < pages.length(); pageIndex++) {
+                JSONObject page = pages.getJSONObject(pageIndex);
+                int required = 10;
+                JSONArray books = page.optJSONArray("books");
+                if (books == null) {
+                    books = new JSONArray();
+                    page.put("books", books);
+                }
+                for (int bookIndex = 0; bookIndex < books.length(); bookIndex++) {
+                    required = Math.max(required, books.getJSONObject(bookIndex).optInt("slot", -1) + 1);
+                }
+                page.put("bookCount", Math.max(normalizeBookCount(page.optInt("bookCount", 10)),
+                                roundedBookCount(required)))
+                        .put("depth", normalizeDepth(page.optInt("depth", 5)));
+            }
         }
 
         if (findLayout(document, document.optString("active")) == null) {
@@ -323,5 +357,25 @@ public final class Multibook2Repository {
         }
 
         return document;
+    }
+
+    private static JSONObject defaultPage(String name) {
+        return new JSONObject()
+                .put("name", name)
+                .put("bookCount", 10)
+                .put("depth", 5)
+                .put("books", new JSONArray());
+    }
+
+    private static int normalizeBookCount(int count) {
+        return count == 20 || count == 30 || count == 40 || count == 50 ? count : 10;
+    }
+
+    private static int roundedBookCount(int required) {
+        return Math.min(50, Math.max(10, ((required + 9) / 10) * 10));
+    }
+
+    private static int normalizeDepth(int depth) {
+        return depth == 3 || depth == 10 || depth == 15 ? depth : 5;
     }
 }

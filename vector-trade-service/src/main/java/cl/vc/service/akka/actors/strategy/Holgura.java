@@ -12,6 +12,7 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrderStateSupport;
 import com.google.protobuf.util.JsonFormat;
 
 import java.util.concurrent.Executors;
@@ -352,8 +353,7 @@ public class Holgura implements StrategyI {
                     this.order = order.toBuilder();
                 }
 
-                if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED) || order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED) ||
-                        order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED)) {
+                if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
                     blockOrder = true;
                     actorStrategy.tell(PoisonPill.getInstance(), ActorRef.noSender());
                 }
@@ -408,5 +408,22 @@ public class Holgura implements StrategyI {
 
     }
 
+
+    @Override
+    public boolean isTemporarilyBlocked() {
+        return blockOrder;
+    }
+
+    @Override
+    public void resumeAfterTemporaryBlock() {
+        blockOrder = false;
+        isReplace = false;
+        orderPendingReplace = null;
+    }
+
+    @Override
+    public void resetRejectRecovery() {
+        blockrejected = 0;
+    }
 
 }

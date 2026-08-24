@@ -1,6 +1,10 @@
 # Build outputs
 **/target/
 
+# macOS metadata
+.DS_Store
+**/.DS_Store
+
 # Large compressed artifacts
 *.gz
 *.log

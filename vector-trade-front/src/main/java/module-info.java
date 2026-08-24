@@ -15,8 +15,12 @@ module front {
     requires keycloak.core;
     requires principal.module;
     requires org.controlsfx.controls;
+    requires org.kordamp.ikonli.core;
+    requires org.kordamp.ikonli.javafx;
+    requires org.kordamp.ikonli.feather;
     requires org.apache.httpcomponents.httpclient;
     requires java.desktop;
+    requires jdk.management;
 
     requires java.base;
     requires java.se;
@@ -41,6 +45,8 @@ module front {
     requires org.jfree.jfreechart;
     requires org.jfree.chart.fx;
     requires ta4j.core;
+    requires org.apache.poi.poi;
+    requires org.apache.poi.ooxml;
 
 
     opens view to java.base;
@@ -57,4 +63,3 @@ module front {
     exports cl.vc.blotter.utils;
     opens cl.vc.blotter.utils to javafx.base, javafx.fxml, javafx.graphics;
 }
-

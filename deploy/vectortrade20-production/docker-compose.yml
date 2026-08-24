@@ -1,0 +1,137 @@
+services:
+  core:
+    image: eclipse-temurin:21-jre
+    container_name: vt20-prod-core
+    restart: unless-stopped
+    environment:
+      TZ: America/Santiago
+    ports:
+      - "8096:8096"
+      - "8089:8089"
+    command:
+      - java
+      - --add-opens=java.base/java.lang=ALL-UNNAMED
+      - --add-opens=java.base/java.lang.invoke=ALL-UNNAMED
+      - --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+      - --add-opens=java.base/java.io=ALL-UNNAMED
+      - --add-opens=java.base/java.net=ALL-UNNAMED
+      - --add-opens=java.base/java.nio=ALL-UNNAMED
+      - --add-opens=java.base/java.util=ALL-UNNAMED
+      - --add-opens=java.base/java.util.concurrent=ALL-UNNAMED
+      - --add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED
+      - --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+      - --add-opens=java.base/sun.util.calendar=ALL-UNNAMED
+      - -Dlogback.configurationFile=/usr/local/app/config/logback.xml
+      - -Duser.timezone=America/Santiago
+      - -XX:+UseContainerSupport
+      - -XX:+UseG1GC
+      - -XX:MaxGCPauseMillis=200
+      - -XX:MaxRAMPercentage=75
+      - -XX:+HeapDumpOnOutOfMemoryError
+      - -XX:HeapDumpPath=/usr/local/app/logs
+      - -XX:+ExitOnOutOfMemoryError
+      - -jar
+      - /usr/local/app/app.jar
+      - /usr/local/app/config/application.properties
+    volumes:
+      - /home/voultech/app/VectorTrade2.0/core/app.jar:/usr/local/app/app.jar:ro
+      - /home/voultech/app/VectorTrade2.0/core/config:/usr/local/app/config
+      - /home/voultech/app/VectorTrade2.0/core/logs:/usr/local/app/logs
+    mem_limit: 3g
+    stop_grace_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+  candle:
+    image: eclipse-temurin:21-jre
+    container_name: vt20-prod-candle
+    restart: unless-stopped
+    environment:
+      TZ: America/Santiago
+    ports:
+      - "8098:8098"
+    command:
+      - java
+      - -Dlogback.configurationFile=/usr/local/app/config/logback.xml
+      - -Duser.timezone=America/Santiago
+      - -XX:+UseContainerSupport
+      - -XX:+UseG1GC
+      - -XX:MaxRAMPercentage=75
+      - -jar
+      - /usr/local/app/app.jar
+      - /usr/local/app/config/application.properties
+    volumes:
+      - /home/voultech/app/VectorTrade2.0/candle/app.jar:/usr/local/app/app.jar:ro
+      - /home/voultech/app/VectorTrade2.0/candle/config:/usr/local/app/config:ro
+      - /home/voultech/app/VectorTrade2.0/candle/logs:/usr/local/app/logs
+    mem_limit: 1536m
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+  chat:
+    image: eclipse-temurin:21-jre
+    container_name: vt20-prod-chat
+    restart: unless-stopped
+    environment:
+      TZ: America/Santiago
+    ports:
+      - "8097:8097"
+    command:
+      - java
+      - -Dlogback.configurationFile=/usr/local/app/config/logback.xml
+      - -Duser.timezone=America/Santiago
+      - -XX:+UseContainerSupport
+      - -XX:+UseG1GC
+      - -XX:MaxRAMPercentage=75
+      - -jar
+      - /usr/local/app/app.jar
+      - /usr/local/app/config/application.properties
+    volumes:
+      - /home/voultech/app/VectorTrade2.0/chat/app.jar:/usr/local/app/app.jar:ro
+      - /home/voultech/app/VectorTrade2.0/chat/config:/usr/local/app/config:ro
+      - /home/voultech/app/VectorTrade2.0/chat/logs:/usr/local/app/logs
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+  news:
+    image: eclipse-temurin:21-jre
+    container_name: vt20-prod-news
+    restart: unless-stopped
+    environment:
+      TZ: America/Santiago
+    ports:
+      - "8100:8100"
+    command:
+      - java
+      - -Dlogback.configurationFile=/usr/local/app/config/logback.xml
+      - -Duser.timezone=America/Santiago
+      - -XX:+UseContainerSupport
+      - -XX:+UseG1GC
+      - -XX:MaxRAMPercentage=75
+      - -jar
+      - /usr/local/app/app.jar
+      - /usr/local/app/config/application.properties
+    volumes:
+      - /home/voultech/app/VectorTrade2.0/news/app.jar:/usr/local/app/app.jar:ro
+      - /home/voultech/app/VectorTrade2.0/news/config:/usr/local/app/config:ro
+      - /home/voultech/app/VectorTrade2.0/news/logs:/usr/local/app/logs
+    mem_limit: 768m
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "5"
+
+networks:
+  default:
+    name: vectortrade20-prod

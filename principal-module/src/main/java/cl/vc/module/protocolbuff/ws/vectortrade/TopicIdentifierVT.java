@@ -44,7 +44,11 @@ public enum TopicIdentifierVT {
     Basket(((byte) 37)),
     PositionHistory((byte) 38),
     SnapshotPrestamos((byte) 39),
-    BolsaStats((byte) 40);
+    BolsaStats((byte) 40),
+    HistoricalOrdersRequest((byte) 41),
+    HistoricalOrdersSnapshot((byte) 42),
+    ClientLogRequest((byte) 43),
+    ClientLogResponse((byte) 44);
 
 
 

@@ -1,72 +1,56 @@
 package cl.vc.blotter.controller;
 
 
-import cl.vc.algos.bkt.proto.BktStrategyProtos;
 import cl.vc.blotter.Repository;
+import cl.vc.blotter.utils.Notifier;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
-import javafx.application.Platform;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
-import javafx.collections.ObservableList;
-import javafx.collections.transformation.FilteredList;
-import javafx.collections.transformation.SortedList;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.scene.Node;
-import javafx.scene.chart.PieChart;
 import javafx.scene.control.*;
-import javafx.scene.layout.HBox;
 import javafx.stage.StageStyle;
 import lombok.Data;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.text.NumberFormat;
-import java.util.ArrayList;
-import java.util.Locale;
+import java.text.DecimalFormat;
+import java.util.stream.IntStream;
 
+/**
+ * Controla UN tab de canasta: la lista de órdenes/ejecuciones en vivo (ExecutionsController
+ * embebido) y el panel de estadísticas, que se calcula EN EL FRONT a partir de las órdenes
+ * (el servidor no provee los agregados).
+ */
 @Slf4j
 @Data
 public class BasketTabController {
 
-    public ObservableList<BktStrategyProtos.Basket> data = FXCollections.observableArrayList();
-    NumberFormat numberFormat = NumberFormat.getNumberInstance(Locale.US);
-    @FXML
-    private TableView<BktStrategyProtos.Basket> basketMainTable;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, String> basketName;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> nBuy;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> nSell;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> totalAmount;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> amountPercDone;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> amountPercLeft;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> totalQty;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> totalAmountDone;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> totalAmountLeft;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> totalQtyDone;
-    @FXML
-    private TableColumn<BktStrategyProtos.Basket, Double> totalQtyLeft;
-    @FXML
-    private Button execButton;
-    @FXML
-    private Button cancelOrder;
-    @FXML
-    private HBox chartContainer;
-    private FilteredList<BktStrategyProtos.Basket> filteredData;
-    @Getter
-    private SortedList<BktStrategyProtos.Basket> sortedData;
-    @FXML
-    private ExecutionsController executionsOrderController;
+    // ── Panel de estadísticas (calculadas en el front) ──
+    @FXML private Label lblBasket;
+    @FXML private Label lblMontoTotal;
+    @FXML private Label lblMontoDone;
+    @FXML private Label lblMontoLeft;
+    @FXML private Label lblPctDone;
+    @FXML private Label lblPctLeft;
+    @FXML private Label lblQtyTotal;
+    @FXML private Label lblQtyDone;
+    @FXML private Label lblQtyLeft;
+    @FXML private Label lblNTotal;
+    @FXML private Label lblNDone;
+    @FXML private Label lblNPending;
+
+    @FXML private Button execButton;
+    @FXML private Button cancelOrder;
+    @FXML private Button replaceOrder;
+    @FXML private TextField quantityReplace;
+    @FXML private TextField priceReplace;
+    @FXML private TextField visibleReplace;
+    @FXML private TextField spreadReplace;
+    @FXML private TextField limitReplace;
+    @FXML private ExecutionsController executionsOrderController;
+
+    private Tab tab;
+    private String basketId = "";
 
     @FXML
     private void initialize() {
@@ -78,174 +62,172 @@ public class BasketTabController {
         executionsOrderController.getIceberg().setVisible(false);
         executionsOrderController.getExecType().setVisible(false);
 
-
-        basketName.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getBasketID()));
-        nBuy.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getNBuy()));
-        nSell.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getNSell()));
-        totalAmount.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getTotalAmount()));
-
-        amountPercDone.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getAmountPercDone()));
-        amountPercLeft.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getAmountPercLeft()));
-        totalQty.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getTotalQty()));
-        totalAmountDone.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getTotalAmountDone()));
-        totalQtyDone.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getTotalQtyDone()));
-        totalQtyLeft.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getTotalQtyLeft()));
-        totalAmountLeft.setCellValueFactory(cellData -> new SimpleObjectProperty<>(cellData.getValue().getTotalAmountLeft()));
-
-        this.basketMainTable.setCache(false);
-        this.data = FXCollections.observableArrayList(new ArrayList<>());
-        this.filteredData = new FilteredList<>(this.data, p -> true);
-        this.sortedData = new SortedList<>(this.filteredData);
-        sortedData.comparatorProperty().bind(basketMainTable.comparatorProperty());
-        this.basketMainTable.setItems(this.sortedData);
-
-        numberFormat.setMaximumFractionDigits(2);
-
-        totalAmount.setCellFactory(column -> new TableCell<BktStrategyProtos.Basket, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item == null || empty) {
-                    setText(null);
-                } else {
-                    setText("$" + numberFormat.format(item));
-                }
-            }
-        });
-
-
-        totalAmountDone.setCellFactory(column -> new TableCell<BktStrategyProtos.Basket, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item == null || empty) {
-                    setText(null);
-                } else {
-                    setText("$" + numberFormat.format(item));
-                }
-            }
-        });
-
-        totalAmountLeft.setCellFactory(column -> new TableCell<BktStrategyProtos.Basket, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item == null || empty) {
-                    setText(null);
-                } else {
-                    setText("$" + numberFormat.format(item));
-                }
-            }
-        });
-
-
-        amountPercDone.setCellFactory(column -> new TableCell<BktStrategyProtos.Basket, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item == null || empty) {
-                    setText(null);
-                } else {
-                    setText(String.format("%.2f", item) + "%");
-                }
-            }
-        });
-
-        amountPercLeft.setCellFactory(column -> new TableCell<BktStrategyProtos.Basket, Double>() {
-            @Override
-            protected void updateItem(Double item, boolean empty) {
-                super.updateItem(item, empty);
-                if (item == null || empty) {
-                    setText(null);
-                } else {
-                    setText(String.format("%.2f", item) + "%");
-                }
-            }
-        });
-
         executionsOrderController.basketOrder();
+        executionsOrderController.setOrderColumnConfigChangeHandler(this::applyOrderColumnConfig);
+        executionsOrderController.applyOrderColumnConfig();
+        setReplaceControlsDisabled(true);
 
-        executionsOrderController.getTableExecutionReports().getSelectionModel().selectedItemProperty().addListener((observable, oldValue, newValue) -> {
-            if (newValue != null) {
+        executionsOrderController.getTableExecutionReports().getSelectionModel().selectedItemProperty()
+                .addListener((observable, oldValue, newValue) -> {
+                    boolean live = isReplaceable(newValue);
+                    cancelOrder.setDisable(!live);
+                    replaceOrder.setDisable(!live);
+                    setReplaceControlsDisabled(!live);
+                    syncReplaceControls(newValue);
+                });
 
-                if (newValue.getOrdStatus().equals(RoutingMessage.OrderStatus.NEW) || newValue.getOrdStatus().equals(RoutingMessage.OrderStatus.REPLACED)
-                        || newValue.getOrdStatus().equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED)) {
-                    cancelOrder.setVisible(true);
-                } else {
-                    cancelOrder.setVisible(false);
-                }
-
-            }
-        });
-
-
-        executionsOrderController.getTableExecutionReports().getItems().addListener((ListChangeListener<RoutingMessage.Order>) change -> {
-
-
-            Platform.runLater(() -> {
-
-                BktStrategyProtos.Basket newValue = basketMainTable.getItems().get(0);
-
-                String buyColor = "#00bfff";
-                String sellColor = "#ff4500";
-                String totalAmountColor = "#00ff7f";
-                String amountLeftColor = "#ff69b4";
-                String volumeDoneColor = "#98fb98";
-                String volumeLeftColor = "#ffa500";
-
-                double nBuy = newValue.getNBuy();
-                double nSell = newValue.getNSell();
-
-                ObservableList<PieChart.Data> pieChartData1 = FXCollections.observableArrayList(
-                        new PieChart.Data("Buy", nBuy),
-                        new PieChart.Data("Sell", nSell)
-                );
-
-                ObservableList<PieChart.Data> pieChartData2 = FXCollections.observableArrayList(
-                        new PieChart.Data("Total Amount Done", newValue.getAmountPercDone()),
-                        new PieChart.Data("Amount Left", newValue.getAmountPercLeft())
-                );
-
-                ObservableList<PieChart.Data> pieChartData3 = FXCollections.observableArrayList(
-                        new PieChart.Data("Qty Done", newValue.getTotalQtyDone()),
-                        new PieChart.Data("Qty Left", newValue.getTotalQtyLeft())
-                );
-
-
-                /*
-                PieChart pieChart1 = createCustomPieChart(pieChartData1, "Buy vs Sell", buyColor, sellColor);
-                PieChart pieChart2 = createCustomPieChart(pieChartData2, "Total Amount vs Amount Left", totalAmountColor, amountLeftColor);
-                PieChart pieChart3 = createCustomPieChart(pieChartData3, "Qty Done vs Qty Left", volumeDoneColor, volumeLeftColor);
-
-                chartContainer.getChildren().clear();
-                chartContainer.getChildren().addAll(pieChart1, pieChart2, pieChart3);
-
-                 */
-
-            });
-        });
-
+        // Cualquier cambio en la lista de órdenes recalcula las estadísticas.
+        executionsOrderController.getTableExecutionReports().getItems()
+                .addListener((ListChangeListener<RoutingMessage.Order>) c -> recomputeStats());
     }
 
+    /** Asocia el Tab y el basketID; fija el encabezado y el título inicial. */
+    public void bindTab(Tab tab, String basketId) {
+        this.tab = tab;
+        this.basketId = basketId == null ? "" : basketId;
+        if (lblBasket != null) lblBasket.setText("Canasta: " + this.basketId);
+        updateTitle(0, 0);
+    }
 
-    private PieChart createCustomPieChart(ObservableList<PieChart.Data> data, String title, String... colors) {
+    /** Upsert por id de una orden en la grilla de la canasta. */
+    public void upsertOrder(RoutingMessage.Order order) {
+        var data = executionsOrderController.getData();
+        if (data == null) return;
+        int idx = IntStream.range(0, data.size())
+                .filter(i -> data.get(i).getId().equals(order.getId()))
+                .findFirst().orElse(-1);
+        if (idx >= 0) {
+            data.set(idx, order);
+        } else {
+            data.add(order);
+        }
+        executionsOrderController.getTableExecutionReports().refresh();
+    }
 
-        PieChart pieChart = new PieChart(data);
-        pieChart.setTitle(title);
+    /**
+     * Recalcula TODAS las estadísticas de la canasta desde las órdenes vivas:
+     * monto total/ejecutado/pendiente, % ejecutado/pendiente (por cantidad),
+     * qty total/ejecutada/pendiente y conteo de órdenes total/hechas/pendientes.
+     *
+     * Nota monto: para órdenes pasivas con PX=0 el monto se estima con el precio que haya
+     * (price -> avgPrice -> lastPx); se vuelve exacto a medida que ejecutan.
+     */
+    public void recomputeStats() {
+        try {
+            double montoTotal = 0, montoDone = 0, qtyTotal = 0, qtyDone = 0;
+            int nTotal = 0, nDone = 0, nPending = 0;
 
-        int colorIndex = 0;
-        for (PieChart.Data slice : data) {
-            String color = colors[colorIndex % colors.length];
-            slice.getNode().setStyle("-fx-pie-color: " + color + ";");
-            colorIndex++;
+            if (executionsOrderController.getData() != null) {
+                for (RoutingMessage.Order o : executionsOrderController.getData()) {
+                    nTotal++;
+                    double oq = o.getOrderQty();
+                    double cum = o.getCumQty();
+                    double avg = o.getAvgPrice();
+                    double pxRef = o.getPrice() > 0 ? o.getPrice() : (avg > 0 ? avg : o.getLastPx());
+
+                    qtyTotal += oq;
+                    qtyDone += cum;
+                    montoTotal += pxRef * oq;
+                    montoDone += (avg > 0 ? avg : pxRef) * cum;
+
+                    RoutingMessage.OrderStatus st = o.getOrdStatus();
+                    if (st.equals(RoutingMessage.OrderStatus.FILLED)) {
+                        nDone++;
+                    } else if (st.equals(RoutingMessage.OrderStatus.PENDING_NEW)
+                            || st.equals(RoutingMessage.OrderStatus.NEW)
+                            || st.equals(RoutingMessage.OrderStatus.REPLACED)
+                            || st.equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED)
+                            || st.equals(RoutingMessage.OrderStatus.PENDING_REPLACE)
+                            || st.equals(RoutingMessage.OrderStatus.PENDING_CANCEL)) {
+                        nPending++;
+                    }
+                }
+            }
+
+            double qtyLeft = Math.max(0, qtyTotal - qtyDone);
+            double montoLeft = Math.max(0, montoTotal - montoDone);
+            double pctDone = qtyTotal > 0 ? (qtyDone / qtyTotal) * 100d : 0d;
+            double pctLeft = qtyTotal > 0 ? 100d - pctDone : 0d;
+
+            DecimalFormat n0 = Repository.getFormatter0dec();
+            DecimalFormat n2 = Repository.getFormatter2dec();
+
+            setText(lblMontoTotal, "$" + n2.format(montoTotal));
+            setText(lblMontoDone, "$" + n2.format(montoDone));
+            setText(lblMontoLeft, "$" + n2.format(montoLeft));
+            setText(lblPctDone, String.format("%.1f%%", pctDone));
+            setText(lblPctLeft, String.format("%.1f%%", pctLeft));
+            setText(lblQtyTotal, n0.format(qtyTotal));
+            setText(lblQtyDone, n0.format(qtyDone));
+            setText(lblQtyLeft, n0.format(qtyLeft));
+            setText(lblNTotal, n0.format(nTotal));
+            setText(lblNDone, n0.format(nDone));
+            setText(lblNPending, n0.format(nPending));
+
+            updateTitle(nDone, nTotal);
+
+        } catch (Exception e) {
+            log.error("Error recalculando estadísticas de la canasta", e);
+        }
+    }
+
+    private void updateTitle(int done, int total) {
+        if (tab != null) tab.setText(basketId + " (" + done + "/" + total + ")");
+    }
+
+    private void setText(Label l, String v) {
+        if (l != null) l.setText(v);
+    }
+
+    private boolean isReplaceable(RoutingMessage.Order order) {
+        if (order == null) {
+            return false;
+        }
+        RoutingMessage.OrderStatus status = order.getOrdStatus();
+        return status.equals(RoutingMessage.OrderStatus.NEW)
+                || status.equals(RoutingMessage.OrderStatus.REPLACED)
+                || status.equals(RoutingMessage.OrderStatus.PARTIALLY_FILLED);
+    }
+
+    private void setReplaceControlsDisabled(boolean disabled) {
+        quantityReplace.setDisable(disabled);
+        priceReplace.setDisable(disabled);
+        visibleReplace.setDisable(disabled);
+        spreadReplace.setDisable(disabled);
+        limitReplace.setDisable(disabled);
+    }
+
+    private void applyOrderColumnConfig() {
+        if (Repository.getRoutingController() != null) {
+            Repository.getRoutingController().applyOrderColumnConfigToAll();
+            return;
+        }
+        executionsOrderController.applyOrderColumnConfig();
+    }
+
+    private void syncReplaceControls(RoutingMessage.Order order) {
+        if (order == null) {
+            quantityReplace.clear();
+            priceReplace.clear();
+            visibleReplace.clear();
+            spreadReplace.clear();
+            limitReplace.clear();
+            return;
         }
 
-        return pieChart;
+        quantityReplace.setText(String.valueOf(order.getOrderQty()));
+        priceReplace.setText(String.valueOf(order.getPrice()));
+        visibleReplace.setText(order.getIcebergPercentage());
+        spreadReplace.setText(String.valueOf(order.getSpread()));
+        limitReplace.setText(String.valueOf(order.getLimit()));
+    }
+
+    private String valueOrDefault(String value, String defaultValue) {
+        return value == null || value.trim().isEmpty() ? defaultValue : value.trim();
     }
 
     @FXML
     public void execAll(ActionEvent actionEvent) {
-
 
         if (!alertRoute("Exec All")) return;
 
@@ -264,9 +246,47 @@ public class BasketTabController {
         if (!alertRoute("Cancel Order")) return;
 
         RoutingMessage.Order order = executionsOrderController.getTableExecutionReports().getSelectionModel().getSelectedItem();
+        if (order == null) return;
         RoutingMessage.OrderCancelRequest orderCancelRequest = RoutingMessage.OrderCancelRequest.newBuilder().setId(order.getId()).build();
         Repository.getClientService().sendMessage(orderCancelRequest);
 
+    }
+
+    @FXML
+    public void replaceOrder(ActionEvent actionEvent) {
+        RoutingMessage.Order order = executionsOrderController.getTableExecutionReports()
+                .getSelectionModel()
+                .getSelectedItem();
+
+        if (!isReplaceable(order)) {
+            Notifier.INSTANCE.notifyError("Canasta", "Selecciona una orden viva de la canasta para modificar.");
+            return;
+        }
+
+        RoutingController routingController = Repository.getRoutingController();
+        if (routingController == null) {
+            Notifier.INSTANCE.notifyError("Canasta", "La vista de ruteo aún no está lista.");
+            return;
+        }
+
+        Repository.getPrincipalController().setOrderSelected(order);
+        routingController.getQuantity2().setText(valueOrDefault(quantityReplace.getText(), String.valueOf(order.getOrderQty())));
+        routingController.getPriceOrder2().setText(valueOrDefault(priceReplace.getText(), String.valueOf(order.getPrice())));
+        routingController.getVisibleid().setText(visibleReplace.getText() == null ? "" : visibleReplace.getText().trim());
+        routingController.getSpread2().setText(valueOrDefault(spreadReplace.getText(), String.valueOf(order.getSpread())));
+        routingController.getLimit2().setText(valueOrDefault(limitReplace.getText(), String.valueOf(order.getLimit())));
+
+        log.info("[BASKET][REPLACE] basket={} orderId={} symbol={} qty={} price={} visible={} spread={} limit={}",
+                basketId,
+                order.getId(),
+                order.getSymbol(),
+                routingController.getQuantity2().getText(),
+                routingController.getPriceOrder2().getText(),
+                routingController.getVisibleid().getText(),
+                routingController.getSpread2().getText(),
+                routingController.getLimit2().getText());
+
+        routingController.replaceOrderAction();
     }
 
     @FXML
@@ -309,10 +329,6 @@ public class BasketTabController {
         alert.initStyle(StageStyle.UTILITY);
         alert.showAndWait();
 
-        if (alert.getResult() == ButtonType.OK) {
-            return true;
-        } else {
-            return false;
-        }
+        return alert.getResult() == ButtonType.OK;
     }
 }

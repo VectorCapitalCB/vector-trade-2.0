@@ -1,8 +1,9 @@
 package cl.vc.inyectorcandle.itch;
 
 import cl.vc.inyectorcandle.model.BrokerDailyStats;
+import cl.vc.inyectorcandle.model.Candle;
 import cl.vc.inyectorcandle.model.InstrumentDailyStats;
-import cl.vc.inyectorcandle.model.MarketDaySummary;
+import cl.vc.inyectorcandle.model.InstrumentKey;
 import cl.vc.inyectorcandle.model.MarketSession;
 import cl.vc.inyectorcandle.mongo.MongoMarketRepository;
 import org.slf4j.Logger;
@@ -18,7 +19,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Instant;
+import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,6 +48,8 @@ public final class ItchLogReplay {
     private static final Logger LOG = LoggerFactory.getLogger(ItchLogReplay.class);
     private static final long PROGRESS_EVERY_LINES = 1_000_000L;
     private static final int RANKING_SIZE = 20;
+    private static final DateTimeFormatter JSON_LOG_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    private static final DateTimeFormatter RECORD_LOG_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss,SSS");
 
     /** Fases en las que una ejecucion cuenta para el cierre; AfterMarket queda fuera a proposito. */
     private static final String PHASE_CLOSING_AUCTION = "SubastaCierreCL";
@@ -51,6 +59,8 @@ public final class ItchLogReplay {
     private final String market;
     private final String currency;
     private final MarketSession session;
+    private final List<Duration> candleTimeframes;
+    private final boolean writeDaily;
 
     private long processedLines;
     private long executions;
@@ -58,10 +68,17 @@ public final class ItchLogReplay {
     private long unpriced;
 
     public ItchLogReplay(MongoMarketRepository repository, String market, String currency, MarketSession session) {
+        this(repository, market, currency, session, List.of(), true);
+    }
+
+    public ItchLogReplay(MongoMarketRepository repository, String market, String currency, MarketSession session,
+                         List<Duration> candleTimeframes, boolean writeDaily) {
         this.repository = repository;
         this.market = market;
         this.currency = currency;
         this.session = session;
+        this.candleTimeframes = candleTimeframes == null ? List.of() : List.copyOf(candleTimeframes);
+        this.writeDaily = writeDaily;
     }
 
     public void replay(String inputPath) {
@@ -94,8 +111,12 @@ public final class ItchLogReplay {
                     return stream.filter(Files::isRegularFile)
                             .filter(p -> {
                                 String n = p.getFileName().toString().toLowerCase();
+                                if (n.equals("itch_data.log")) {
+                                    return false; // archivo activo: nunca se reprocesa mientras se escribe
+                                }
                                 boolean known = n.startsWith("itch_data.") || n.startsWith("itch-messages-");
-                                return known && (n.endsWith(".log") || n.endsWith(".log.gz"));
+                                return known && (n.endsWith(".log") || n.endsWith(".log.gz")
+                                        || n.equals("itch_data.log_"));
                             })
                             .sorted()
                             .toList();
@@ -109,7 +130,7 @@ public final class ItchLogReplay {
 
     /** Un archivo es un dia. El estado del libro y los acumuladores viven solo dentro del archivo. */
     private void replayFile(Path file) {
-        DayState state = new DayState();
+        DayState state = new DayState(new HistoricalCandleAccumulator(session, candleTimeframes));
         long fileStartMs = System.currentTimeMillis();
         long fileStartLines = processedLines;
         LOG.info("Leyendo {}", file);
@@ -148,9 +169,12 @@ public final class ItchLogReplay {
      * mismos campos, asi que se resuelven al mismo acumulador en vez de duplicar el replay.
      */
     private void processLine(String line, DayState state) {
+        Instant eventTime = parseEventTime(line);
         if (state.day == null && line.length() >= 10) {
             try {
-                state.day = LocalDate.parse(line.substring(0, 10));
+                state.day = eventTime == null
+                        ? LocalDate.parse(line.substring(0, 10))
+                        : eventTime.atZone(session.zone()).toLocalDate();
             } catch (Exception ignored) {
                 return;
             }
@@ -158,7 +182,7 @@ public final class ItchLogReplay {
 
         int typeStart = line.indexOf("ITCH[SOUP] ");
         if (typeStart < 0) {
-            processRecordLine(line, state);
+            processRecordLine(line, state, eventTime);
             return;
         }
         typeStart += 11;
@@ -170,25 +194,36 @@ public final class ItchLogReplay {
         }
 
         switch (line.substring(typeStart, typeEnd)) {
-            case "ADD_ORDER" -> state.livePrice.put(jsonLong(line, "orderId", jsonStart), jsonLong(line, "price", jsonStart));
+            case "ADD_ORDER", "ADD_ORDER_MPID" -> state.livePrice.put(
+                    jsonLong(line, "orderId", jsonStart), jsonLong(line, "price", jsonStart));
             case "ORDER_DELETE" -> state.livePrice.remove(jsonLong(line, "orderId", jsonStart));
             case "ORDER_BOOK_DIR" -> state.books.put(jsonLong(line, "orderBookId", jsonStart), new Book(
                     jsonString(line, "symbol", jsonStart),
                     jsonString(line, "isin", jsonStart),
                     jsonString(line, "tradingCurrency", jsonStart),
                     (int) jsonLong(line, "decimalsInPrice", jsonStart),
-                    (int) jsonLong(line, "decimalsInQuantity", jsonStart)));
+                    (int) jsonLong(line, "decimalsInQuantity", jsonStart),
+                    (int) jsonLong(line, "financialProduct", jsonStart)));
             case "ORDER_BOOK_STATE" -> state.phase.put(jsonLong(line, "orderBookId", jsonStart), jsonString(line, "stateName", jsonStart));
             case "ORDER_EXECUTED" -> onExecuted(state, jsonLong(line, "matchId", jsonStart),
                     jsonLong(line, "orderBookId", jsonStart), jsonLong(line, "orderId", jsonStart),
                     Long.MIN_VALUE, jsonLong(line, "quantity", jsonStart), true,
                     jsonString(line, "owner", jsonStart), jsonString(line, "counterparty", jsonStart),
-                    jsonString(line, "side", jsonStart));
-            case "ORDER_EXECUTED_PRICE", "TRADE" -> onExecuted(state, jsonLong(line, "matchId", jsonStart),
+                    jsonString(line, "side", jsonStart), eventTime);
+            case "ORDER_EXECUTED_PRICE" -> {
+                if (!"N".equalsIgnoreCase(jsonString(line, "printable", jsonStart))) {
+                    onExecuted(state, jsonLong(line, "matchId", jsonStart),
+                            jsonLong(line, "orderBookId", jsonStart), Long.MIN_VALUE,
+                            jsonLong(line, "price", jsonStart), jsonLong(line, "quantity", jsonStart), false,
+                            jsonString(line, "owner", jsonStart), jsonString(line, "counterparty", jsonStart),
+                            jsonString(line, "side", jsonStart), eventTime);
+                }
+            }
+            case "TRADE" -> onExecuted(state, jsonLong(line, "matchId", jsonStart),
                     jsonLong(line, "orderBookId", jsonStart), Long.MIN_VALUE,
                     jsonLong(line, "price", jsonStart), jsonLong(line, "quantity", jsonStart), false,
                     jsonString(line, "owner", jsonStart), jsonString(line, "counterparty", jsonStart),
-                    jsonString(line, "side", jsonStart));
+                    jsonString(line, "side", jsonStart), eventTime);
             default -> { }
         }
     }
@@ -202,7 +237,7 @@ public final class ItchLogReplay {
      * arranca antes de la apertura la fecha coincide igual, pero un log que empiece despues de las
      * 20:00 de Santiago le pondria el dia siguiente a {@code state.day}.
      */
-    private void processRecordLine(String line, DayState state) {
+    private void processRecordLine(String line, DayState state, Instant eventTime) {
         int open = line.indexOf('[');
         if (open < 0) {
             return;
@@ -213,30 +248,32 @@ public final class ItchLogReplay {
         }
 
         switch (line.substring(typeStart, open)) {
-            case "AddOrder" -> state.livePrice.put(recLong(line, "orderId", open), recLong(line, "priceRaw", open));
+            case "AddOrder", "AddOrderMpid" -> state.livePrice.put(
+                    recLong(line, "orderId", open), recLong(line, "priceRaw", open));
             case "DeleteOrder" -> state.livePrice.remove(recLong(line, "orderId", open));
             case "Directory" -> state.books.put(recLong(line, "bookId", open), new Book(
                     recString(line, "symbol", open),
                     recString(line, "isin", open),
                     recString(line, "currency", open),
                     (int) recLong(line, "priceDecimals", open),
-                    0));
+                    0,
+                    (int) recLong(line, "financialProduct", open)));
             case "BookState" -> state.phase.put(recLong(line, "bookId", open), recString(line, "state", open));
             case "OrderExecuted" -> onExecuted(state, recLong(line, "matchId", open),
                     recLong(line, "bookId", open), recLong(line, "orderId", open),
                     Long.MIN_VALUE, recLong(line, "executedQty", open), true,
                     recString(line, "owner", open), recString(line, "counterparty", open),
-                    recSide(line, open));
+                    recSide(line, open), eventTime);
             case "ExecutedWithPrice" -> onExecuted(state, recLong(line, "matchId", open),
                     recLong(line, "bookId", open), Long.MIN_VALUE,
                     recLong(line, "priceRaw", open), recLong(line, "executedQty", open), false,
                     recString(line, "owner", open), recString(line, "counterparty", open),
-                    recSide(line, open));
+                    recSide(line, open), eventTime);
             case "TradeReport" -> onExecuted(state, recLong(line, "matchId", open),
                     recLong(line, "bookId", open), Long.MIN_VALUE,
                     recLong(line, "priceRaw", open), recLong(line, "qty", open), false,
                     recString(line, "owner", open), recString(line, "counterparty", open),
-                    recSide(line, open));
+                    recSide(line, open), eventTime);
             default -> { }
         }
     }
@@ -250,7 +287,7 @@ public final class ItchLogReplay {
      */
     private void onExecuted(DayState state, long matchId, long orderBookId, long orderId,
                             long rawPrice, long rawQty, boolean priceFromBook,
-                            String owner, String counterparty, String side) {
+                            String owner, String counterparty, String side, Instant eventTime) {
         if (matchId != Long.MIN_VALUE && !state.seenMatch.add(matchId)) {
             duplicates++;
             return;
@@ -281,6 +318,11 @@ public final class ItchLogReplay {
         BigDecimal qty = BigDecimal.valueOf(rawQty, book.decimalsInQuantity);
         BigDecimal amount = price.multiply(qty);
 
+        String bookCurrency = book.currency == null || book.currency.isBlank() ? currency : book.currency;
+        InstrumentKey instrumentKey = InstrumentKey.fromValues(book.symbol, settlement(book.financialProduct),
+                market, bookCurrency, securityType(book.financialProduct));
+        state.candles.apply(instrumentKey, eventTime, price, qty, amount);
+
         state.instruments
                 .computeIfAbsent(book.symbol, s -> new InstrumentAccum(book))
                 .apply(price, qty, amount, state.phase.getOrDefault(orderBookId, ""));
@@ -297,8 +339,19 @@ public final class ItchLogReplay {
     }
 
     private void flushDay(DayState state) {
+        List<Candle> candles = state.candles.snapshot();
+        for (Candle candle : candles) {
+            repository.upsertCandle(candle, "ITCH_LOG_REPLAY");
+        }
+
+        if (!writeDaily) {
+            repository.flushWrites();
+            LOG.info("[ITCH][{}] velas={} daily=omitido", state.day, candles.size());
+            return;
+        }
         if (state.day == null || state.instruments.isEmpty()) {
             LOG.info("Dia sin ejecuciones utilizables, nada que escribir");
+            repository.flushWrites();
             return;
         }
 
@@ -311,8 +364,44 @@ public final class ItchLogReplay {
             repository.upsertBrokerDaily(entry.getValue().toStats(market, entry.getKey(), state.day));
         }
 
-        LOG.info("[ITCH][{}] instrumentos={} corredoras={}",
-                state.day, state.instruments.size(), state.brokers.size());
+        repository.flushWrites();
+        LOG.info("[ITCH][{}] velas={} instrumentos={} corredoras={}",
+                state.day, candles.size(), state.instruments.size(), state.brokers.size());
+    }
+
+    private Instant parseEventTime(String line) {
+        if (line == null || line.length() < 23) {
+            return null;
+        }
+        try {
+            if (line.charAt(10) == ' ') {
+                return LocalDateTime.parse(line.substring(0, 23), JSON_LOG_TIME)
+                        .atZone(session.zone()).toInstant();
+            }
+            if (line.charAt(10) == 'T') {
+                return LocalDateTime.parse(line.substring(0, 23), RECORD_LOG_TIME)
+                        .toInstant(ZoneOffset.UTC);
+            }
+        } catch (DateTimeParseException ignored) {
+            // Algunas rotaciones comienzan con una linea truncada; se descarta solo esa linea.
+        }
+        return null;
+    }
+
+    static String settlement(int financialProduct) {
+        return "T2";
+    }
+
+    static String securityType(int financialProduct) {
+        return switch (financialProduct) {
+            case 1, 2, 11 -> "OPT";
+            case 3, 12, 13 -> "FUT";
+            case 4 -> "FI";
+            case 9 -> "MON";
+            case 14 -> "ETF";
+            case 16 -> "CFI";
+            default -> "CS";
+        };
     }
 
     // ---- parseo JSON plano: los mensajes son de una linea y sin anidamiento ----
@@ -429,10 +518,12 @@ public final class ItchLogReplay {
 
     // ---- estado ----
 
-    private record Book(String symbol, String isin, String currency, int decimalsInPrice, int decimalsInQuantity) {
+    private record Book(String symbol, String isin, String currency, int decimalsInPrice, int decimalsInQuantity,
+                        int financialProduct) {
     }
 
     private static final class DayState {
+        final HistoricalCandleAccumulator candles;
         LocalDate day;
         final Map<Long, Book> books = new HashMap<>(20_000);
         final Map<Long, Long> livePrice = new HashMap<>(65_536);
@@ -440,6 +531,10 @@ public final class ItchLogReplay {
         final Set<Long> seenMatch = new HashSet<>(131_072);
         final Map<String, InstrumentAccum> instruments = new HashMap<>(20_000);
         final Map<String, BrokerAccum> brokers = new HashMap<>(64);
+
+        DayState(HistoricalCandleAccumulator candles) {
+            this.candles = candles;
+        }
 
         BrokerAccum broker(String code) {
             return brokers.computeIfAbsent(code, k -> new BrokerAccum());

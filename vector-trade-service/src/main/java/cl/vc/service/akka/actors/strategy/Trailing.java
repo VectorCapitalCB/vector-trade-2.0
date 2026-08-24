@@ -9,6 +9,7 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.session.SessionsMessage;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrderStateSupport;
 
 import java.math.BigDecimal;
 
@@ -162,9 +163,7 @@ public class Trailing implements StrategyI {
             blockrejected = 0;
 
 
-        } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED) ||
-                order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED) ||
-                order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)) {
+        } else if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
 
             MainApp.getMessageEventBus().unsubscribe(actorStrategy, idSubscribe);
             MainApp.getMessageEventBus().unsubscribe(actorStrategy, order.getId());
@@ -200,6 +199,21 @@ public class Trailing implements StrategyI {
             actorStrategy.tell(PoisonPill.getInstance(), ActorRef.noSender());
         }
 
+    }
+
+    @Override
+    public boolean isTemporarilyBlocked() {
+        return blockOrders;
+    }
+
+    @Override
+    public void resumeAfterTemporaryBlock() {
+        blockOrders = false;
+    }
+
+    @Override
+    public void resetRejectRecovery() {
+        blockrejected = 0;
     }
 
 }

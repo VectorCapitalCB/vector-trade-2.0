@@ -1,4 +1,10 @@
 import { useEffect, useState } from 'react'
+import {
+  Activity, ArrowLeftRight, BarChart3, BookOpen, Boxes, Cable, CircleDollarSign,
+  Database, FileClock, Gauge, KeyRound, LockKeyhole,
+  LogOut, MessageSquareMore, Newspaper, RefreshCcw, Scale, Send, ServerCog,
+  ShieldCheck, Users, WalletCards,
+} from 'lucide-react'
 import api, { clearAdminToken, getAdminToken, setAdminToken } from './api.js'
 import SymbolsPage     from './pages/SymbolsPage.jsx'
 import AccountsPage    from './pages/AccountsPage.jsx'
@@ -20,55 +26,76 @@ import MultibookPage      from './pages/MultibookPage.jsx'
 import KeycloakRiskPage   from './pages/KeycloakRiskPage.jsx'
 import RedisRecoveryPage  from './pages/RedisRecoveryPage.jsx'
 import MongoPage          from './pages/MongoPage.jsx'
+import ClientLogsPage     from './pages/ClientLogsPage.jsx'
 
 const PAGES = [
-  { id: 'symbols',     label: '📡 Suscripciones MKD',     component: SymbolsPage },
-  { id: 'accounts',    label: '⚡ Cuadratura Prioritaria', component: AccountsPage },
-  { id: 'connections', label: '🔌 Conexiones',             component: ConnectionsPage },
-  { id: 'redis',       label: '🧯 Redis Recovery',         component: RedisRecoveryPage },
-  { id: 'mongo',       label: '🍃 Mongo (Var %)',           component: MongoPage },
-  { id: 'orders',      label: '📋 Reenvío Órdenes',        component: OrdersPage },
-  { id: 'inject',      label: '💉 Inyección Mensajes',     component: InjectPage },
-  { id: 'properties',  label: '⚙️ Propiedades',            component: PropertiesPage },
-  { id: 'news',        label: '📰 Noticias',               component: NewsPage },
-  { id: 'risk',        label: '🛡️ Control de Riesgo',      component: RiskPage },
-  { id: 'od',          label: '🚫 Control OD',              component: OdPage },
-  { id: 'multibook',   label: '🧩 MultiBook Redis',         component: MultibookPage },
-  { id: 'sessions',    label: '👤 Sesiones Activas',       component: SessionsAdminPage },
-  { id: 'ipsecurity',  label: '🔒 Seguridad IP',            component: IpSecurityPage },
-  { id: 'simultaneas', label: '🧮 Simultáneas Manuales',    component: SimultaneasPage },
-  { id: 'prestamos',   label: '💸 Préstamos Manuales',      component: PrestamosPage },
-  { id: 'saldo',       label: '💰 Saldo Manual',            component: SaldoPage },
-  { id: 'sqlrecovery', label: '🗄️ SQL Recovery',          component: SqlRecoveryPage },
-  { id: 'keycloakrisk',label: '🗝️ Keycloak',               component: KeycloakRiskPage },
-  { id: 'accountload', label: '📊 Carga Clientes',          component: AccountLoadPage },
+  { id: 'symbols',      group: 'Mercado',        label: 'Suscripciones MKD',      icon: Activity,          component: SymbolsPage },
+  { id: 'accounts',     group: 'Mercado',        label: 'Cuadratura prioritaria', icon: Scale,             component: AccountsPage },
+  { id: 'connections',  group: 'Mercado',        label: 'Conexiones',             icon: Cable,             component: ConnectionsPage },
+  { id: 'redis',        group: 'Persistencia',   label: 'Redis recovery',         icon: RefreshCcw,        component: RedisRecoveryPage },
+  { id: 'mongo',        group: 'Persistencia',   label: 'Mongo (Var %)',          icon: Database,          component: MongoPage },
+  { id: 'multibook',    group: 'Persistencia',   label: 'MultiBook Redis',        icon: BookOpen,          component: MultibookPage },
+  { id: 'sqlrecovery',  group: 'Persistencia',   label: 'SQL recovery',           icon: ServerCog,         component: SqlRecoveryPage },
+  { id: 'orders',       group: 'Operaciones',    label: 'Reenvío de órdenes',     icon: Send,              component: OrdersPage },
+  { id: 'inject',       group: 'Operaciones',    label: 'Inyección de mensajes',  icon: MessageSquareMore, component: InjectPage },
+  { id: 'simultaneas',  group: 'Operaciones',    label: 'Simultáneas manuales',   icon: ArrowLeftRight,    component: SimultaneasPage },
+  { id: 'prestamos',    group: 'Operaciones',    label: 'Préstamos manuales',     icon: WalletCards,       component: PrestamosPage },
+  { id: 'saldo',        group: 'Operaciones',    label: 'Saldo manual',           icon: CircleDollarSign,  component: SaldoPage },
+  { id: 'risk',         group: 'Control',        label: 'Control de riesgo',      icon: Gauge,             component: RiskPage },
+  { id: 'od',           group: 'Control',        label: 'Control OD',             icon: ShieldCheck,       component: OdPage },
+  { id: 'sessions',     group: 'Control',        label: 'Sesiones activas',       icon: Users,             component: SessionsAdminPage },
+  { id: 'clientlogs',   group: 'Control',        label: 'Diagnóstico de fronts',  icon: FileClock,         component: ClientLogsPage },
+  { id: 'ipsecurity',   group: 'Control',        label: 'Seguridad IP',           icon: LockKeyhole,       component: IpSecurityPage },
+  { id: 'properties',   group: 'Administración', label: 'Propiedades',            icon: ServerCog,         component: PropertiesPage },
+  { id: 'news',         group: 'Administración', label: 'Noticias',               icon: Newspaper,         component: NewsPage },
+  { id: 'keycloakrisk', group: 'Administración', label: 'Keycloak',               icon: KeyRound,          component: KeycloakRiskPage },
+  { id: 'accountload',  group: 'Administración', label: 'Carga de clientes',      icon: BarChart3,         component: AccountLoadPage },
 ]
+
+const GROUPS = [...new Set(PAGES.map(page => page.group))]
 
 const s = {
   app:     { display: 'flex', height: '100vh', overflow: 'hidden' },
   sidebar: {
-    width: 230, background: '#141720', borderRight: '1px solid #232840',
-    display: 'flex', flexDirection: 'column', padding: '0 0 16px 0', flexShrink: 0,
+    width: 248, height: '100vh', background: '#121722', borderRight: '1px solid #293246',
+    display: 'flex', flexDirection: 'column', flexShrink: 0, overflow: 'hidden',
   },
   logo: {
-    padding: '20px 18px 14px', fontSize: 13, fontWeight: 700,
-    color: '#7c8db5', letterSpacing: 1, borderBottom: '1px solid #232840',
-    marginBottom: 8,
+    height: 58, padding: '0 17px', display: 'flex', alignItems: 'center', gap: 10,
+    color: '#dbeafe', borderBottom: '1px solid #293246', flexShrink: 0,
+  },
+  logoMark: {
+    width: 30, height: 30, display: 'grid', placeItems: 'center', borderRadius: 6,
+    background: '#1e3a5f', color: '#7dd3fc', border: '1px solid #315579',
+  },
+  logoText: { display: 'grid', gap: 1 },
+  logoTitle: { fontSize: 12, fontWeight: 800, letterSpacing: 1 },
+  logoSub: { fontSize: 9, color: '#718096', letterSpacing: .5 },
+  navScroll: {
+    flex: 1, minHeight: 0, overflowY: 'auto', overflowX: 'hidden',
+    padding: '9px 8px 12px', scrollbarGutter: 'stable',
+  },
+  group: { marginBottom: 8 },
+  groupLabel: {
+    padding: '8px 10px 5px', color: '#64748b', fontSize: 9, fontWeight: 800,
+    letterSpacing: .9, textTransform: 'uppercase',
   },
   logout: {
-    margin: 'auto 14px 0', padding: '9px 12px', borderRadius: 6,
-    border: '1px solid #334155', background: '#1e293b', color: '#cbd5e1',
-    cursor: 'pointer', fontSize: 12, fontWeight: 600,
+    height: 34, margin: '10px 12px 12px', padding: '0 11px', borderRadius: 5,
+    border: '1px solid #334155', background: '#182131', color: '#aebbd0',
+    cursor: 'pointer', fontSize: 11, fontWeight: 700, flexShrink: 0,
+    display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
   },
   navBtn: (active) => ({
-    display: 'block', width: '100%', textAlign: 'left',
-    padding: '10px 18px', fontSize: 13, cursor: 'pointer', border: 'none',
-    borderRadius: 0, transition: 'all .15s',
-    background: active ? '#1e2540' : 'transparent',
-    color:      active ? '#60a5fa' : '#a0aec0',
-    borderLeft: active ? '3px solid #3b82f6' : '3px solid transparent',
+    display: 'flex', alignItems: 'center', gap: 10, width: '100%', textAlign: 'left',
+    height: 34, padding: '0 10px', marginBottom: 2, fontSize: 11.5, fontWeight: active ? 700 : 500,
+    cursor: 'pointer', borderRadius: 5, transition: 'background .15s, color .15s',
+    background: active ? '#1d3553' : 'transparent',
+    color: active ? '#dbeafe' : '#9eabc0',
+    border: active ? '1px solid #315579' : '1px solid transparent',
   }),
-  main: { flex: 1, overflow: 'auto', padding: 24, background: '#0f1117' },
+  navIcon: (active) => ({ color: active ? '#67c2f0' : '#718096', flexShrink: 0 }),
+  main: { flex: 1, minWidth: 0, overflow: 'auto', padding: 24, background: '#0f1117' },
   authPage: {
     minHeight: '100vh', display: 'grid', placeItems: 'center', padding: 24,
     background: 'radial-gradient(circle at 20% 10%, #1d2b45 0, #0f1117 42%)',
@@ -174,13 +201,34 @@ export default function App() {
   return (
     <div style={s.app}>
       <nav style={s.sidebar}>
-        <div style={s.logo}>VT ADMIN</div>
-        {PAGES.map(p => (
-          <button key={p.id} style={s.navBtn(page === p.id)} onClick={() => setPage(p.id)}>
-            {p.label}
-          </button>
-        ))}
-        <button style={s.logout} onClick={logout}>Cerrar sesión</button>
+        <div style={s.logo}>
+          <span style={s.logoMark}><Boxes size={17} strokeWidth={1.8} /></span>
+          <span style={s.logoText}>
+            <span style={s.logoTitle}>VT ADMIN</span>
+            <span style={s.logoSub}>CONTROL DE SERVICIOS</span>
+          </span>
+        </div>
+        <div style={s.navScroll}>
+          {GROUPS.map(group => (
+            <section key={group} style={s.group}>
+              <div style={s.groupLabel}>{group}</div>
+              {PAGES.filter(p => p.group === group).map(p => {
+                const Icon = p.icon
+                const active = page === p.id
+                return (
+                  <button key={p.id} style={s.navBtn(active)} onClick={() => setPage(p.id)} title={p.label}>
+                    <Icon size={15} strokeWidth={1.8} style={s.navIcon(active)} />
+                    <span>{p.label}</span>
+                  </button>
+                )
+              })}
+            </section>
+          ))}
+        </div>
+        <button style={s.logout} onClick={logout}>
+          <LogOut size={14} strokeWidth={1.8} />
+          Cerrar sesión
+        </button>
       </nav>
       <main style={s.main}>
         <Active />

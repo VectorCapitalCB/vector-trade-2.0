@@ -12,6 +12,7 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrderStateSupport;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -220,9 +221,7 @@ public class BasketAggressive implements StrategyI {
                 blockrejected = 0;
 
 
-            } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED) ||
-                    order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED) ||
-                    order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)) {
+            } else if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
 
                 blockOrders = true;
                 actorStrategy.tell(PoisonPill.getInstance(), ActorRef.noSender());
@@ -307,6 +306,32 @@ public class BasketAggressive implements StrategyI {
 
         }
 
+    }
+
+    @Override
+    public boolean isTemporarilyBlocked() {
+        return blockOrders;
+    }
+
+    @Override
+    public void resumeAfterTemporaryBlock() {
+        blockOrders = false;
+    }
+
+    @Override
+    public void resetRejectRecovery() {
+        blockrejected = 0;
+    }
+
+    @Override
+    public boolean isAtConfiguredLimit() {
+        if (statistic == null) {
+            return false;
+        }
+        if (order.getSide().equals(RoutingMessage.Side.BUY)) {
+            return limit_calculate_buy > 0d && statistic.getAskPx() > limit_calculate_buy;
+        }
+        return limit_calculate_sell > 0d && statistic.getBidPx() < limit_calculate_sell;
     }
 
 }

@@ -10,6 +10,12 @@
         "C:/Users/victo/AppData/Local/Temp/claude/E--VC-GITHUB-vector-trade-2-0/3be15145-ec7d-4ec9-8ae7-a1fc8efc6f26/scratchpad/e2e.properties"
       ],
       "port": 18097
+    },
+    {
+      "name": "admin-web",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev", "--prefix", "vector-trade-service/admin-web"],
+      "port": 5173
     }
   ]
 }

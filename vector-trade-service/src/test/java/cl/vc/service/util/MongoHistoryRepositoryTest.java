@@ -35,6 +35,7 @@ class MongoHistoryRepositoryTest {
     private RoutingMessage.Order.Builder fill(String execId) {
         return RoutingMessage.Order.newBuilder()
                 .setId("ORD-1")
+                .setOrderID("FIX-ORD-1")
                 .setAccount(ACCOUNT)
                 .setSymbol("SQM-B")
                 .setSide(RoutingMessage.Side.BUY)
@@ -61,6 +62,7 @@ class MongoHistoryRepositoryTest {
         assertEquals("SQM-B", d.getString("symbol"));
         assertEquals("BUY", d.getString("side"));
         assertEquals("EXEC-1", d.getString("execId"));
+        assertEquals("FIX-ORD-1", d.getString("orderIdFix"));
         assertEquals(44980d, d.getDouble("lastPx"), 1e-9);
         assertEquals(100d, d.getDouble("lastQty"), 1e-9);
         assertEquals(Date.from(when), d.get("transactTime"));
@@ -72,9 +74,44 @@ class MongoHistoryRepositoryTest {
         Instant before = Instant.now().minusSeconds(1);
         MongoHistoryRepository.recordExecution(fill("EXEC-2").build());
 
-        Date stamped = (Date) singleQueuedDocument().get("transactTime");
+        Document document = singleQueuedDocument();
+        Date stamped = (Date) document.get("transactTime");
         assertTrue(stamped.toInstant().isAfter(before),
                 "transactTime deberia ser la hora de recepcion; si no, el documento cae fuera de todo rango del calendario");
+
+        Method fromDocument = MongoHistoryRepository.class.getDeclaredMethod("orderFromDocument", Document.class);
+        fromDocument.setAccessible(true);
+        RoutingMessage.Order restored = (RoutingMessage.Order) fromDocument.invoke(null, document);
+        assertTrue(restored.hasTime(), "la vista debe recuperar la hora estampada aunque el sellside no la enviara");
+        assertEquals(stamped.toInstant().getEpochSecond(), restored.getTime().getSeconds());
+    }
+
+    @Test
+    @DisplayName("sin execId ni time la clave de respaldo sigue siendo estable al restaurar Redis")
+    void executionKey_sinExecIdNiTime_esEstable() throws Exception {
+        RoutingMessage.Order order = fill("").build();
+        Method executionKey = MongoHistoryRepository.class.getDeclaredMethod(
+                "executionKey", RoutingMessage.Order.class);
+        executionKey.setAccessible(true);
+
+        assertEquals(executionKey.invoke(null, order), executionKey.invoke(null, order));
+    }
+
+    @Test
+    @DisplayName("el fallback historico conserva el OrderID FIX fuera del proto")
+    void orderFromDocument_sinProto_conservaOrderIdFix() throws Exception {
+        MongoHistoryRepository.recordExecution(fill("EXEC-FIX")
+                .setContraBroker("VCC")
+                .build());
+        Document document = singleQueuedDocument();
+        document.remove("orderProto");
+
+        Method fromDocument = MongoHistoryRepository.class.getDeclaredMethod("orderFromDocument", Document.class);
+        fromDocument.setAccessible(true);
+        RoutingMessage.Order restored = (RoutingMessage.Order) fromDocument.invoke(null, document);
+
+        assertEquals("FIX-ORD-1", restored.getOrderID());
+        assertEquals("VCC", restored.getContraBroker());
     }
 
     @Test
@@ -91,6 +128,49 @@ class MongoHistoryRepositoryTest {
         MongoHistoryRepository.recordExecution(null);
         MongoHistoryRepository.recordOrderTerminal(null);
         assertTrue(queue().isEmpty());
+    }
+
+    @Test
+    @DisplayName("canceladas y rechazadas nunca entran al historico de operaciones")
+    void recordFilledOrder_ignoraOrdenSinFillValido() throws Exception {
+        MongoHistoryRepository.recordFilledOrder(fill("EXEC-C")
+                .setOrdStatus(RoutingMessage.OrderStatus.CANCELED)
+                .build());
+        MongoHistoryRepository.recordFilledOrder(fill("EXEC-R")
+                .setOrdStatus(RoutingMessage.OrderStatus.REJECTED)
+                .build());
+        assertTrue(queue().isEmpty());
+    }
+
+    @Test
+    @DisplayName("un parcial guarda su palo y una fila resumen")
+    void recordFilledOrder_parcialEncolaDetalleYResumen() throws Exception {
+        MongoHistoryRepository.recordFilledOrder(fill("EXEC-P")
+                .setOrdStatus(RoutingMessage.OrderStatus.PARTIALLY_FILLED)
+                .setOrderQty(1_000d)
+                .setCumQty(250d)
+                .setLastQty(250d)
+                .build());
+        assertEquals(2, queue().size());
+    }
+
+    @Test
+    @DisplayName("el resumen historico reconstruye OrderQty cuando el fill llega en cero")
+    void executionSummary_reconstruyeCantidadOrden() throws Exception {
+        RoutingMessage.Order persisted = fill("EXEC-ZERO")
+                .setOrderQty(0d)
+                .setLastQty(1d)
+                .setCumQty(1d)
+                .build();
+        Method method = MongoHistoryRepository.class.getDeclaredMethod(
+                "executionSummary", RoutingMessage.Order.class, java.util.List.class);
+        method.setAccessible(true);
+
+        RoutingMessage.Order summary = (RoutingMessage.Order) method.invoke(
+                null, persisted, java.util.List.of(persisted));
+
+        assertEquals(1d, summary.getOrderQty(), 1e-9);
+        assertEquals(1d, summary.getCumQty(), 1e-9);
     }
 
     @Test
@@ -115,6 +195,7 @@ class MongoHistoryRepositoryTest {
 
         Document d = singleQueuedDocument();
         assertEquals("ORD-1", d.getString("orderId"));
+        assertEquals("FIX-ORD-1", d.getString("orderIdFix"));
         assertEquals("CL-1", d.getString("clOrdId"));
         assertEquals(100d, d.getDouble("orderQty"), 1e-9);
         assertEquals("FILLED", d.getString("ordStatus"));

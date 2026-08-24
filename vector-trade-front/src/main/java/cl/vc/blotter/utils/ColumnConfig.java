@@ -1,5 +1,8 @@
 package cl.vc.blotter.utils;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
+
 public class ColumnConfig {
 
 
@@ -23,6 +26,7 @@ public class ColumnConfig {
     private boolean desbalancetheoric = true;
     private boolean priceTheoric = true;
     private boolean amountTheoric = true;
+    private Map<String, Boolean> orderColumns = new LinkedHashMap<>();
 
 
     public boolean isSymbol() {
@@ -183,5 +187,31 @@ public class ColumnConfig {
 
     public void setAmountTheoric(boolean amountTheoric) {
         this.amountTheoric = amountTheoric;
+    }
+
+    public Map<String, Boolean> getOrderColumns() {
+        return orderColumns;
+    }
+
+    public void setOrderColumns(Map<String, Boolean> orderColumns) {
+        this.orderColumns = orderColumns == null ? new LinkedHashMap<>() : new LinkedHashMap<>(orderColumns);
+    }
+
+    public boolean hasOrderColumn(String key) {
+        return orderColumns != null && orderColumns.containsKey(key);
+    }
+
+    public boolean isOrderColumnVisible(String key, boolean defaultVisible) {
+        if (orderColumns == null) {
+            orderColumns = new LinkedHashMap<>();
+        }
+        return orderColumns.getOrDefault(key, defaultVisible);
+    }
+
+    public void setOrderColumnVisible(String key, boolean visible) {
+        if (orderColumns == null) {
+            orderColumns = new LinkedHashMap<>();
+        }
+        orderColumns.put(key, visible);
     }
 }

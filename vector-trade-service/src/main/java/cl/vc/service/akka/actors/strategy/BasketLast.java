@@ -12,6 +12,7 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrderStateSupport;
 
 import java.math.BigDecimal;
 
@@ -123,9 +124,7 @@ public class BasketLast implements StrategyI {
                 blockrejected = 0;
 
 
-            } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED) ||
-                    order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED) ||
-                    order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)) {
+            } else if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
 
                 blockOrders = true;
                 actorStrategy.tell(PoisonPill.getInstance(), ActorRef.noSender());
@@ -262,9 +261,7 @@ public class BasketLast implements StrategyI {
                     MainApp.getConnections().get(order.getSecurityExchange()).sendMessage(orderReplaceRequest);
                 }
 
-            } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)
-                    || order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)
-                    || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED)) {
+            } else if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
 
                 blockOrders = true;
             }
@@ -323,16 +320,38 @@ public class BasketLast implements StrategyI {
                     blockOrders = true;
                 }
 
-            } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)
-                    || order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)
-                    || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED)) {
+            } else if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
 
                 blockOrders = true;
             }
         }
     }
 
+    @Override
+    public boolean isTemporarilyBlocked() {
+        return blockOrders;
+    }
+
+    @Override
+    public void resumeAfterTemporaryBlock() {
+        blockOrders = false;
+    }
+
+    @Override
+    public void resetRejectRecovery() {
+        blockrejected = 0;
+    }
+
+    @Override
+    public boolean isAtConfiguredLimit() {
+        if (statistic == null) {
+            return false;
+        }
+        if (order.getSide().equals(RoutingMessage.Side.BUY)) {
+            return limit_calculate_buy > 0d && statistic.getLast() > limit_calculate_buy;
+        }
+        return limit_calculate_sell > 0d && statistic.getLast() < limit_calculate_sell;
+    }
+
 }
-
-
 

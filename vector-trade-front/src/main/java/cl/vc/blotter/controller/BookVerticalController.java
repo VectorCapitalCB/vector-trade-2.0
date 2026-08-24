@@ -7,6 +7,8 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.utils.ProtoConverter;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
+import javafx.geometry.Orientation;
+import javafx.scene.control.ScrollBar;
 import javafx.scene.control.SplitPane;
 import javafx.scene.control.TableCell;
 import javafx.scene.control.TableColumn;
@@ -19,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class BookVerticalController {
+
+    private static final double BOOK_SCROLLBAR_GUTTER = 16.0;
 
     @FXML
     private TableView<OrderBookEntry> bidViewTable;
@@ -34,17 +38,21 @@ public class BookVerticalController {
     @FXML
     private TableColumn<OrderBookEntry, String> quantityOffer;
     @FXML
+    private ScrollBar bidBookScroll;
+    @FXML
+    private ScrollBar offerBookScroll;
+    @FXML
     private SplitPane bookSplit;
 
     @FXML
     private void initialize() {
 
-        offerViewTable.setMinHeight(170);  // Altura mínima para la tabla de oferta
-        bidViewTable.setMinHeight(170);    // Altura mínima para la tabla de demanda
-
-        // Establecemos el tamaño máximo de las tablas para que no se agranden más allá de un cierto límite
-        offerViewTable.setMaxHeight(170);  // Limitar la altura máxima
-        bidViewTable.setMaxHeight(170);    // Limitar la altura máxima
+        // El libro vive dentro del SplitPane principal. Debe poder comprimirse con el panel
+        // superior; un alto fijo hace que desborde sobre la seccion inferior al moverlo.
+        offerViewTable.setMinHeight(0);
+        bidViewTable.setMinHeight(0);
+        offerViewTable.setMaxHeight(Double.MAX_VALUE);
+        bidViewTable.setMaxHeight(Double.MAX_VALUE);
 
         // Permitir que el SplitPane sea redimensionable
         SplitPane.setResizableWithParent(offerViewTable, true);
@@ -53,9 +61,14 @@ public class BookVerticalController {
         // Configuración del SplitPane
         bookSplit.setDividerPositions(0.5);  // Mantener el divisor en el 50% inicial
 
-        // Permitir el ajuste de las columnas en la tabla
-        offerViewTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        bidViewTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        // Ambas tablas deben reservar el mismo espacio para el scroll vertical. Si solo uno
+        // de los lados tiene suficientes posturas para mostrarlo, CONSTRAINED_RESIZE_POLICY
+        // entrega anchos distintos y desalinea precio/cantidad entre compra y venta.
+        offerViewTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        bidViewTable.setColumnResizePolicy(TableView.UNCONSTRAINED_RESIZE_POLICY);
+        installSynchronizedBookColumns();
+        installPermanentScrollBar(bidViewTable, bidBookScroll, false);
+        installPermanentScrollBar(offerViewTable, offerBookScroll, true);
 
         // Configurar las celdas de las tablas
         priceBid.setCellValueFactory(new PropertyValueFactory<>("price"));
@@ -114,7 +127,7 @@ public class BookVerticalController {
 
                 // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
                 // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
-                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                if (isOwnLiveOrder(bidViewTable, data)) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
                            + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
                 } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
@@ -154,7 +167,7 @@ public class BookVerticalController {
 
                 // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
                 // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
-                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                if (isOwnLiveOrder(bidViewTable, data)) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
                            + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
                 } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
@@ -203,7 +216,7 @@ public class BookVerticalController {
 
                         // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
                 // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
-                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                if (isOwnLiveOrder(offerViewTable, data)) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
                            + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
                 } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
@@ -257,7 +270,7 @@ public class BookVerticalController {
 
                         // Orden propia viva en este nivel: se evalua ANTES que las reglas por cuenta,
                 // que son mas gruesas (marcan cualquier orden de tus cuentas, no la tuya).
-                if (Repository.tieneOrdenVivaEn(data.getSymbol(), data.getSide(), data.getPriceValue())) {
+                if (isOwnLiveOrder(offerViewTable, data)) {
                     setStyle("-fx-alignment: CENTER-RIGHT; -fx-text-fill: #ffffff; -fx-background-color: #b8860b;"
                            + " -fx-border-color: #ffd700; -fx-border-width: 0 0 0 3;");
                 } else if (Repository.getUser() != null && "16138017/0".equals(data.getAccount()) && !data.getAccount().isEmpty()) {
@@ -324,14 +337,111 @@ public class BookVerticalController {
             }
         });
 
-        bidViewTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        offerViewTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-
-
         hideTableHeader(bidViewTable);
         hideTableHeader(offerViewTable);
 
 
+    }
+
+    private boolean isOwnLiveOrder(TableView<OrderBookEntry> table, OrderBookEntry entry) {
+        if (entry == null) return false;
+        boolean repeatedPrice = table.getItems().stream()
+                .filter(item -> item != null
+                        && item.getSide() == entry.getSide()
+                        && Math.abs(item.getPriceValue() - entry.getPriceValue()) < 0.0001d)
+                .limit(2)
+                .count() > 1;
+        if (!repeatedPrice) {
+            return Repository.tieneOrdenVivaEn(
+                    entry.getSymbol(), entry.getSide(), entry.getPriceValue(),
+                    entry.getSecurityExchangeRouting(), null);
+        }
+        return Repository.tienePosturaVivaEn(
+                entry.getSymbol(), entry.getSide(), entry.getPriceValue(), entry.getSizeValue(),
+                entry.getAccount(), entry.getOperator(), entry.getSecurityExchangeRouting(), null);
+    }
+
+    private void installSynchronizedBookColumns() {
+        Runnable resize = this::resizeBookColumns;
+        bidViewTable.widthProperty().addListener((obs, oldWidth, newWidth) -> resize.run());
+        offerViewTable.widthProperty().addListener((obs, oldWidth, newWidth) -> resize.run());
+        bidViewTable.skinProperty().addListener((obs, oldSkin, newSkin) -> {
+            if (newSkin != null) Platform.runLater(resize);
+        });
+        offerViewTable.skinProperty().addListener((obs, oldSkin, newSkin) -> {
+            if (newSkin != null) Platform.runLater(resize);
+        });
+        Platform.runLater(resize);
+    }
+
+    private void resizeBookColumns() {
+        double tableWidth = Math.min(bidViewTable.getWidth(), offerViewTable.getWidth());
+        if (tableWidth <= BOOK_SCROLLBAR_GUTTER) return;
+
+        double columnWidth = bookColumnWidth(tableWidth);
+        setColumnWidth(priceBid, columnWidth);
+        setColumnWidth(quantityBid, columnWidth);
+        setColumnWidth(priceOffer, columnWidth);
+        setColumnWidth(quantityOffer, columnWidth);
+    }
+
+    static double bookColumnWidth(double tableWidth) {
+        return Math.max(1.0, (tableWidth - BOOK_SCROLLBAR_GUTTER) / 2.0);
+    }
+
+    private static void setColumnWidth(TableColumn<?, ?> column, double width) {
+        column.setMinWidth(width);
+        column.setPrefWidth(width);
+        column.setMaxWidth(width);
+    }
+
+    private void installPermanentScrollBar(TableView<?> table, ScrollBar externalBar, boolean inverted) {
+        Runnable connect = () -> connectScrollBars(table, externalBar, inverted);
+        table.skinProperty().addListener((obs, oldSkin, newSkin) -> {
+            if (newSkin != null) Platform.runLater(connect);
+        });
+        Platform.runLater(connect);
+    }
+
+    private void connectScrollBars(TableView<?> table, ScrollBar externalBar, boolean inverted) {
+        ScrollBar internalBar = table.lookupAll(".scroll-bar").stream()
+                .filter(ScrollBar.class::isInstance)
+                .map(ScrollBar.class::cast)
+                .filter(bar -> bar.getOrientation() == Orientation.VERTICAL)
+                .findFirst()
+                .orElse(null);
+        if (internalBar == null || externalBar.getProperties().get("book-scroll-source") == internalBar) return;
+
+        externalBar.getProperties().put("book-scroll-source", internalBar);
+        internalBar.setOpacity(0);
+        internalBar.setMouseTransparent(true);
+
+        Runnable sync = () -> {
+            externalBar.setMin(internalBar.getMin());
+            externalBar.setMax(internalBar.getMax());
+            externalBar.setVisibleAmount(internalBar.getVisibleAmount());
+            externalBar.setUnitIncrement(internalBar.getUnitIncrement());
+            externalBar.setBlockIncrement(internalBar.getBlockIncrement());
+            double externalValue = inverted
+                    ? internalBar.getMax() + internalBar.getMin() - internalBar.getValue()
+                    : internalBar.getValue();
+            if (Math.abs(externalBar.getValue() - externalValue) > 0.0001) {
+                externalBar.setValue(externalValue);
+            }
+        };
+        internalBar.minProperty().addListener((obs, oldValue, newValue) -> sync.run());
+        internalBar.maxProperty().addListener((obs, oldValue, newValue) -> sync.run());
+        internalBar.visibleAmountProperty().addListener((obs, oldValue, newValue) -> sync.run());
+        internalBar.valueProperty().addListener((obs, oldValue, newValue) -> sync.run());
+        externalBar.valueProperty().addListener((obs, oldValue, newValue) -> {
+            double internalValue = inverted
+                    ? internalBar.getMax() + internalBar.getMin() - newValue.doubleValue()
+                    : newValue.doubleValue();
+            if (Math.abs(internalBar.getValue() - internalValue) > 0.0001) {
+                internalBar.setValue(internalValue);
+            }
+        });
+        sync.run();
     }
 
     private void hideTableHeader(TableView<?> table) {

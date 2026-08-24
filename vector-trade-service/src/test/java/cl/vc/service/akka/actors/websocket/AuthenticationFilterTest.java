@@ -25,9 +25,7 @@ import static org.mockito.Mockito.*;
  *  - El flag 'passwordrequiere': si es false, el filtro NO autentica (bypass total).
  *  - Las credenciales Basic llegan como base64("encUser:encPass") donde cada parte
  *    va cifrada con AES (AESEncryption); el filtro descifra ambas.
- *  - EL PASSWORD MÁGICO UUID '9f3c2a1b-7e44-4d8a-9c21-5b7f3a9e8d12' que BYPASSA
- *    Keycloak: si el password descifrado es ese UUID, NO se valida contra Keycloak.
- *    (Comportamiento INSEGURO documentado a propósito, no un objetivo.)
+ *  - El antiguo password UUID especial ya no omite Keycloak.
  *  - El flujo normal SÍ invoca KeycloakService.getTokenKeycloak.
  *  - Rate-limit por IP: a los 20 fallos la IP queda bloqueada (403) antes de mirar auth.
  *

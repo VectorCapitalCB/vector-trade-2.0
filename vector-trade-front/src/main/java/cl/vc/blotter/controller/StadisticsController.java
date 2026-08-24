@@ -1,7 +1,7 @@
 package cl.vc.blotter.controller;
 
+import cl.vc.blotter.utils.CandleWindow;
 import cl.vc.blotter.Repository;
-import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import javafx.application.Platform;
 import javafx.scene.chart.BarChart;
@@ -13,7 +13,7 @@ import javafx.scene.control.*;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.input.*;
-import javafx.scene.layout.FlowPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -41,13 +41,12 @@ public class StadisticsController {
 
 
     @FXML private ComboBox<MarketDataMessage.SecurityExchangeMarketData> cmbSecurityExchange;
-    @FXML public  ComboBox<RoutingMessage.SettlType> cmbSettlType;
     @FXML private ComboBox<String> filterCombo;
     @FXML private ComboBox<String> cmbSymbol;
     @FXML private ComboBox<String> cmbHistoryRange;
     @FXML private ComboBox<String> cmbHistoryTf;
     @FXML private DatePicker dpStatsDate;
-    @FXML private FlowPane kpiWrap;
+    @FXML private GridPane kpiWrap;
 
 
     @FXML private Label totalVolume;
@@ -62,7 +61,6 @@ public class StadisticsController {
     @FXML private Label lblIndiceMaximo;
     @FXML private Label lblIndiceMinimo;
 
-    @FXML private Label lblLiquidezMedia;
     @FXML private Label lblNumeroTotalTrades;
 
     @FXML private Label lblCapitalizacionPromedio;
@@ -78,7 +76,6 @@ public class StadisticsController {
     @FXML private TableColumn<MarketDataMessage.RankinSymbol, String> colVariacionPct;
     @FXML private TableColumn<MarketDataMessage.RankinSymbol, String> colVolumen;
     @FXML private TableColumn<MarketDataMessage.RankinSymbol, String> colMonto;
-    @FXML private TableColumn<MarketDataMessage.RankinSymbol, String> colLiquid;
     @FXML private LineChart<String, Number> marketOverviewChart;
     @FXML private BarChart<String, Number> topVolumeChart;
 
@@ -104,14 +101,6 @@ public class StadisticsController {
         dfPct.setDecimalFormatSymbols(symbols);
         dfPct.setRoundingMode(RoundingMode.HALF_UP);
 
-        if (kpiWrap != null) {
-            kpiWrap.sceneProperty().addListener((obs, oldScene, newScene) -> {
-                if (newScene != null) {
-                    kpiWrap.prefWrapLengthProperty().bind(newScene.widthProperty().subtract(80));
-                }
-            });
-        }
-
         if (filterCombo != null) {
             filterCombo.setItems(FXCollections.observableArrayList(
                     "Más tranzado",
@@ -123,17 +112,6 @@ public class StadisticsController {
             ));
             filterCombo.getSelectionModel().select("Más tranzado");
             filterCombo.valueProperty().addListener((obs, o, n) -> refreshTable());
-        }
-
-        if (cmbSettlType != null) {
-            cmbSettlType.setItems(FXCollections.observableArrayList(
-                    RoutingMessage.SettlType.T2,
-                    RoutingMessage.SettlType.CASH,
-                    RoutingMessage.SettlType.NEXT_DAY
-            ));
-            cmbSettlType.getSelectionModel().clearSelection();
-            cmbSettlType.setPromptText("Todas");
-            cmbSettlType.valueProperty().addListener((obs, oldValue, newValue) -> refreshTable());
         }
 
         if (cmbHistoryRange != null) {
@@ -185,7 +163,6 @@ public class StadisticsController {
         colVariacionPct.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(formatPercentage(cd.getValue().getVariacionPct())));
         colVolumen.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(dfNumber.format(cd.getValue().getVolumen())));
         colMonto.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(dfNumber.format(cd.getValue().getMonto())));
-        colLiquid.setCellValueFactory(cd -> new javafx.beans.property.SimpleStringProperty(cd.getValue().getSettlType().name()));
 
         // Colorear variación 24h
         colVariacionPct.setCellFactory(col -> new TableCell<>() {
@@ -257,7 +234,6 @@ public class StadisticsController {
         lblIndicePromedio.setText(dfPrice.format(s.getIndicePromedio()));
         lblIndiceMaximo.setText(dfPrice.format(s.getIndiceMaximo()));
         lblIndiceMinimo.setText(dfPrice.format(s.getIndiceMinimo()));
-        lblLiquidezMedia.setText(dfRatio.format(s.getLiquidezMedia()));
         lblNumeroTotalTrades.setText(dfInt.format(s.getNumeroTotalTrades()));
         lblCapitalizacionPromedio.setText(dfNumber.format(s.getCapitalizacionPromedio()));
         lblPrecioPromedioAcumulado.setText(dfNumber.format(s.getPrecioPromedioAcumulado()));
@@ -287,37 +263,21 @@ public class StadisticsController {
             default:             src = lastStats.getMasTranzadoList(); break;
         }
 
-        RoutingMessage.SettlType selectedSettlType =
-                (cmbSettlType != null) ? cmbSettlType.getValue() : null;
-
-        if (selectedSettlType != null) {
-            src = filterBySettlType(src, selectedSettlType);
-        }
-
         src = dedupeBySymbol(src);
         tableItems.setAll(src);
         refreshTopVolumeChart(src);
     }
 
-    private List<MarketDataMessage.RankinSymbol> filterBySettlType(
-            List<MarketDataMessage.RankinSymbol> source,
-            RoutingMessage.SettlType selectedSettlType) {
-        return source.stream()
-                .filter(rs -> rs.getSettlType() == selectedSettlType)
-                .collect(Collectors.toList());
-    }
-
     /**
-     * La key incluye la liquidacion: el servidor ya manda una fila por (symbol, exchange, settlType),
-     * asi que colapsar solo por symbol borraba de la tabla el mismo papel en CASH o NEXT_DAY cuando
-     * el filtro "Liquidacion" esta en "Todas".
+     * Los snapshots anteriores a la consolidacion nacional pueden traer una fila por liquidacion.
+     * Mientras expira ese historial, se conserva solo la variante con mayor monto por instrumento.
      */
     private List<MarketDataMessage.RankinSymbol> dedupeBySymbol(List<MarketDataMessage.RankinSymbol> source) {
         return source.stream()
                 .collect(Collectors.toMap(
-                        rs -> normalizeSymbol(rs.getSymbol()) + "|" + rs.getSettlType().name(),
+                        rs -> normalizeSymbol(rs.getSymbol()),
                         rs -> rs,
-                        (a, b) -> a,
+                        (a, b) -> b.getMonto() > a.getMonto() ? b : a,
                         java.util.LinkedHashMap::new
                 ))
                 .values()
@@ -652,26 +612,11 @@ public class StadisticsController {
 
     @FXML
     private void openCandlesForSymbol() {
-        try {
-            String symbol = cmbSymbol != null ? cmbSymbol.getValue() : null;
-            if (symbol == null || symbol.isBlank()) {
-                return;
-            }
-
-            Repository.setSelectedCandleSymbol(symbol);
-
-            FXMLLoader loader = new FXMLLoader(this.getClass().getResource("/view/Candle.fxml"));
-            Parent mainPane = loader.load();
-            Stage stage = new Stage();
-            Scene scene = new Scene(mainPane, 1100, 700);
-            scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource(Repository.getSTYLE())).toExternalForm());
-            stage.setScene(scene);
-            stage.setTitle("Velas - " + symbol);
-            stage.show();
-
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // Un solo camino de apertura (CandleWindow): antes esta copia abria una ventana nueva en
+        // cada click y aplicaba el CSS oscuro fijo, ignorando el modo dia.
+        String symbol = cmbSymbol != null ? cmbSymbol.getValue() : null;
+        if (symbol == null || symbol.isBlank()) return;
+        CandleWindow.open(symbol);
     }
 
     /**
@@ -692,7 +637,6 @@ public class StadisticsController {
         registrarKpi("Indice Promedio", lblIndicePromedio);
         registrarKpi("Indice Maximo", lblIndiceMaximo);
         registrarKpi("Indice Minimo", lblIndiceMinimo);
-        registrarKpi("Liquidez Media", lblLiquidezMedia);
         registrarKpi("N Total Trades", lblNumeroTotalTrades);
         registrarKpi("Cap. Promedio", lblCapitalizacionPromedio);
         registrarKpi("Precio Prom. Acum.", lblPrecioPromedioAcumulado);
@@ -739,7 +683,6 @@ public class StadisticsController {
         StringBuilder sb = new StringBuilder();
         sb.append("Fecha Stats\t").append(dpStatsDate != null && dpStatsDate.getValue() != null ? dpStatsDate.getValue() : "").append('\n');
         sb.append("Indicador\t").append(filterCombo != null && filterCombo.getValue() != null ? filterCombo.getValue() : "").append('\n');
-        sb.append("Liquidacion\t").append(cmbSettlType != null && cmbSettlType.getValue() != null ? cmbSettlType.getValue().name() : "Todas").append('\n');
         if (lastStats != null) {
             sb.append("Id\t").append(lastStats.getId()).append('\n');
             sb.append("Hora Inicio\t").append(lastStats.getHoraInicio()).append('\n');
@@ -758,14 +701,13 @@ public class StadisticsController {
                         ? new ArrayList<>(rankinSymbolTable.getSelectionModel().getSelectedItems())
                         : new ArrayList<>(tableItems);
 
-        StringBuilder sb = new StringBuilder("Instrumento\tPrecio\t24h %\tVolumen\tMonto\tLiquidacion\n");
+        StringBuilder sb = new StringBuilder("Instrumento\tPrecio\t24h %\tVolumen\tMonto\n");
         for (MarketDataMessage.RankinSymbol fila : filas) {
             sb.append(colSymbol.getCellData(fila)).append('\t')
               .append(colPrecioUltimo.getCellData(fila)).append('\t')
               .append(colVariacionPct.getCellData(fila)).append('\t')
               .append(colVolumen.getCellData(fila)).append('\t')
-              .append(colMonto.getCellData(fila)).append('\t')
-              .append(colLiquid.getCellData(fila)).append('\n');
+              .append(colMonto.getCellData(fila)).append('\n');
         }
         return sb.toString();
     }

@@ -25,11 +25,17 @@ class BolsaStatsBuildTest {
 
     private static MarketDataMessage.RankinSymbol row(String symbol, double last, double high, double low,
                                                       double varPct, double volumen, double monto) {
+        return row(symbol, RoutingMessage.SettlType.T2, last, high, low, varPct, volumen, monto);
+    }
+
+    private static MarketDataMessage.RankinSymbol row(String symbol, RoutingMessage.SettlType settlType,
+                                                      double last, double high, double low,
+                                                      double varPct, double volumen, double monto) {
         return MarketDataMessage.RankinSymbol.newBuilder()
                 .setId(symbol)
                 .setSecurityExchange(MarketDataMessage.SecurityExchangeMarketData.BCS)
                 .setSymbol(symbol)
-                .setSettlType(RoutingMessage.SettlType.T2)
+                .setSettlType(settlType)
                 .setSecurityType(RoutingMessage.SecurityType.CS)
                 .setVariacionPct(varPct)
                 .setPrecioUltimo(last)
@@ -171,6 +177,34 @@ class BolsaStatsBuildTest {
     }
 
     // ---------- invariantes de los rankings ----------
+
+    @Test
+    void consolidaLiquidacionesEnUnaFilaNacionalPorInstrumento() {
+        List<MarketDataMessage.RankinSymbol> rows = List.of(
+                row("LTM", RoutingMessage.SettlType.T2, 25.0, 25.2, 24.8, -1.2, 100, 2_500),
+                row("LTM", RoutingMessage.SettlType.CASH, 24.9, 25.3, 24.7, -2.0, 40, 996),
+                row("LTM", RoutingMessage.SettlType.NEXT_DAY, 25.1, 25.4, 24.9, 0.5, 10, 251),
+                row("CHILE", 190.0, 191.0, 189.0, 1.0, 50, 9_500));
+
+        List<MarketDataMessage.RankinSymbol> national = CandleProtoMarketPublisher.aggregateNationalRows(rows);
+        assertEquals(2, national.size());
+
+        MarketDataMessage.RankinSymbol ltm = national.stream()
+                .filter(row -> row.getSymbol().equals("LTM"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals(150.0, ltm.getVolumen(), 0.0);
+        assertEquals(3_747.0, ltm.getMonto(), 0.0);
+        assertEquals(25.0, ltm.getPrecioUltimo(), 0.0, "T2 debe ser la referencia de precio");
+        assertEquals(-1.2, ltm.getVariacionPct(), 0.0, "T2 debe ser la referencia de variacion");
+        assertEquals(25.4, ltm.getPrecioMaximo(), 0.0);
+        assertEquals(24.7, ltm.getPrecioMinimo(), 0.0);
+
+        MarketDataMessage.BolsaStats stats = build(rows, 4, 20);
+        assertEquals(2, stats.getMasTranzadoCount());
+        assertEquals(200.0, stats.getTotalVolumen(), 0.0);
+        assertEquals(13_247.0, stats.getMontoTotal(), 0.0);
+    }
 
     @Test
     void rankingsSinDuplicadosYRespetanTopN() {

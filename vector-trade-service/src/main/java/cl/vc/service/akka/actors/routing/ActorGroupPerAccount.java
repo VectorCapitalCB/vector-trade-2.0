@@ -17,6 +17,8 @@ import cl.vc.service.util.CalculatePosition;
 import cl.vc.service.util.CalculoCreasys;
 import cl.vc.service.util.LogicaPosition;
 import cl.vc.service.util.MongoHistoryRepository;
+import cl.vc.service.util.OrigClOrdIdRecoverySupport;
+import cl.vc.service.util.OrderStateSupport;
 import cl.vc.service.util.ProtoDateProcessor;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -45,6 +47,8 @@ public class ActorGroupPerAccount extends AbstractActor {
     private final Map<String, RoutingMessage.Order> exceIdProcess = new HashMap<>();
     private final HashMap<String, ActorRef> actorSession = new HashMap<>();
     private final HashMap<String, ActorRef> strategyActors = new HashMap<>();
+    private final Map<String, Integer> missingOrigClOrdIdRejects = new HashMap<>();
+    private final Set<String> externallyUnavailableOrderIds = new HashSet<>();
     private final String account;
     private final HashMap<String, BlotterMessage.Simultaneas> simultaneasHashMap = new HashMap<>();
     private final BlotterMessage.Balance.Builder balance = BlotterMessage.Balance.newBuilder();
@@ -122,6 +126,8 @@ public class ActorGroupPerAccount extends AbstractActor {
                 .match(RoutingMessage.OrderCancelRequest.class, this::onCancelRequest)
                 .match(RoutingMessage.Order.class, this::onOrders)
                 .match(BlotterMessage.Position.class, this::onPositions)
+                .match(ActorStrategy.ExternalOrderUnavailable.class, this::onExternalOrderUnavailable)
+                .match(ActorStrategy.StrategyStatusReason.class, this::onStrategyStatusReason)
                 .match(RoutingMessage.OrderCancelReject.class, this::onRejected)
                 .match(BlotterMessage.Simultaneas.class, this::onSimultaneas)
                 .match(RefreshManualSimultaneas.class, this::onRefreshManualSimultaneas)
@@ -196,10 +202,106 @@ public class ActorGroupPerAccount extends AbstractActor {
         try {
             if (msg.isRecalculate() && requiereCreasys) {
                 calculatePatrimonio();
+            } else {
+                publishManualSaldoWithoutSql();
             }
         } catch (Exception e) {
             log.error("Error refrescando saldo manual para cuenta {}", account, e);
         }
+    }
+
+    private void publishManualSaldoWithoutSql() {
+        ManualSaldoOverride override = MainApp.getManualSaldoOverride(account);
+        double cajaValue = override != null ? override.getCaja() : 0d;
+        double transitoriasValue = override != null ? override.getCuentaTransitorias() : 0d;
+        double garantiaValue = override != null ? override.getGarantiaEfectivo() : 0d;
+
+        BlotterMessage.ValuesPatrimonio.Builder caja = patrimonio.hasCaja()
+                ? patrimonio.getCaja().toBuilder()
+                : BlotterMessage.ValuesPatrimonio.newBuilder().setDescription("Cajas");
+        BlotterMessage.ValuesPatrimonio.Builder transitorias = patrimonio.hasCuentaTransitoriasPorCobrarPagar()
+                ? patrimonio.getCuentaTransitoriasPorCobrarPagar().toBuilder()
+                : BlotterMessage.ValuesPatrimonio.newBuilder().setDescription("Cuentas transitorias por cobrar/pagar");
+        BlotterMessage.ValuesPatrimonio.Builder garantia = patrimonio.hasGarantiaEfectivo()
+                ? patrimonio.getGarantiaEfectivo().toBuilder()
+                : BlotterMessage.ValuesPatrimonio.newBuilder().setDescription("Garantias en efectivo");
+
+        caja.setValues(cajaValue);
+        transitorias.setValues(transitoriasValue);
+        garantia.setValues(garantiaValue);
+
+        double liquidezValue = cajaValue + transitoriasValue + garantiaValue;
+        double rentaVariableValue = patrimonio.hasRentaVariable()
+                ? patrimonio.getRentaVariable().getValues()
+                : 0d;
+        double activosValue = liquidezValue + rentaVariableValue;
+
+        BlotterMessage.ValuesPatrimonio.Builder liquidez = patrimonio.hasLiquidez()
+                ? patrimonio.getLiquidez().toBuilder()
+                : BlotterMessage.ValuesPatrimonio.newBuilder().setDescription("LIQUIDEZ");
+        liquidez.setValues(liquidezValue);
+
+        BlotterMessage.ValuesPatrimonio.Builder activos = patrimonio.hasActivos()
+                ? patrimonio.getActivos().toBuilder()
+                : BlotterMessage.ValuesPatrimonio.newBuilder().setDescription("Activos");
+        activos.setValues(activosValue).setPorcentage(activosValue == 0d ? 0d : 100d);
+
+        caja.setPorcentage(safePercentage(cajaValue, activosValue));
+        transitorias.setPorcentage(safePercentage(transitoriasValue, activosValue));
+        garantia.setPorcentage(safePercentage(garantiaValue, activosValue));
+        liquidez.setPorcentage(safePercentage(liquidezValue, activosValue));
+
+        patrimonio.setCuenta(account)
+                .setCurrency(RoutingMessage.Currency.CLP)
+                .setCaja(caja)
+                .setCuentaTransitoriasPorCobrarPagar(transitorias)
+                .setGarantiaEfectivo(garantia)
+                .setLiquidez(liquidez)
+                .setActivos(activos);
+
+        ProtoDateProcessor.setDateProcesorIfMissing(balance);
+        double carteraActual = balance.getCartera();
+        double leverage = palanca != null && palanca > 0d ? palanca : 3d;
+        marginaccount = marginLimit != null && marginLimit == -1d
+                ? marginLimit
+                : activosValue * leverage - carteraActual;
+        balance.setCuenta(account)
+                .setCupo(marginaccount)
+                .setSaldoDisponible(Math.max(0d, marginaccount));
+
+        if (override != null) {
+            applyManualSaldoOverrideToBalance();
+        } else {
+            clearManualSaldoFieldsFromBalance();
+        }
+
+        rebuildLogicaPosition("MANUAL_SALDO");
+        BlotterMessage.Patrimonio patrimonioMessage = patrimonio.build();
+        BlotterMessage.Balance balanceMessage = balance.build();
+        actorSession.values().forEach(session -> {
+            session.tell(patrimonioMessage, ActorRef.noSender());
+            session.tell(balanceMessage, ActorRef.noSender());
+        });
+        persistPatrimonio(patrimonioMessage);
+        persistBalance(balanceMessage);
+        log.info("[ManualSaldo] cuenta={} sql=false override={} caja={} activos={} saldoDisponible={} sesiones={}",
+                account, override != null, cajaValue, activosValue, balanceMessage.getSaldoDisponible(), actorSession.size());
+    }
+
+    private void clearManualSaldoFieldsFromBalance() {
+        balance.setGarantiasConstituidas(0d)
+                .setGarantiasExigidas(0d)
+                .setGarantiasReservadas(0d)
+                .setLimiteFinanciero(0d)
+                .setGarantiasDisponible(0d)
+                .setOrdenesActivasCompras(0d)
+                .setOrdenesActivasVentas(0d)
+                .setOrdenesCalzadasCompras(0d)
+                .setOrdenesCalzadasVentas(0d)
+                .setOrdenesCestaCompras(0d)
+                .setOrdenesCestaVentas(0d)
+                .setRendimiento(0d)
+                .setTotal(0d);
     }
 
     public void calculatePatrimonio() {
@@ -871,9 +973,16 @@ public class ActorGroupPerAccount extends AbstractActor {
 
     public void onCancelRequest(RoutingMessage.OrderCancelRequest msg) {
         try {
-
-
             RoutingMessage.Order orderRequest = ordersMap.get(msg.getId());
+            if (isExternallyUnavailable(msg.getId(), orderRequest)) {
+                publishRecoveryReject(msg.getId());
+                return;
+            }
+
+            if (orderRequest == null) {
+                log.warn("Cancel sin orden base en actor cuenta: {} id: {}", account, msg.getId());
+                return;
+            }
 
             if (orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BEST) ||
                     orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.HOLGURA) ||
@@ -905,6 +1014,10 @@ public class ActorGroupPerAccount extends AbstractActor {
             RoutingMessage.Order order = ordersMap.get(msg.getId());
             if (order == null) {
                 log.warn("Replace sin orden base en actor cuenta: {} id: {}", account, msg.getId());
+                return;
+            }
+            if (isExternallyUnavailable(msg.getId(), order)) {
+                publishRecoveryReject(msg.getId());
                 return;
             }
 
@@ -1112,9 +1225,96 @@ public class ActorGroupPerAccount extends AbstractActor {
     }
 
     private void onRejected(RoutingMessage.OrderCancelReject rejected) {
+        RoutingMessage.OrderCancelReject operatorReject = rejected;
+        if (OrigClOrdIdRecoverySupport.isMissingFromSequence(rejected.getText())) {
+            RoutingMessage.Order rejectedOrder = ordersMap.get(rejected.getId());
+            if (rejectedOrder != null && isStrategyManagedByActor(rejectedOrder.getStrategyOrder())) {
+                return;
+            }
 
+            int attempts = missingOrigClOrdIdRejects.merge(rejected.getId(), 1, Integer::sum);
+            operatorReject = OrigClOrdIdRecoverySupport.withOperatorReason(rejected);
+            log.warn("[OrderRecovery][ORIG_CL_ORD_ID_MISSING] account={} orderId={} attempt={}/{} exchangeReason={}",
+                    account, rejected.getId(), attempts, OrigClOrdIdRecoverySupport.MAX_REJECTS,
+                    rejected.getText());
+
+            if (attempts >= OrigClOrdIdRecoverySupport.MAX_REJECTS) {
+                markExternalOrderUnavailable(rejected.getId());
+            }
+        }
+
+        RoutingMessage.OrderCancelReject finalReject = operatorReject;
+        actorSession.forEach((key, value) -> value.tell(finalReject, ActorRef.noSender()));
+    }
+
+    private void onExternalOrderUnavailable(ActorStrategy.ExternalOrderUnavailable unavailable) {
+        markExternalOrderUnavailable(unavailable.getOrderId());
+        actorSession.forEach((key, value) -> value.tell(unavailable.getRejected(), ActorRef.noSender()));
+    }
+
+    private void onStrategyStatusReason(ActorStrategy.StrategyStatusReason status) {
+        RoutingMessage.Order current = ordersMap.get(status.getOrderId());
+        if (current == null || OrderStateSupport.isConclusiveStrategyTerminal(current)
+                || isExternallyUnavailable(status.getOrderId(), current)) {
+            return;
+        }
+
+        RoutingMessage.Order updated = current.toBuilder().setText(status.getReason()).build();
+        ordersMap.put(updated.getId(), updated);
+        MainApp.getIdOrders().put(updated.getId(), updated);
+        actorSession.forEach((key, value) -> value.tell(updated, ActorRef.noSender()));
+        persistOrdersAfterRecoveryMark();
+        log.info("[StrategyRecovery][STATUS_REASON] account={} orderId={} strategy={} reason={}",
+                account, updated.getId(), updated.getStrategyOrder(), status.getReason());
+    }
+
+    private boolean isExternallyUnavailable(String orderId, RoutingMessage.Order order) {
+        return externallyUnavailableOrderIds.contains(orderId)
+                || OrigClOrdIdRecoverySupport.isMarked(order);
+    }
+
+    private void publishRecoveryReject(String orderId) {
+        RoutingMessage.OrderCancelReject rejected = RoutingMessage.OrderCancelReject.newBuilder()
+                .setId(orderId)
+                .setExecId(IDGenerator.getID())
+                .setText(OrigClOrdIdRecoverySupport.POSSIBLE_FILLED_OR_CANCEL_REASON)
+                .build();
         actorSession.forEach((key, value) -> value.tell(rejected, ActorRef.noSender()));
+        log.warn("[OrderRecovery][REQUEST_BLOCKED] account={} orderId={} reason={}",
+                account, orderId, rejected.getText());
+    }
 
+    private void markExternalOrderUnavailable(String orderId) {
+        externallyUnavailableOrderIds.add(orderId);
+        missingOrigClOrdIdRejects.remove(orderId);
+
+        ActorRef strategyActor = strategyActors.remove(orderId);
+        if (strategyActor != null) {
+            getContext().stop(strategyActor);
+        }
+
+        RoutingMessage.Order current = ordersMap.get(orderId);
+        if (current != null) {
+            RoutingMessage.Order marked = current.toBuilder()
+                    .setText(OrigClOrdIdRecoverySupport.POSSIBLE_FILLED_OR_CANCEL_REASON)
+                    .build();
+            ordersMap.put(orderId, marked);
+            MainApp.getIdOrders().put(orderId, marked);
+            persistOrdersAfterRecoveryMark();
+        }
+
+        log.error("[OrderRecovery][BLOCKED_AFTER_RETRIES] account={} orderId={} attempts={} reason={}",
+                account, orderId, OrigClOrdIdRecoverySupport.MAX_REJECTS,
+                OrigClOrdIdRecoverySupport.POSSIBLE_FILLED_OR_CANCEL_REASON);
+    }
+
+    private void persistOrdersAfterRecoveryMark() {
+        HashMap<String, RoutingMessage.Order> ordersSnapshot = new HashMap<>(ordersMap);
+        MainApp.submitRedisWrite(account, () -> {
+            if (MainApp.getOrdersMapRedis() != null) {
+                MainApp.getOrdersMapRedis().put(account, ordersSnapshot);
+            }
+        });
     }
 
     /**
@@ -1176,6 +1376,7 @@ public class ActorGroupPerAccount extends AbstractActor {
             } else {
 
                 RoutingMessage.Order orderold = ordersMap.get(incomingOrder.getId());
+                incomingOrder = preserveKnownOrderQuantity(orderold, incomingOrder);
                 boolean tradeExecution = incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE);
                 String tradeExecutionKey = tradeExecution ? tradeExecutionKey(incomingOrder) : "";
                 boolean duplicateExecId = tradeExecution && exceIdProcess.containsKey(tradeExecutionKey);
@@ -1207,8 +1408,19 @@ public class ActorGroupPerAccount extends AbstractActor {
                 }
 
                 RoutingMessage.Order order = preserveFinalStateForLateTrade(orderold, incomingOrder);
+                boolean terminalOrder = OrderStateSupport.isConclusiveStrategyTerminal(order);
+                if (terminalOrder) {
+                    externallyUnavailableOrderIds.remove(order.getId());
+                    missingOrigClOrdIdRejects.remove(order.getId());
+                } else if (isExternallyUnavailable(order.getId(), orderold)) {
+                    order = order.toBuilder()
+                            .setText(OrigClOrdIdRecoverySupport.POSSIBLE_FILLED_OR_CANCEL_REASON)
+                            .build();
+                }
 
-                actorSession.forEach((key, value) -> value.tell(order, ActorRef.noSender()));
+                for (ActorRef sessionActor : actorSession.values()) {
+                    sessionActor.tell(order, ActorRef.noSender());
+                }
 
                 if (tradeExecution) {
                     logIntradayTradeIn(order, orderold, duplicateExecId);
@@ -1221,13 +1433,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                     forceBookRefresh(order);
                 }
 
-                if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)
-                        || order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)
-                        || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED)) {
-
-                    // Historico multi-dia: solo el estado terminal. Encola, no toca la red.
-                    MongoHistoryRepository.recordOrderTerminal(order);
-
+                if (terminalOrder) {
                     if (strategyActors.containsKey(order.getId()) && !order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.VWAP)) {
                         strategyActors.get(order.getId()).tell(PoisonPill.getInstance(), ActorRef.noSender());
                         strategyActors.remove(order.getId());
@@ -1240,7 +1446,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                     tradesMap.put(tradeExecutionKey, order);
                     MainApp.getTradesMapAll().put(account, tradesMap);
 
-                    MongoHistoryRepository.recordExecution(order);
+                    MongoHistoryRepository.recordFilledOrder(order);
 
 
                     // Copia defensiva: el writer serializa en otro hilo mientras el actor sigue mutando tradesMap.
@@ -1442,6 +1648,9 @@ public class ActorGroupPerAccount extends AbstractActor {
             } else if (restoredFromRedisState) {
                 ensureLogicaPosition("INITIALIZE_RESTORE");
             }
+            if (!requiereCreasys && MainApp.hasManualSaldoOverride(account)) {
+                publishManualSaldoWithoutSql();
+            }
             getSender().tell(Initialized.INSTANCE, getSelf());
 
         } catch (Exception e) {
@@ -1632,21 +1841,27 @@ public class ActorGroupPerAccount extends AbstractActor {
                     return;
                 }
 
-                restoredToday.put(key1, value1);
+                RoutingMessage.Order restoredOrderValue = normalizeInconsistentFilledState(value1);
+                restoredToday.put(key1, restoredOrderValue);
 
-                if (isStrategyManagedByActor(value1.getStrategyOrder())) {
+                boolean recoveryBlocked = OrigClOrdIdRecoverySupport.isMarked(restoredOrderValue);
+                if (recoveryBlocked) {
+                    externallyUnavailableOrderIds.add(restoredOrderValue.getId());
+                }
 
-                    if (!isFinalStatus(value1.getOrdStatus())) {
+                if (isStrategyManagedByActor(restoredOrderValue.getStrategyOrder())) {
 
-                        ActorRef actorRef = MainApp.getSystem().actorOf(ActorStrategy.props(value1, getSelf(), strategyActors));
-                        strategyActors.put(value1.getId(), actorRef);
+                    if (!isConclusiveFinalState(restoredOrderValue) && !recoveryBlocked) {
+
+                        ActorRef actorRef = MainApp.getSystem().actorOf(ActorStrategy.props(restoredOrderValue, getSelf(), strategyActors));
+                        strategyActors.put(restoredOrderValue.getId(), actorRef);
                     }
                 }
 
-                actorSession.forEach((key, value) -> value.tell(value1, ActorRef.noSender()));
+                actorSession.forEach((key, value) -> value.tell(restoredOrderValue, ActorRef.noSender()));
 
-                MainApp.getIdOrders().put(key1, value1);
-                MainApp.getMessageEventBus().subscribe(getSelf(), value1.getId());
+                MainApp.getIdOrders().put(key1, restoredOrderValue);
+                MainApp.getMessageEventBus().subscribe(getSelf(), restoredOrderValue.getId());
 
             });
 
@@ -1684,6 +1899,11 @@ public class ActorGroupPerAccount extends AbstractActor {
                         && value1.getExecId() != null
                         && !value1.getExecId().isBlank()) {
                     exceIdProcess.put(restoredKey, value1);
+                }
+                if (tradeExecution) {
+                    // Recupera en Mongo los fills intradia conservados en Redis. Los indices unicos
+                    // hacen que sea seguro repetirlo en cada reinicio.
+                    MongoHistoryRepository.recordFilledOrder(value1);
                 }
                 actorSession.forEach((key2, value) -> value.tell(value1, ActorRef.noSender()));
             });
@@ -1803,20 +2023,8 @@ public class ActorGroupPerAccount extends AbstractActor {
         ).contains(strategyOrder);
     }
 
-    private boolean isFinalStatus(RoutingMessage.OrderStatus status) {
-        return status == RoutingMessage.OrderStatus.CANCELED
-                || status == RoutingMessage.OrderStatus.FILLED
-                || status == RoutingMessage.OrderStatus.REJECTED
-                || status == RoutingMessage.OrderStatus.STOPPED
-                || status == RoutingMessage.OrderStatus.DONE_FOR_DAY;
-    }
-
     private RoutingMessage.Order normalizeInconsistentFilledState(RoutingMessage.Order order) {
-        if (order == null
-                || order.getOrdStatus() != RoutingMessage.OrderStatus.FILLED
-                || order.getOrderQty() <= 0d
-                || order.getCumQty() >= order.getOrderQty()
-                || order.getLeaves() <= 0d) {
+        if (!OrderStateSupport.isInconsistentFilled(order)) {
             return order;
         }
 
@@ -1829,19 +2037,11 @@ public class ActorGroupPerAccount extends AbstractActor {
                 order.getCumQty(),
                 order.getLeaves());
 
-        return order.toBuilder()
-                .setOrdStatus(RoutingMessage.OrderStatus.PARTIALLY_FILLED)
-                .build();
+        return OrderStateSupport.normalizeInconsistentFilled(order);
     }
 
     private boolean isConclusiveFinalState(RoutingMessage.Order order) {
-        if (order == null || !isFinalStatus(order.getOrdStatus())) {
-            return false;
-        }
-        if (order.getOrdStatus() != RoutingMessage.OrderStatus.FILLED || order.getOrderQty() <= 0d) {
-            return true;
-        }
-        return order.getCumQty() >= order.getOrderQty() || order.getLeaves() <= 0d;
+        return OrderStateSupport.isConclusiveFinalState(order);
     }
 
     private boolean isRealTradeEvent(RoutingMessage.Order order, RoutingMessage.Order previous) {
@@ -1890,6 +2090,15 @@ public class ActorGroupPerAccount extends AbstractActor {
             merged.setLeaves(previous.getLeaves());
         }
         return merged.build();
+    }
+
+    private RoutingMessage.Order preserveKnownOrderQuantity(RoutingMessage.Order previous,
+                                                              RoutingMessage.Order incoming) {
+        if (previous == null || incoming == null
+                || incoming.getOrderQty() > 0d || previous.getOrderQty() <= 0d) {
+            return incoming;
+        }
+        return incoming.toBuilder().setOrderQty(previous.getOrderQty()).build();
     }
 
     private void publishIntradayPositionState() {
@@ -1983,7 +2192,7 @@ public class ActorGroupPerAccount extends AbstractActor {
         return ordersMap.values().stream()
                 .filter(Objects::nonNull)
                 .filter(existing -> !Objects.equals(existing.getId(), incoming.getId()))
-                .filter(existing -> !isFinalStatus(existing.getOrdStatus()))
+                .filter(existing -> !isConclusiveFinalState(existing))
                 .filter(existing -> isOppositeOdSide(existing.getSide(), incoming.getSide()))
                 .filter(existing -> wouldCrossOwnOrder(incoming, existing))
                 .filter(existing -> incomingAccount.equals(normalizeOdValue(existing.getAccount())))

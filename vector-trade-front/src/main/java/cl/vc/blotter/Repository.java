@@ -6,6 +6,7 @@ import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import cl.vc.blotter.controller.*;
 import cl.vc.blotter.model.BookVO;
+import cl.vc.blotter.model.HistoricalCandle;
 import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
@@ -20,12 +21,12 @@ import javafx.beans.property.SimpleBooleanProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.scene.Scene;
-import javafx.scene.media.MediaPlayer;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import java.text.DecimalFormat;
+import java.text.NumberFormat;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.util.*;
@@ -42,6 +43,10 @@ public class Repository {
     @Getter
     @Setter
     private static StadisticsController statsController;
+
+    @Getter
+    @Setter
+    private static HistoricalOrdersController historicalOrdersController;
 
     private static volatile ColumnConfig columnConfig;
 
@@ -102,15 +107,126 @@ public class Repository {
      * llegado 75 ms antes, y la columna Tendencia quedaba casi vacia.
      */
     private static final java.util.Map<String, double[]> seriesIntradia = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final javafx.beans.property.ReadOnlyIntegerWrapper seriesIntradiaVersion =
+            new javafx.beans.property.ReadOnlyIntegerWrapper(0);
+    private static final Map<String, List<HistoricalCandle>> closePriceHistory =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Set<String> closePriceHistoryResponses =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final javafx.beans.property.ReadOnlyIntegerWrapper closePriceHistoryVersion =
+            new javafx.beans.property.ReadOnlyIntegerWrapper(0);
+    private static final Map<String, List<cl.vc.blotter.model.TradeCandle>> tradeCandles =
+            new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Set<String> tradeCandleResponses =
+            java.util.concurrent.ConcurrentHashMap.newKeySet();
+    private static final javafx.beans.property.ReadOnlyIntegerWrapper tradeCandlesVersion =
+            new javafx.beans.property.ReadOnlyIntegerWrapper(0);
+    private static final javafx.beans.property.ReadOnlyStringWrapper candleRequestError =
+            new javafx.beans.property.ReadOnlyStringWrapper("");
 
     public static void setSeriesIntradia(java.util.Map<String, double[]> series) {
-        if (series != null) {
+        if (series != null && !series.isEmpty()) {
             seriesIntradia.putAll(series);
+            seriesIntradiaVersion.set(seriesIntradiaVersion.get() + 1);
         }
+    }
+
+    public static javafx.beans.property.ReadOnlyIntegerProperty seriesIntradiaVersionProperty() {
+        return seriesIntradiaVersion.getReadOnlyProperty();
     }
 
     public static double[] getSerieIntradia(String topic) {
         return (topic == null) ? null : seriesIntradia.get(topic);
+    }
+
+    /** Elimina snapshots antiguos cuando Candle confirma que hoy no hay trades. */
+    public static void clearSeriesIntradia(java.util.Collection<String> symbols) {
+        if (symbols == null || symbols.isEmpty()) return;
+        boolean removed = seriesIntradia.keySet().removeIf(topic -> symbols.stream()
+                .filter(java.util.Objects::nonNull)
+                .map(String::trim)
+                .filter(symbol -> !symbol.isEmpty())
+                .anyMatch(symbol -> java.util.Arrays.stream(MarketDataMessage.SecurityExchangeMarketData.values())
+                        .anyMatch(exchange -> topic.startsWith(symbol + exchange.name()))));
+        if (removed) {
+            seriesIntradiaVersion.set(seriesIntradiaVersion.get() + 1);
+        }
+    }
+
+    public static void setClosePriceHistory(String symbol, List<HistoricalCandle> candles) {
+        if (symbol == null || symbol.isBlank()) {
+            return;
+        }
+        String normalized = symbol.trim().toUpperCase(Locale.ROOT);
+        closePriceHistory.put(normalized,
+                candles == null ? List.of() : List.copyOf(candles));
+        closePriceHistoryResponses.add(normalized);
+        candleRequestError.set("");
+        closePriceHistoryVersion.set(closePriceHistoryVersion.get() + 1);
+    }
+
+    public static List<HistoricalCandle> getClosePriceHistory(String symbol) {
+        if (symbol == null || symbol.isBlank()) {
+            return List.of();
+        }
+        return closePriceHistory.getOrDefault(symbol.trim().toUpperCase(Locale.ROOT), List.of());
+    }
+
+    public static Set<String> getClosePriceHistorySymbols() {
+        return Set.copyOf(closePriceHistory.keySet());
+    }
+
+    public static boolean hasClosePriceHistoryResponse(String symbol) {
+        return symbol != null && closePriceHistoryResponses.contains(symbol.trim().toUpperCase(Locale.ROOT));
+    }
+
+    public static javafx.beans.property.ReadOnlyIntegerProperty closePriceHistoryVersionProperty() {
+        return closePriceHistoryVersion.getReadOnlyProperty();
+    }
+
+    public static void setTradeCandles(String symbol, int bucketMinutes,
+                                       List<cl.vc.blotter.model.TradeCandle> candles) {
+        if (symbol == null || symbol.isBlank() || bucketMinutes <= 0) {
+            return;
+        }
+        String key = tradeCandleKey(symbol, bucketMinutes);
+        tradeCandles.put(key,
+                candles == null ? List.of() : List.copyOf(candles));
+        tradeCandleResponses.add(key);
+        candleRequestError.set("");
+        tradeCandlesVersion.set(tradeCandlesVersion.get() + 1);
+    }
+
+    public static List<cl.vc.blotter.model.TradeCandle> getTradeCandles(String symbol, int bucketMinutes) {
+        if (symbol == null || symbol.isBlank() || bucketMinutes <= 0) {
+            return List.of();
+        }
+        return tradeCandles.getOrDefault(tradeCandleKey(symbol, bucketMinutes), List.of());
+    }
+
+    public static javafx.beans.property.ReadOnlyIntegerProperty tradeCandlesVersionProperty() {
+        return tradeCandlesVersion.getReadOnlyProperty();
+    }
+
+    public static boolean hasTradeCandlesResponse(String symbol, int bucketMinutes) {
+        return symbol != null && bucketMinutes > 0
+                && tradeCandleResponses.contains(tradeCandleKey(symbol, bucketMinutes));
+    }
+
+    public static void setCandleRequestError(String message) {
+        candleRequestError.set(message == null ? "" : message.trim());
+    }
+
+    public static String getCandleRequestError() {
+        return candleRequestError.get();
+    }
+
+    public static javafx.beans.property.ReadOnlyStringProperty candleRequestErrorProperty() {
+        return candleRequestError.getReadOnlyProperty();
+    }
+
+    private static String tradeCandleKey(String symbol, int bucketMinutes) {
+        return symbol.trim().toUpperCase(Locale.ROOT) + "|" + bucketMinutes;
     }
 
     /** Estados en los que una orden sigue viva en el mercado y por lo tanto aparece en el libro. */
@@ -120,35 +236,154 @@ public class Repository {
             RoutingMessage.OrderStatus.LIVE,
             RoutingMessage.OrderStatus.PENDING_LIVE,
             RoutingMessage.OrderStatus.PENDING_NEW,
+            RoutingMessage.OrderStatus.PENDING_CANCEL,
             RoutingMessage.OrderStatus.PENDING_REPLACE,
             RoutingMessage.OrderStatus.REPLACED);
+
+    private record LiveOrderSide(String symbol, RoutingMessage.Side side,
+                                 RoutingMessage.SecurityExchangeRouting exchange,
+                                 RoutingMessage.SettlType settlType) {
+    }
+
+    private static final Map<String, RoutingMessage.Order> liveOrdersById = new HashMap<>();
+    private static volatile Map<LiveOrderSide, List<Double>> liveOrderPrices = Map.of();
+
+    public static synchronized void updateLiveOrderLevel(RoutingMessage.Order order) {
+        if (order == null || order.getId() == null || order.getId().isBlank()) {
+            return;
+        }
+        if (ESTADOS_VIVOS.contains(order.getOrdStatus())) {
+            liveOrdersById.put(order.getId(), order);
+        } else {
+            liveOrdersById.remove(order.getId());
+        }
+        rebuildLiveOrderIndex();
+    }
+
+    public static synchronized void clearLiveOrderLevels() {
+        liveOrdersById.clear();
+        liveOrderPrices = Map.of();
+    }
+
+    private static void rebuildLiveOrderIndex() {
+        Map<LiveOrderSide, List<Double>> next = new HashMap<>();
+        for (RoutingMessage.Order order : liveOrdersById.values()) {
+            if (order.getSymbol() == null || order.getSymbol().isBlank()
+                    || order.getSide() == null || order.getPrice() <= 0d) {
+                continue;
+            }
+            LiveOrderSide key = new LiveOrderSide(
+                    order.getSymbol().trim().toUpperCase(Locale.ROOT),
+                    order.getSide(), order.getSecurityExchange(), order.getSettlType());
+            next.computeIfAbsent(key, ignored -> new ArrayList<>()).add(order.getPrice());
+        }
+        Map<LiveOrderSide, List<Double>> immutable = new HashMap<>();
+        next.forEach((key, prices) -> immutable.put(key, List.copyOf(prices)));
+        liveOrderPrices = Map.copyOf(immutable);
+    }
 
     /**
      * true si el usuario tiene una orden VIVA en ese simbolo, lado y precio; es decir, si
      * ese nivel del libro es suyo.
      *
-     * Se cruza contra las ordenes propias en vez de mirar el 'account' que publica el
+     * Se cruza contra un indice de ordenes propias en vez de mirar el 'account' que publica el
      * mercado: ese campo identifica la cuenta, no la orden, asi que marca por igual
      * cualquier orden de tus cuentas venga de donde venga, y no todos los mercados lo
      * publican. El precio se compara con tolerancia porque viene como double desde dos
-     * fuentes distintas (el libro y el ack de ruteo) y la igualdad exacta falla.
+     * fuentes distintas (el libro y el ack de ruteo) y la igualdad exacta falla. El indice
+     * evita recorrer la tabla de ordenes por cada celda del multibook.
      */
     public static boolean tieneOrdenVivaEn(String symbol, RoutingMessage.Side side, double precio) {
-        if (symbol == null || side == null || precio <= 0d) return false;
-        try {
-            var tabla = getRoutingController() == null ? null
-                    : getRoutingController().getWorkingOrderController();
-            if (tabla == null || tabla.getTableExecutionReports() == null) return false;
+        return tieneOrdenVivaEn(symbol, side, precio, null, null);
+    }
 
-            for (RoutingMessage.Order orden : tabla.getTableExecutionReports().getItems()) {
-                if (orden == null) continue;
-                if (!symbol.equals(orden.getSymbol())) continue;
-                if (orden.getSide() != side) continue;
-                if (!ESTADOS_VIVOS.contains(orden.getOrdStatus())) continue;
-                if (Math.abs(orden.getPrice() - precio) < 0.0001d) return true;
+    public static boolean tieneOrdenVivaEn(String symbol, RoutingMessage.Side side, double precio,
+                                            RoutingMessage.SecurityExchangeRouting exchange,
+                                            RoutingMessage.SettlType settlType) {
+        if (symbol == null || side == null || precio <= 0d) return false;
+        String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
+        boolean exactExchange = exchange != null
+                && exchange != RoutingMessage.SecurityExchangeRouting.UNRECOGNIZED;
+        boolean exactSettlement = settlType != null
+                && settlType != RoutingMessage.SettlType.UNRECOGNIZED;
+        if (exactExchange && exactSettlement) {
+            List<Double> prices = liveOrderPrices.get(
+                    new LiveOrderSide(normalizedSymbol, side, exchange, settlType));
+            return containsPrice(prices, precio);
+        }
+        for (Map.Entry<LiveOrderSide, List<Double>> entry : liveOrderPrices.entrySet()) {
+            LiveOrderSide key = entry.getKey();
+            if (!normalizedSymbol.equals(key.symbol()) || side != key.side()) continue;
+            if (exactExchange && exchange != key.exchange()) continue;
+            if (exactSettlement && settlType != key.settlType()) continue;
+            if (containsPrice(entry.getValue(), precio)) return true;
+        }
+        return false;
+    }
+
+    /**
+     * Coincidencia de una postura desagrupada. En este modo puede haber varias filas con el
+     * mismo precio, por lo que el nivel por si solo no identifica cual pertenece al usuario.
+     */
+    public static synchronized boolean tienePosturaVivaEn(
+            String symbol,
+            RoutingMessage.Side side,
+            double precio,
+            double cantidad,
+            String account,
+            String operator,
+            RoutingMessage.SecurityExchangeRouting exchange,
+            RoutingMessage.SettlType settlType) {
+        if (symbol == null || side == null || precio <= 0d) return false;
+
+        String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
+        String normalizedAccount = normalizeLiveOrderText(account);
+        String normalizedOperator = normalizeLiveOrderText(operator);
+
+        for (RoutingMessage.Order order : liveOrdersById.values()) {
+            if (!normalizedSymbol.equals(normalizeLiveOrderText(order.getSymbol()))
+                    || side != order.getSide()
+                    || Math.abs(order.getPrice() - precio) >= 0.0001d) {
+                continue;
             }
-        } catch (Exception ignore) {
-            // La tabla puede no existir todavia durante el arranque.
+            if (exchange != null
+                    && exchange != RoutingMessage.SecurityExchangeRouting.UNRECOGNIZED
+                    && exchange != order.getSecurityExchange()) {
+                continue;
+            }
+            if (settlType != null
+                    && settlType != RoutingMessage.SettlType.UNRECOGNIZED
+                    && settlType != order.getSettlType()) {
+                continue;
+            }
+
+            if (!normalizedAccount.isEmpty()
+                    && normalizedAccount.equals(normalizeLiveOrderText(order.getAccount()))) {
+                return true;
+            }
+            if (!normalizedOperator.isEmpty()
+                    && normalizedOperator.equals(normalizeLiveOrderText(order.getOperator()))) {
+                return true;
+            }
+
+            double pending = order.getLeaves() > 0d
+                    ? order.getLeaves()
+                    : Math.max(0d, order.getOrderQty() - order.getCumQty());
+            if (cantidad > 0d && pending > 0d && Math.abs(pending - cantidad) < 0.000001d) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static String normalizeLiveOrderText(String value) {
+        return value == null ? "" : value.trim().toUpperCase(Locale.ROOT);
+    }
+
+    private static boolean containsPrice(List<Double> prices, double bookPrice) {
+        if (prices == null) return false;
+        for (double orderPrice : prices) {
+            if (Math.abs(orderPrice - bookPrice) < 0.0001d) return true;
         }
         return false;
     }
@@ -202,9 +437,51 @@ public class Repository {
     @Getter
     private static final ObservableList<MarketDataMessage.TradeGeneral> candleTradeGenerales = FXCollections.observableArrayList();
 
-    @Setter
     @Getter
-    private static  FooterController footerController;
+    private static FooterController footerController;
+
+    @Getter
+    private static volatile MarketDataMessage.Statistic latestDollarStatistic;
+
+    /** La huincha se registra al construirse para que Configuración pueda pedirle refrescar. */
+    private static volatile HuinchaController huinchaController;
+
+    public static HuinchaController getHuinchaController() {
+        return huinchaController;
+    }
+
+    public static void setHuinchaController(HuinchaController controller) {
+        huinchaController = controller;
+    }
+
+    public static void setFooterController(FooterController controller) {
+        footerController = controller;
+        MarketDataMessage.Statistic pendingStatistic = latestDollarStatistic;
+        if (controller != null && pendingStatistic != null) {
+            runOnFxThread(() -> controller.updateDollarStatistics(pendingStatistic));
+        }
+    }
+
+    public static void updateDollarStatistic(MarketDataMessage.Statistic statistic) {
+        if (statistic == null) {
+            return;
+        }
+        latestDollarStatistic = statistic;
+        runOnFxThread(() -> {
+            FooterController controller = footerController;
+            if (controller != null) {
+                controller.updateDollarStatistics(statistic);
+            }
+        });
+    }
+
+    private static void runOnFxThread(Runnable action) {
+        if (javafx.application.Platform.isFxApplicationThread()) {
+            action.run();
+        } else {
+            javafx.application.Platform.runLater(action);
+        }
+    }
 
     @Setter
     @Getter
@@ -232,6 +509,17 @@ public class Repository {
 
     @Getter
     private static final DecimalFormat formatter0dec = new DecimalFormat("#,##0");
+
+    public static DecimalFormat priceFormatter(int decimals) {
+        DecimalFormat formatter = (DecimalFormat) NumberFormat.getNumberInstance(Locale.US);
+        StringBuilder pattern = new StringBuilder("#,##0");
+        if (decimals > 0) {
+            pattern.append('.');
+            pattern.append("0".repeat(decimals));
+        }
+        formatter.applyPattern(pattern.toString());
+        return formatter;
+    }
 
     @Getter
     @Setter
@@ -269,9 +557,6 @@ public class Repository {
     @Getter
     @Setter
     public static String version;
-    @Getter
-    @Setter
-    private static String selectedCandleSymbol;
     @Getter
     public static List<String> groups = new ArrayList<>();
     @Setter
@@ -369,15 +654,6 @@ public class Repository {
     @Getter
     @Setter
     private static List<PositionHistoricalController> positionHistoricalControllerList = new ArrayList<>();
-    @Getter
-    @Setter
-    private static MediaPlayer mediaPlayerNew;
-    @Getter
-    @Setter
-    private static MediaPlayer mediaPlayerReject;
-    @Getter
-    @Setter
-    private static MediaPlayer mediaPlayerTrade;
     @Getter
     @Setter
     private static List<String> defaultRoutingList = new ArrayList<>();

@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.Reader;
 import java.io.Writer;
+import java.text.Normalizer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -39,6 +40,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.awt.Toolkit;
@@ -51,6 +53,7 @@ public class ChatController {
     private static final Gson GSON = new GsonBuilder().create();
     private static final DateTimeFormatter CHAT_TIMESTAMP_TODAY_FORMAT = DateTimeFormatter.ofPattern("HH:mm:ss");
     private static final DateTimeFormatter CHAT_TIMESTAMP_FULL_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    private static final long ECHO_SUPPRESSION_MILLIS = 15_000L;
     private static final Map<String, String> EMOJI_IMAGE_PATHS = new LinkedHashMap<>();
     private static final Map<String, Image> EMOJI_IMAGES = new HashMap<>();
     private static final List<String> EMOJI_TOKENS = new ArrayList<>();
@@ -109,6 +112,7 @@ public class ChatController {
     private final Set<String> unreadUsers = new LinkedHashSet<>();
     private String activeUser;
     private final Map<String, Integer> pendingEcho = new HashMap<>();
+    private final Map<String, Long> recentOutgoingEchoes = new HashMap<>();
     private String me = "yo";
     private boolean loadingState = false;
     private boolean suppressChatAlerts = false;
@@ -291,8 +295,8 @@ public class ChatController {
         Image image = getEmojiImage(emoji);
         if (image != null) {
             ImageView imageView = new ImageView(image);
-            imageView.setFitWidth(18);
-            imageView.setFitHeight(18);
+            imageView.setFitWidth(20);
+            imageView.setFitHeight(20);
             imageView.setPreserveRatio(true);
             button.setText("");
             button.setGraphic(imageView);
@@ -311,8 +315,8 @@ public class ChatController {
                 Image img = getEmojiImage(matched);
                 if (img != null) {
                     ImageView imageView = new ImageView(img);
-                    imageView.setFitWidth(16);
-                    imageView.setFitHeight(16);
+                    imageView.setFitWidth(18);
+                    imageView.setFitHeight(18);
                     imageView.setPreserveRatio(true);
                     flow.getChildren().add(imageView);
                 } else {
@@ -536,7 +540,10 @@ public class ChatController {
         ObservableList<String> conversation = conversations.get(counterpart);
         String formatted = formatMessageLine(sender, body, messageTimestamp);
         // El mismo mensaje vuelve a llegar dentro del snapshot al reconectar o al reabrir la app.
-        if (conversation.contains(formatted)) {
+        String formattedIdentity = normalizeMessageIdentity(formatted);
+        if (conversation.stream()
+                .map(ChatController::normalizeMessageIdentity)
+                .anyMatch(formattedIdentity::equals)) {
             return;
         }
 
@@ -594,26 +601,69 @@ public class ChatController {
         return "[" + timestamp + "] " + sender + ": " + body;
     }
 
-    private void registerPendingEcho(String counterpart, String body) {
-        pendingEcho.merge(echoKey(counterpart, body), 1, Integer::sum);
+    void registerPendingEcho(String counterpart, String body) {
+        long now = System.currentTimeMillis();
+        purgeExpiredEchoes(now);
+        String key = echoKey(counterpart, body);
+        pendingEcho.merge(key, 1, Integer::sum);
+        recentOutgoingEchoes.put(key, now + ECHO_SUPPRESSION_MILLIS);
     }
 
-    private boolean consumePendingEcho(String counterpart, String body) {
+    boolean consumePendingEcho(String counterpart, String body) {
+        long now = System.currentTimeMillis();
+        purgeExpiredEchoes(now);
         String key = echoKey(counterpart, body);
         Integer pending = pendingEcho.get(key);
-        if (pending == null) {
-            return false;
+        if (pending != null) {
+            if (pending <= 1) {
+                pendingEcho.remove(key);
+            } else {
+                pendingEcho.put(key, pending - 1);
+            }
+            return true;
         }
-        if (pending <= 1) {
-            pendingEcho.remove(key);
-        } else {
-            pendingEcho.put(key, pending - 1);
-        }
-        return true;
+        Long suppressUntil = recentOutgoingEchoes.get(key);
+        return suppressUntil != null && suppressUntil >= now;
     }
 
     private String echoKey(String counterpart, String body) {
-        return counterpart.toLowerCase() + "\t" + body;
+        String normalizedCounterpart = counterpart == null ? "" : counterpart.trim().toLowerCase(Locale.ROOT);
+        return normalizedCounterpart + "\t" + normalizeMessageIdentity(body);
+    }
+
+    private void purgeExpiredEchoes(long now) {
+        List<String> expiredKeys = recentOutgoingEchoes.entrySet().stream()
+                .filter(entry -> entry.getValue() < now)
+                .map(Map.Entry::getKey)
+                .toList();
+        expiredKeys.forEach(key -> {
+            recentOutgoingEchoes.remove(key);
+            pendingEcho.remove(key);
+        });
+    }
+
+    static String normalizeMessageIdentity(String value) {
+        if (value == null) {
+            return "";
+        }
+        return Normalizer.normalize(value, Normalizer.Form.NFC)
+                .replace("\uFE0E", "")
+                .replace("\uFE0F", "")
+                .trim()
+                .replaceAll("\\s+", " ");
+    }
+
+    static List<String> deduplicateConsecutiveMessages(List<String> messages) {
+        List<String> deduplicated = new ArrayList<>();
+        String previousIdentity = null;
+        for (String message : messages) {
+            String identity = normalizeMessageIdentity(message);
+            if (!identity.equals(previousIdentity)) {
+                deduplicated.add(message);
+                previousIdentity = identity;
+            }
+        }
+        return deduplicated;
     }
 
     private void scrollIfActive(String conversationUser) {
@@ -728,7 +778,7 @@ public class ChatController {
                     ObservableList<String> conv = conversations.get(user);
                     conv.clear();
                     if (entry.getValue() != null) {
-                        conv.addAll(entry.getValue());
+                        conv.addAll(deduplicateConsecutiveMessages(entry.getValue()));
                     }
                 }
             }

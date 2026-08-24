@@ -15,6 +15,10 @@ import cl.vc.module.protocolbuff.session.SessionsMessage;
 import cl.vc.service.MainApp;
 import cl.vc.service.akka.actors.strategy.*;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrigClOrdIdRecoverySupport;
+import cl.vc.service.util.OrderStateSupport;
+import cl.vc.service.util.StrategyRecoverySupport;
+import cl.vc.service.util.StrategyRecoveryState;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -28,6 +32,18 @@ public class ActorStrategy extends AbstractActor {
         static final MkdTimeoutCheck INSTANCE = new MkdTimeoutCheck();
     }
 
+    private static final class ResumeAfterRateLimit {
+        private final long generation;
+
+        private ResumeAfterRateLimit(long generation) {
+            this.generation = generation;
+        }
+    }
+
+    private static final class BlockedStrategyCheck {
+        static final BlockedStrategyCheck INSTANCE = new BlockedStrategyCheck();
+    }
+
     private static final Object lock = new Object();
     private final RoutingMessage.Order order;
     private final ActorRef actorGroupPerOrder;
@@ -37,11 +53,54 @@ public class ActorStrategy extends AbstractActor {
 
     private String idSubscribe;
     private HashMap<String, ActorRef> strategyActors;
+    private int missingOrigClOrdIdRejects;
+    private boolean limitReasonActive;
+    private long blockedSinceMillis = -1L;
+    private RoutingMessage.Order latestOrder;
+    private BookSnapshot latestSnapshot;
+    private final StrategyRecoveryState recoveryState = new StrategyRecoveryState();
+
+    public static final class StrategyStatusReason {
+        private final String orderId;
+        private final String reason;
+
+        public StrategyStatusReason(String orderId, String reason) {
+            this.orderId = orderId;
+            this.reason = reason;
+        }
+
+        public String getOrderId() {
+            return orderId;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+    }
+
+    public static final class ExternalOrderUnavailable {
+        private final String orderId;
+        private final RoutingMessage.OrderCancelReject rejected;
+
+        public ExternalOrderUnavailable(String orderId, RoutingMessage.OrderCancelReject rejected) {
+            this.orderId = orderId;
+            this.rejected = rejected;
+        }
+
+        public String getOrderId() {
+            return orderId;
+        }
+
+        public RoutingMessage.OrderCancelReject getRejected() {
+            return rejected;
+        }
+    }
 
 
     private ActorStrategy(RoutingMessage.NewOrderRequest msg, ActorRef actorGroupPerOrder, HashMap<String, ActorRef> strategyActors ) {
         this.actorGroupPerOrder = actorGroupPerOrder;
         this.order = msg.getOrder().toBuilder().setOrdStatus(RoutingMessage.OrderStatus.PENDING_NEW).build();
+        this.latestOrder = this.order;
         this. strategyActors = strategyActors;
     }
 
@@ -49,6 +108,7 @@ public class ActorStrategy extends AbstractActor {
         this.actorGroupPerOrder = actorGroupPerOrder;
         this. strategyActors = strategyActors;
         this.order = msg;
+        this.latestOrder = msg;
     }
 
 
@@ -130,6 +190,8 @@ public class ActorStrategy extends AbstractActor {
                         getContext().getDispatcher(), ActorRef.noSender());
             }
 
+            scheduleBlockedStrategyCheck();
+
         } catch (Exception e) {
             fileLog.error(e.getMessage(), e);
         }
@@ -195,6 +257,8 @@ public class ActorStrategy extends AbstractActor {
                 .match(SessionsMessage.Disconnect.class, this::onDisconect)
                 .match(SessionsMessage.Connect.class, this::onConect)
                 .match(MkdTimeoutCheck.class, this::onMkdTimeoutCheck)
+                .match(ResumeAfterRateLimit.class, this::onResumeAfterRateLimit)
+                .match(BlockedStrategyCheck.class, this::onBlockedStrategyCheck)
                 .build();
     }
 
@@ -249,27 +313,117 @@ public class ActorStrategy extends AbstractActor {
     }
 
     public void onIncrementalBook(MarketDataMessage.IncrementalBook incrementalBook) {
+        if (recoveryState.isRateLimitPaused()) {
+            latestSnapshot = MainApp.getSnapshotHashMap().get(idSubscribe);
+            return;
+        }
         strategy.onIncrementalBook(incrementalBook);
+        publishLimitReasonIfChanged(false);
     }
 
     public void onSnapshot(BookSnapshot snapshot) {
+        latestSnapshot = snapshot;
+        if (recoveryState.isRateLimitPaused()) {
+            return;
+        }
         strategy.onSnapshot(snapshot);
+        publishLimitReasonIfChanged(false);
     }
 
     public void onStatistic(MarketDataMessage.Statistic statistic) {
+        if (recoveryState.isRateLimitPaused()) {
+            latestSnapshot = MainApp.getSnapshotHashMap().get(idSubscribe);
+            return;
+        }
         strategy.onStatistic(statistic);
+        publishLimitReasonIfChanged(false);
     }
 
     private void onRejected(RoutingMessage.OrderCancelReject rejected) {
-        strategy.onRejected(rejected);
+        if (OrigClOrdIdRecoverySupport.isMissingFromSequence(rejected.getText())) {
+            missingOrigClOrdIdRejects++;
+            RoutingMessage.OrderCancelReject operatorReject =
+                    OrigClOrdIdRecoverySupport.withOperatorReason(rejected);
+
+            log.warn("[OrderRecovery][ORIG_CL_ORD_ID_MISSING] orderId={} strategy={} attempt={}/{} exchangeReason={}",
+                    order.getId(), order.getStrategyOrder(), missingOrigClOrdIdRejects,
+                    OrigClOrdIdRecoverySupport.MAX_REJECTS, rejected.getText());
+
+            if (missingOrigClOrdIdRejects >= OrigClOrdIdRecoverySupport.MAX_REJECTS) {
+                actorGroupPerOrder.tell(
+                        new ExternalOrderUnavailable(order.getId(), operatorReject),
+                        ActorRef.noSender());
+                getContext().stop(getSelf());
+                return;
+            }
+
+            strategy.onRejected(operatorReject);
+            actorGroupPerOrder.tell(operatorReject, ActorRef.noSender());
+            return;
+        }
+
+        if (StrategyRecoverySupport.isOrderRateLimit(rejected.getText())) {
+            missingOrigClOrdIdRejects = 0;
+            pauseStrategyForRateLimit(rejected);
+            actorGroupPerOrder.tell(rejected, ActorRef.noSender());
+            return;
+        }
+
+        missingOrigClOrdIdRejects = 0;
+
+        StrategyRecoveryState.RejectAction rejectAction = recoveryState.registerReject(rejectThreshold());
+        if (rejectAction == StrategyRecoveryState.RejectAction.CANCEL_REJECTED_RESUME) {
+            strategy.resumeAfterTemporaryBlock();
+            strategy.resetRejectRecovery();
+            blockedSinceMillis = -1L;
+            log.warn("[StrategyRecovery][CANCEL_REJECTED_RESUME] orderId={} strategy={} reason={}",
+                    order.getId(), order.getStrategyOrder(), rejected.getText());
+            replayLatestMarketData();
+            actorGroupPerOrder.tell(rejected, ActorRef.noSender());
+            return;
+        }
+
+        int rejectThreshold = rejectThreshold();
+        if (rejectAction == StrategyRecoveryState.RejectAction.CANCEL_LIVE_ORDER) {
+            strategy.resetRejectRecovery();
+            strategy.cancelAfterConsecutiveRejects(order.getId());
+            blockedSinceMillis = System.currentTimeMillis();
+            log.warn("[StrategyRecovery][CANCEL_AFTER_REJECTS] orderId={} strategy={} rejects={}/{} reason={}",
+                    order.getId(), order.getStrategyOrder(), recoveryState.getConsecutiveRejects(), rejectThreshold,
+                    rejected.getText());
+        } else {
+            strategy.onRejected(rejected);
+            strategy.resetRejectRecovery();
+        }
         actorGroupPerOrder.tell(rejected, ActorRef.noSender());
     }
 
-    private void onOrders(RoutingMessage.Order order) {
+    private void onOrders(RoutingMessage.Order incomingOrder) {
+        if (!incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_REPLACE)
+                && !incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_CANCEL)) {
+            missingOrigClOrdIdRejects = 0;
+        }
+        if (OrderStateSupport.isInconsistentFilled(incomingOrder)) {
+            log.warn("[OrderState][STRATEGY_FILLED_NORMALIZED] strategy={} orderId={} execId={} execType={} orderQty={} cumQty={} leaves={}",
+                    incomingOrder.getStrategyOrder(),
+                    incomingOrder.getId(),
+                    incomingOrder.getExecId(),
+                    incomingOrder.getExecType(),
+                    incomingOrder.getOrderQty(),
+                    incomingOrder.getCumQty(),
+                    incomingOrder.getLeaves());
+        }
+        RoutingMessage.Order order = OrderStateSupport.normalizeInconsistentFilled(incomingOrder);
+        latestOrder = order;
 
-        if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED)
-                || order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED)
-                || order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)) {
+        if (!order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_REPLACE)
+                && !order.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_CANCEL)) {
+            recoveryState.successfulNonPendingUpdate();
+            blockedSinceMillis = -1L;
+            strategy.resetRejectRecovery();
+        }
+
+        if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
 
 
             if(!order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.VWAP)){
@@ -281,6 +435,106 @@ public class ActorStrategy extends AbstractActor {
         }
 
         strategy.onOrders(order);
+        publishLimitReasonIfChanged(true);
+    }
+
+    private void pauseStrategyForRateLimit(RoutingMessage.OrderCancelReject rejected) {
+        long generation = recoveryState.pauseForRateLimit();
+        int pauseSeconds = propertyInt("strategy.rate.limit.pause.seconds", 3, 1, 30);
+        log.warn("[StrategyRecovery][RATE_LIMIT_PAUSE] orderId={} strategy={} seconds={} reason={}",
+                order.getId(), order.getStrategyOrder(), pauseSeconds, rejected.getText());
+        getContext().getSystem().scheduler().scheduleOnce(
+                java.time.Duration.ofSeconds(pauseSeconds),
+                getSelf(), new ResumeAfterRateLimit(generation),
+                getContext().getDispatcher(), ActorRef.noSender());
+    }
+
+    private void onResumeAfterRateLimit(ResumeAfterRateLimit resume) {
+        if (!recoveryState.resumeAfterRateLimit(resume.generation)) {
+            return;
+        }
+        strategy.resumeAfterTemporaryBlock();
+        strategy.resetRejectRecovery();
+        blockedSinceMillis = -1L;
+        log.info("[StrategyRecovery][RATE_LIMIT_RESUME] orderId={} strategy={}",
+                order.getId(), order.getStrategyOrder());
+        replayLatestMarketData();
+    }
+
+    private void scheduleBlockedStrategyCheck() {
+        getContext().getSystem().scheduler().scheduleOnce(
+                java.time.Duration.ofSeconds(1),
+                getSelf(), BlockedStrategyCheck.INSTANCE,
+                getContext().getDispatcher(), ActorRef.noSender());
+    }
+
+    private void onBlockedStrategyCheck(BlockedStrategyCheck ignored) {
+        try {
+            if (!recoveryState.isRateLimitPaused() && isActiveOrder(latestOrder)
+                    && (recoveryState.isCancelPending() || strategy.isTemporarilyBlocked())) {
+                long now = System.currentTimeMillis();
+                if (blockedSinceMillis < 0L) {
+                    blockedSinceMillis = now;
+                }
+                int resumeSeconds = propertyInt("strategy.blocked.resume.seconds", 10, 1, 120);
+                if (now - blockedSinceMillis >= resumeSeconds * 1000L) {
+                    log.warn("[StrategyRecovery][STALE_BLOCK_RESUME] orderId={} strategy={} seconds={}",
+                            order.getId(), order.getStrategyOrder(), resumeSeconds);
+                    recoveryState.releaseStaleBlock();
+                    strategy.resumeAfterTemporaryBlock();
+                    strategy.resetRejectRecovery();
+                    blockedSinceMillis = -1L;
+                    replayLatestMarketData();
+                }
+            } else if (!strategy.isTemporarilyBlocked()) {
+                blockedSinceMillis = -1L;
+            }
+        } finally {
+            scheduleBlockedStrategyCheck();
+        }
+    }
+
+    private void replayLatestMarketData() {
+        if (!recoveryState.isRateLimitPaused() && latestSnapshot != null && isActiveOrder(latestOrder)) {
+            strategy.onSnapshot(latestSnapshot);
+            publishLimitReasonIfChanged(false);
+        }
+    }
+
+    private void publishLimitReasonIfChanged(boolean refreshAtLimit) {
+        if (!isActiveOrder(latestOrder)) {
+            limitReasonActive = false;
+            return;
+        }
+        boolean atLimit = strategy.isAtConfiguredLimit();
+        String reason = StrategyRecoverySupport.limitStatusReason(
+                limitReasonActive, atLimit, refreshAtLimit);
+        if (reason == null) {
+            return;
+        }
+        limitReasonActive = atLimit;
+        actorGroupPerOrder.tell(new StrategyStatusReason(order.getId(), reason), ActorRef.noSender());
+        log.info("[StrategyRecovery][LIMIT_STATUS] orderId={} strategy={} atLimit={} reason={}",
+                order.getId(), order.getStrategyOrder(), atLimit, reason);
+    }
+
+    private int rejectThreshold() {
+        String configured = MainApp.getProperties().getProperty("strategy.reject.cancel.threshold", "5");
+        return StrategyRecoverySupport.rejectThreshold(configured);
+    }
+
+    private int propertyInt(String key, int defaultValue, int min, int max) {
+        int value = defaultValue;
+        try {
+            value = Integer.parseInt(MainApp.getProperties().getProperty(key, String.valueOf(defaultValue)).trim());
+        } catch (Exception ignore) {
+        }
+        return Math.max(min, Math.min(max, value));
+    }
+
+    private boolean isActiveOrder(RoutingMessage.Order current) {
+        return current != null
+                && StrategyRecoverySupport.isExchangeRecognizedActive(current.getOrdStatus());
     }
 
 }

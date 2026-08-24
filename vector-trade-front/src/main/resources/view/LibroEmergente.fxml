@@ -4,7 +4,8 @@
 <?import javafx.scene.canvas.Canvas?>
 <?import javafx.scene.control.*?>
 <?import javafx.scene.layout.*?>
-<AnchorPane xmlns:fx="http://javafx.com/fxml"
+<?import org.kordamp.ikonli.javafx.FontIcon?>
+<AnchorPane fx:id="bookRoot" xmlns:fx="http://javafx.com/fxml"
             xmlns="http://javafx.com/javafx"
             fx:controller="cl.vc.blotter.controller.LibroEmergenteController"
             AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
@@ -15,55 +16,70 @@
 
     <children>
 
-        <HBox spacing="10" maxHeight="350" maxWidth="700" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
+        <HBox spacing="10" maxWidth="700" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0"
               AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
               VBox.vgrow="ALWAYS"
               HBox.hgrow="ALWAYS">
 
-            <VBox spacing="10" HBox.hgrow="ALWAYS">
+            <VBox spacing="6" HBox.hgrow="ALWAYS">
                 <padding>
-                    <Insets top="10" right="10" bottom="10" left="10"/>
+                    <Insets top="6" right="6" bottom="6" left="6"/>
                 </padding>
-                <TextField fx:id="ticket" prefWidth="200"/>
-                <HBox spacing="10">
-                    <ChoiceBox fx:id="cbMarket" prefWidth="100"/>
-                    <ChoiceBox fx:id="settlType" prefWidth="100"/>
-                    <ChoiceBox fx:id="securityType" prefWidth="100"/>
-                    <Button fx:id="BTNSubscribebook" onAction="#subscribeSymbol" prefHeight="20" prefWidth="110"
+                <HBox spacing="4" alignment="CENTER_LEFT">
+                    <Button fx:id="multibookSettingsButton" visible="false" managed="false"
+                            minWidth="20" prefWidth="20" maxWidth="20" minHeight="20" prefHeight="20" maxHeight="20"
+                            styleClass="multibook-settings-button" onAction="#openMultibookSettings">
+                        <graphic>
+                            <FontIcon iconLiteral="fth-settings" iconSize="12" styleClass="multibook-settings-icon"/>
+                        </graphic>
+                        <tooltip>
+                            <Tooltip text="Configuración del Multibook"/>
+                        </tooltip>
+                    </Button>
+                    <TextField fx:id="ticket" promptText="Instrumento" minWidth="60" prefWidth="64" maxWidth="64"
+                               minHeight="26" prefHeight="26" maxHeight="26"/>
+                    <ChoiceBox fx:id="cbMarket" minWidth="70" prefWidth="70" maxWidth="70"
+                               minHeight="26" prefHeight="26" maxHeight="26"/>
+                    <ChoiceBox fx:id="settlType" minWidth="56" prefWidth="56" maxWidth="56"
+                               minHeight="26" prefHeight="26" maxHeight="26"/>
+                    <ChoiceBox fx:id="securityType" minWidth="58" prefWidth="58" maxWidth="58"
+                               minHeight="26" prefHeight="26" maxHeight="26"/>
+                    <Button fx:id="BTNSubscribebook" onAction="#subscribeSymbol"
+                            minHeight="26" prefHeight="26" maxHeight="26" minWidth="76" prefWidth="76" maxWidth="76"
                             text="Suscribir" styleClass="BTNSubscribebook"/>
                 </HBox>
 
-                <VBox>
+                <VBox fx:id="supplementaryBox">
 
-                    <HBox spacing="3" alignment="CENTER">
+                    <HBox fx:id="statisticsBar" spacing="2" alignment="CENTER" styleClass="multibook-stats">
 
-                        <VBox alignment="CENTER">
+                        <VBox alignment="CENTER" minWidth="42" prefWidth="42" maxWidth="42">
                             <Label text="Previo" styleClass="text-field-custom-label"/>
-                            <Label fx:id="previusClose" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                            <Label fx:id="previusClose" maxWidth="Infinity" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
-                        <VBox alignment="CENTER">
+                        <VBox alignment="CENTER" minWidth="42" prefWidth="42" maxWidth="42">
                             <Label text="Último" styleClass="text-field-custom-label"/>
-                            <Label fx:id="closepriceGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                            <Label fx:id="closepriceGen" maxWidth="Infinity" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
-                        <VBox alignment="CENTER">
+                        <VBox alignment="CENTER" minWidth="38" prefWidth="38" maxWidth="38">
                             <Label text="V.%" styleClass="text-field-custom-label"/>
-                            <Label fx:id="imbalanceGen" prefWidth="30" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                            <Label fx:id="imbalanceGen" maxWidth="Infinity" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
-                        <VBox alignment="CENTER">
+                        <VBox alignment="CENTER" minWidth="72" prefWidth="72" maxWidth="72">
                             <Label text="Vol" styleClass="text-field-custom-label"/>
-                            <Label fx:id="volumeGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                            <Label fx:id="volumeGen" maxWidth="Infinity" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
-                        <VBox alignment="CENTER">
+                        <VBox alignment="CENTER" minWidth="43" prefWidth="43" maxWidth="43">
                             <Label text="Mayor" styleClass="text-field-custom-label"/>
-                            <Label fx:id="highpriceGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                            <Label fx:id="highpriceGen" maxWidth="Infinity" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
-                        <VBox alignment="CENTER">
+                        <VBox alignment="CENTER" minWidth="43" prefWidth="43" maxWidth="43">
                             <Label text="Medio" styleClass="text-field-custom-label"/>
-                            <Label fx:id="medioGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                            <Label fx:id="medioGen" maxWidth="Infinity" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
-                        <VBox alignment="CENTER">
+                        <VBox alignment="CENTER" minWidth="43" prefWidth="43" maxWidth="43">
                             <Label text="Menor" styleClass="text-field-custom-label"/>
-                            <Label fx:id="lowpriceGen" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
+                            <Label fx:id="lowpriceGen" maxWidth="Infinity" styleClass="text-field-custom" VBox.vgrow="ALWAYS"/>
                         </VBox>
                     </HBox>
 
@@ -76,7 +92,7 @@
                 <HBox spacing="10" VBox.vgrow="ALWAYS">
                     <VBox HBox.hgrow="ALWAYS">
 
-                        <TableView fx:id="bidViewTable" VBox.vgrow="ALWAYS">
+                        <TableView fx:id="bidViewTable" styleClass="multibook-order-table" VBox.vgrow="ALWAYS">
                             <columns>
                                 <TableColumn fx:id="quantityBid" text="Cantidad" minWidth="50" prefWidth="100"
                                              maxWidth="200"/>
@@ -89,7 +105,7 @@
                         </TableView>
                     </VBox>
                     <VBox HBox.hgrow="ALWAYS">
-                        <TableView fx:id="offerViewTable" VBox.vgrow="ALWAYS">
+                        <TableView fx:id="offerViewTable" styleClass="multibook-order-table" VBox.vgrow="ALWAYS">
                             <columns>
                                 <TableColumn fx:id="priceOffer" text="Precio" minWidth="50" prefWidth="100"
                                              maxWidth="200"/>

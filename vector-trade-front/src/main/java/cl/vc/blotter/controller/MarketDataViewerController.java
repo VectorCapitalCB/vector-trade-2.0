@@ -323,6 +323,10 @@ public class MarketDataViewerController implements Initializable {
     @FXML
     private ExecutionsController preselectOrdersController;
     @FXML
+    private ExecutionsController workingOrderController;
+    @FXML
+    private ExecutionsController executionsOrderController;
+    @FXML
     private HBox hboxMKD;
 
     @FXML
@@ -409,6 +413,7 @@ public class MarketDataViewerController implements Initializable {
             replaceOrder.setDisable(true);
 
             setConfByuser(true);
+            setupOrderColumnConfigHandlers();
 
 
             replaceOrder.getStyleClass().clear();
@@ -943,6 +948,31 @@ public class MarketDataViewerController implements Initializable {
         lanzadorController.bestActions(actionEvent);
     }
 
+    private void setupOrderColumnConfigHandlers() {
+        if (preselectOrdersController != null) {
+            preselectOrdersController.setOrderColumnConfigChangeHandler(this::applyOrderColumnConfigToAll);
+        }
+        if (workingOrderController != null) {
+            workingOrderController.setOrderColumnConfigChangeHandler(this::applyOrderColumnConfigToAll);
+        }
+        if (executionsOrderController != null) {
+            executionsOrderController.setOrderColumnConfigChangeHandler(this::applyOrderColumnConfigToAll);
+        }
+        applyOrderColumnConfigToAll();
+    }
+
+    public void applyOrderColumnConfigToAll() {
+        if (preselectOrdersController != null) {
+            preselectOrdersController.applyOrderColumnConfig();
+        }
+        if (workingOrderController != null) {
+            workingOrderController.applyOrderColumnConfig();
+        }
+        if (executionsOrderController != null) {
+            executionsOrderController.applyOrderColumnConfig();
+        }
+    }
+
     @FXML
     public void hitAction2(ActionEvent actionEvent) {
         lanzadorController.hitActions(actionEvent);
@@ -1370,4 +1400,3 @@ public class MarketDataViewerController implements Initializable {
         titelpaneMarketData.setText("Ãšltimas Operaciones Nemo (" + marketDataTradeTable.getItems().size() + ")");
     }
 }
-

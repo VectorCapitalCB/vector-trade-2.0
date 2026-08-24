@@ -46,9 +46,9 @@ public enum Notifier {
     private static double width = 300;
     private static double height = 80;
     private static double offsetX = 10;
-    private static double offsetY = 10;
+    private static double offsetY = 48;
     private static double spacingY = 25;
-    private static Pos popupLocation = Pos.TOP_RIGHT;
+    private static Pos popupLocation = Pos.BOTTOM_RIGHT;
     private static Stage stageRef = null;
     private Duration popupLifetime;
     private StackPane pane;
@@ -225,7 +225,7 @@ public enum Notifier {
         body.getStyleClass().addAll("body");
         body.setPrefSize(width, height);
 
-        Label title = new Label(NOTIFICATION.TITLE);
+        Label title = new Label(I18n.tr(NOTIFICATION.TITLE));
         title.getStylesheets().add(getClass().getResource(Repository.getSTYLE()).toExternalForm());
         title.getStyleClass().add("title");
 
@@ -234,7 +234,7 @@ public enum Notifier {
         icon.setFitHeight(ICON_HEIGHT);
 
 
-        Label message = new Label(NOTIFICATION.MESSAGE);
+        Label message = new Label(I18n.tr(NOTIFICATION.MESSAGE));
         message.getStylesheets().add(getClass().getResource(Repository.getSTYLE()).toExternalForm());
         message.getStyleClass().add("message");
 
@@ -266,8 +266,6 @@ public enum Notifier {
         POPUP.setAutoFix(false);
         POPUP.setAutoHide(false);
         POPUP.setHideOnEscape(false);
-        POPUP.setX(getX());
-        POPUP.setY(getY());
         POPUP.getContent().add(popupPane);
 
         popups.add(POPUP);
@@ -297,43 +295,41 @@ public enum Notifier {
         });
 
 
-        Window owner = stageRef != null ? stageRef : Repository.getPrincipal();
-        if (owner != null && owner.isShowing()) {
-            POPUP.show(owner);
-        } else {
-            log.debug("Notification popup skipped: owner window is not showing");
+        Window owner = focusedApplicationWindow();
+        if (owner == null) {
+            log.debug("Notification popup skipped to preserve the current application focus");
             popups.remove(POPUP);
             return;
         }
+        POPUP.show(owner, getX(owner), getY(owner));
         timeline.play();
     }
 
-    private double getX() {
-        Screen screen = Screen.getPrimary();
-        if (stageRef != null) {
-            for (Screen s : Screen.getScreens()) {
-                if (s.getBounds().contains(stageRef.getX() + stageRef.getWidth()
-                        / 2, stageRef.getY() + stageRef.getHeight() / 2)) {
-                    screen = s;
-                    break;
-                }
-            }
-        }
+    private Window focusedApplicationWindow() {
+        return Window.getWindows().stream()
+                .filter(window -> window instanceof Stage && window.isShowing() && window.isFocused())
+                .findFirst()
+                .orElse(null);
+    }
+
+    private double getX(Window owner) {
+        Screen screen = screenFor(owner);
         return calcX(screen.getVisualBounds().getMinX(), screen.getVisualBounds().getWidth());
     }
 
-    private double getY() {
-        Screen screen = Screen.getPrimary();
-        if (stageRef != null) {
-            for (Screen s : Screen.getScreens()) {
-                if (s.getBounds().contains(stageRef.getX(), stageRef.getY())) {
-                    screen = s;
-                    break;
-                }
+    private double getY(Window owner) {
+        Screen screen = screenFor(owner);
+        return calcY(screen.getVisualBounds().getMinY(), screen.getVisualBounds().getHeight());
+    }
+
+    private Screen screenFor(Window owner) {
+        for (Screen screen : Screen.getScreens()) {
+            if (screen.getBounds().contains(owner.getX() + owner.getWidth() / 2,
+                    owner.getY() + owner.getHeight() / 2)) {
+                return screen;
             }
         }
-        double calculatedY = calcY(screen.getVisualBounds().getMinY(), screen.getVisualBounds().getHeight());
-        return calculatedY;
+        return Screen.getPrimary();
     }
 
     private double calcX(final double LEFT, final double TOTAL_WIDTH) {

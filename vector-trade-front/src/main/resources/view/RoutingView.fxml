@@ -12,8 +12,9 @@
         <VBox AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"
               HBox.hgrow="ALWAYS" VBox.vgrow="ALWAYS">
 
-            <ButtonBar fx:id="ButtonbarFiltros" maxHeight="60" prefHeight="60" HBox.hgrow="ALWAYS">
-                <buttons>
+            <HBox alignment="CENTER" maxHeight="44" minHeight="44" prefHeight="44"
+                  spacing="10" styleClass="routing-filters-bar" HBox.hgrow="ALWAYS">
+                <children>
                     <Label alignment="BASELINE_RIGHT">Cuenta</Label>
                     <TextField fx:id="accountFilter" minWidth="150" prefWidth="150" promptText="Filtra cuenta…" />
                     <Label alignment="BASELINE_RIGHT">Destino</Label>
@@ -24,12 +25,11 @@
                     <ComboBox fx:id="sideFilter" minWidth="150" prefWidth="150" />
                     <Label alignment="BASELINE_RIGHT">Instrumento</Label>
                     <TextField fx:id="symbolFilter" minWidth="150" prefWidth="150" />
-                    <CheckBox fx:id="hideIDs" prefHeight="24.0" prefWidth="100" selected="true" style="-fx-font-weight: bold;" text="Ocultar IDs" />
-                </buttons>
-            </ButtonBar>
+                </children>
+            </HBox>
 
-            <TabPane fx:id="ruteoTabPane" tabClosingPolicy="UNAVAILABLE" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
-                <Tab fx:id="tabRuteo" text="Trabajando">
+            <TabPane fx:id="ruteoTabPane" tabClosingPolicy="SELECTED_TAB" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
+                <Tab fx:id="tabRuteo" text="Trabajando" closable="false">
 
                     <VBox spacing="10" VBox.vgrow="ALWAYS" HBox.hgrow="ALWAYS">
 
@@ -76,11 +76,12 @@
                     </VBox>
                 </Tab>
 
-                <Tab text="Ejecutadas">
+                <Tab text="Ejecutadas" closable="false">
                     <ScrollPane fitToHeight="true" fitToWidth="true" pannable="true">
                         <fx:include fx:id="executionsOrder" source="Executions.fxml" />
                     </ScrollPane>
                 </Tab>
+
             </TabPane>
         </VBox>
     </children>

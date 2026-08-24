@@ -72,10 +72,11 @@
 
 
 .vc {
-    -fx-background-color: #2b3178;
-    -fx-text-fill: white;
+    -fx-background-color: linear-gradient(to bottom, #2e4a6d, #22344d);
+    -fx-text-fill: #eaf1fc;
     -fx-alignment: center;
-    -fx-border-color: #A30000FF;
+    -fx-border-color: #e04b4b;
+    -fx-border-width: 1.5;
     -fx-font-weight: bold;
 
 }
@@ -495,6 +496,67 @@
     -fx-border-color: #2b3178;
 }
 
+.balance-filter-bar {
+    -fx-padding: 8 12;
+    -fx-background-color: #111820;
+    -fx-border-color: #2d3b49;
+    -fx-border-width: 0 0 1 0;
+}
+
+.balance-overview {
+    -fx-padding: 0 12 12 12;
+}
+
+.balance-section {
+    -fx-padding: 12;
+    -fx-background-color: #17212b;
+    -fx-border-color: #34495c;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+.balance-section-title {
+    -fx-text-fill: #eef4f8;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.balance-subsection-title {
+    -fx-padding: 5 0 3 0;
+    -fx-text-fill: #9fb0bf;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+    -fx-border-color: #2d3b49;
+    -fx-border-width: 0 0 1 0;
+}
+
+.balance-field-label {
+    -fx-text-fill: #bac6d1;
+}
+
+.balance-emphasis-label {
+    -fx-text-fill: #eef4f8;
+    -fx-font-weight: bold;
+}
+
+.balance-readonly {
+    -fx-pref-height: 28px;
+    -fx-background-color: #111820;
+    -fx-control-inner-background: #111820;
+    -fx-border-color: #34495c;
+    -fx-border-width: 1;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+    -fx-text-fill: #e5edf3;
+}
+
+.balance-available {
+    -fx-border-color: #2f8f58;
+    -fx-text-fill: #43cf78;
+    -fx-font-weight: bold;
+}
+
 #replaceOrder:disabled {
     -fx-opacity: 0.5;
     -fx-background-color: grey; /* Puedes ajustar esto según lo que necesites */
@@ -643,6 +705,12 @@
     -fx-font-weight: bold;
     -fx-background-color: #161a20;
 
+}
+
+.multibook-stats .text-field-custom {
+    -fx-alignment: center;
+    -fx-padding: 2 2;
+    -fx-min-height: 18;
 }
 
 
@@ -1034,6 +1102,91 @@
     -fx-opacity: 0.35;
 }
 
+.multibook-visibility-toggle {
+    -fx-min-width: 82;
+    -fx-padding: 3 8;
+    -fx-text-fill: #8f9cad;
+}
+
+.multibook-visibility-toggle:selected {
+    -fx-background-color: #29455f;
+    -fx-border-color: #5f7f9d;
+    -fx-text-fill: #eef3fb;
+}
+
+.multibook-settings-button {
+    -fx-padding: 1;
+    -fx-background-radius: 3;
+    -fx-border-radius: 3;
+}
+
+.multibook-settings-button:hover {
+    -fx-background-color: #29455f;
+    -fx-border-color: #5f7f9d;
+}
+
+.multibook-settings-icon {
+    -fx-icon-color: #b9c4d6;
+}
+
+.multibook-floating-config {
+    -fx-background-color: #171d25;
+    -fx-border-color: #405267;
+    -fx-border-width: 0 0 1 0;
+}
+
+.multibook-section-label {
+    -fx-padding: 0 2 0 5;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #7f8fa3;
+}
+
+.multibook-action-manage {
+    -fx-background-color: #294762;
+    -fx-border-color: #4c6c87;
+}
+
+.multibook-action-save {
+    -fx-background-color: #285842;
+    -fx-border-color: #4a8068;
+}
+
+.multibook-action-delete {
+    -fx-background-color: #5a3035;
+    -fx-border-color: #8b5057;
+}
+
+.multibook-action-file {
+    -fx-background-color: #5a4b2c;
+    -fx-border-color: #88734a;
+}
+
+.multibook-grid-scroll,
+.multibook-grid-scroll > .viewport {
+    -fx-background-color: transparent;
+}
+
+.multibook-grid {
+    -fx-padding: 0 0 8 0;
+}
+
+.multibook-order-table .scroll-bar:vertical {
+    -fx-opacity: 1;
+}
+
+.multibook-action-manage:hover { -fx-background-color: #355a79; }
+.multibook-action-save:hover   { -fx-background-color: #347154; }
+.multibook-action-delete:hover { -fx-background-color: #743e45; }
+.multibook-action-file:hover   { -fx-background-color: #756139; }
+
+.multibook-action-manage,
+.multibook-action-save,
+.multibook-action-delete,
+.multibook-action-file {
+    -fx-text-fill: #f2f5f8;
+}
+
 /* ===== Huincha de papeles (entre el lanzador y Datos del Mercado) ===== */
 .huincha {
     -fx-background-color: #12151a;
@@ -1061,3 +1214,526 @@
     -fx-font-size: 11px;
     -fx-font-weight: bold;
 }
+
+/* Popup de busqueda de instrumentos del Lanzador (vive en una ventana separada). */
+.launcher-suggestions {
+    -fx-background-color: #151a21;
+    -fx-control-inner-background: #151a21;
+    -fx-border-color: #3f536d;
+    -fx-border-width: 1;
+    -fx-padding: 0;
+}
+
+.launcher-suggestions .virtual-flow,
+.launcher-suggestions .clipped-container,
+.launcher-suggestions .sheet,
+.launcher-suggestions .viewport,
+.launcher-suggestions .list-cell:empty {
+    -fx-background-color: #151a21;
+}
+
+.launcher-suggestions .list-cell {
+    -fx-background-color: #151a21;
+    -fx-text-fill: #e5eaf2;
+    -fx-padding: 3 8 3 8;
+}
+
+.launcher-suggestions .list-cell:filled:hover {
+    -fx-background-color: #26384f;
+    -fx-text-fill: #ffffff;
+}
+
+.launcher-suggestions .list-cell:filled:selected {
+    -fx-background-color: #2e4a6d;
+    -fx-text-fill: #ffffff;
+}
+
+.footer-toolbar {
+    -fx-background-color: #18212c;
+    -fx-border-color: #2c3948 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+    -fx-padding: 4 6;
+    -fx-spacing: 4;
+}
+
+.footer-action {
+    -fx-background-color: #223246;
+    -fx-border-color: #3b4b5e;
+    -fx-border-radius: 4;
+    -fx-background-radius: 4;
+    -fx-padding: 7 10;
+    -fx-graphic-text-gap: 7;
+    -fx-font-size: 12px;
+    -fx-text-fill: #dfe7f1;
+}
+
+.footer-action:hover {
+    -fx-background-color: #2b3e54;
+    -fx-border-color: #60758d;
+}
+
+.footer-action .ikonli-font-icon {
+    -fx-icon-color: #9fb3c8;
+}
+.footer-meta-icon {
+    -fx-icon-color: #8fa3b8;
+}
+
+.footer-user-label {
+    -fx-text-fill: #cdbb78;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.footer-meta-icon.footer-user-icon {
+    -fx-icon-color: #cdbb78;
+}
+
+.footer-environment-label {
+    -fx-text-fill: #b6c1cf;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+}
+
+.footer-meta-icon.footer-environment-production {
+    -fx-icon-color: #c98b8b;
+}
+
+.footer-environment-label.footer-environment-production {
+    -fx-text-fill: #c98b8b;
+}
+
+.footer-meta-icon.footer-environment-test {
+    -fx-icon-color: #8fa8bd;
+}
+
+.footer-environment-label.footer-environment-test {
+    -fx-text-fill: #8fa8bd;
+}
+
+.footer-meta-icon.footer-environment-qa {
+    -fx-icon-color: #cdbb78;
+}
+
+.footer-environment-label.footer-environment-qa {
+    -fx-text-fill: #cdbb78;
+}
+
+.footer-meta-icon.footer-environment-local,
+.footer-meta-icon.footer-environment-default {
+    -fx-icon-color: #7fa2c1;
+}
+
+.footer-environment-label.footer-environment-local,
+.footer-environment-label.footer-environment-default {
+    -fx-text-fill: #7fa2c1;
+}
+
+.footer-fx-panel {
+    -fx-background-color: #131c27;
+    -fx-background-radius: 3;
+    -fx-border-color: #405267;
+    -fx-border-radius: 3;
+    -fx-border-width: 1;
+    -fx-padding: 0 3 0 0;
+}
+
+.footer-fx-title {
+    -fx-background-color: #25374a;
+    -fx-background-radius: 2 0 0 2;
+    -fx-border-color: transparent #405267 transparent transparent;
+    -fx-border-width: 0 1 0 0;
+    -fx-text-fill: #aebdcb;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.footer-fx-value {
+    -fx-alignment: center;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 0 2;
+}
+
+.footer-fx-value.label-bid-green {
+    -fx-text-fill: #18fc00;
+}
+
+.footer-fx-value.label-ask-red {
+    -fx-text-fill: #f03b3b;
+}
+
+.footer-fx-value.label-last {
+    -fx-text-fill: #eef3fb;
+}
+
+.launcher-advanced #addBookButton,
+.launcher-advanced #addpreselect,
+.launcher-advanced #paste {
+    -fx-background-color: #253b50;
+    -fx-border-color: #48647e;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-text-fill: #e8eef5;
+    -fx-font-weight: bold;
+    -fx-padding: 5 10;
+    -fx-cursor: hand;
+}
+
+.launcher-advanced #addBookButton:hover,
+.launcher-advanced #addpreselect:hover,
+.launcher-advanced #paste:hover {
+    -fx-background-color: #304b64;
+    -fx-border-color: #6686a3;
+}
+
+.launcher-advanced .buyButton {
+    -fx-background-color: #2f8756;
+    -fx-border-color: #56ad76;
+}
+
+.launcher-advanced .buyButton:hover {
+    -fx-background-color: #399764;
+    -fx-border-color: #70c28c;
+}
+
+.launcher-advanced .sellButton {
+    -fx-background-color: #9f4b50;
+    -fx-border-color: #c66a70;
+}
+
+.launcher-advanced .sellButton:hover {
+    -fx-background-color: #b2575d;
+    -fx-border-color: #db7d82;
+}
+
+.launcher-advanced .replaceButton {
+    -fx-background-color: #9a7d32;
+    -fx-border-color: #c1a34e;
+}
+
+.launcher-advanced .replaceButton:hover {
+    -fx-background-color: #aa8c3b;
+    -fx-border-color: #d2b75f;
+}
+
+.launcher-advanced .buyButton,
+.launcher-advanced .sellButton,
+.launcher-advanced .replaceButton {
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-text-fill: #f6f8fb;
+    -fx-font-weight: bold;
+    -fx-padding: 5 10;
+    -fx-cursor: hand;
+}
+
+.launcher-advanced .launcher-trade-icon,
+.launcher-advanced .launcher-utility-icon {
+    -fx-icon-color: #dce7f2;
+}
+
+.chat-emoji-button {
+    -fx-background-color: #203449;
+    -fx-border-color: #45627d;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-padding: 4;
+    -fx-cursor: hand;
+}
+
+.chat-emoji-button:hover {
+    -fx-background-color: #2b4760;
+    -fx-border-color: #6686a3;
+}
+
+.portfolio-delete-button {
+    -fx-background-color: #6a343b;
+    -fx-border-color: #b5656d;
+    -fx-border-width: 1.25;
+    -fx-background-radius: 5;
+    -fx-border-radius: 5;
+    -fx-text-fill: #f7edef;
+}
+
+.portfolio-delete-button:hover {
+    -fx-background-color: #7b3d45;
+    -fx-border-color: #ca7980;
+}
+
+.historical-orders-toolbar {
+    -fx-padding: 5 8;
+    -fx-background-color: #111820;
+    -fx-border-color: #2d3b49;
+    -fx-border-width: 0 0 1 0;
+}
+
+.historical-analytics-band {
+    -fx-padding: 8 10;
+    -fx-background-color: #10171f;
+    -fx-border-color: #2d3b49;
+    -fx-border-width: 0 0 1 0;
+}
+
+.historical-metric {
+    -fx-padding: 8 10;
+    -fx-background-color: #18222d;
+    -fx-border-color: #34495c;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+.historical-metric-title {
+    -fx-text-fill: #94a7b9;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.historical-metric-value {
+    -fx-text-fill: #eef4f8;
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+}
+
+.metric-buy {
+    -fx-text-fill: #43cf78;
+}
+
+.metric-sell {
+    -fx-text-fill: #ff6666;
+}
+
+.metric-neutral {
+    -fx-text-fill: #d9e2ea;
+}
+
+.historical-chart-panel {
+    -fx-padding: 4 8;
+    -fx-background-color: #151f29;
+    -fx-border-color: #34495c;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+.historical-chart-title {
+    -fx-text-fill: #cbd7e1;
+    -fx-font-size: 10px;
+    -fx-font-weight: bold;
+}
+
+.historical-chart-legend-label {
+    -fx-text-fill: #dce6ee;
+    -fx-font-size: 9px;
+    -fx-font-weight: bold;
+}
+
+.historical-slice-0 { -fx-background-color: #3d8fc4; }
+.historical-slice-1 { -fx-background-color: #49b675; }
+.historical-slice-2 { -fx-background-color: #d5ad53; }
+.historical-slice-3 { -fx-background-color: #c86e72; }
+.historical-slice-4 { -fx-background-color: #718fc7; }
+.historical-slice-5 { -fx-background-color: #87939d; }
+
+.historical-analytics-band .chart,
+.historical-detail-chart.chart {
+    -fx-background-color: transparent;
+    -fx-padding: 0;
+}
+
+.historical-analytics-band .chart-pie-label,
+.historical-detail-chart .chart-pie-label {
+    -fx-fill: #dce6ee;
+    -fx-font-size: 9px;
+}
+
+.historical-analytics-band .chart-pie-label-line,
+.historical-detail-chart .chart-pie-label-line {
+    -fx-stroke: #7f94a7;
+}
+
+.historical-analytics-band .default-color0.chart-pie,
+.historical-detail-chart .default-color0.chart-pie { -fx-pie-color: #3d8fc4; }
+.historical-analytics-band .default-color1.chart-pie,
+.historical-detail-chart .default-color1.chart-pie { -fx-pie-color: #49b675; }
+.historical-analytics-band .default-color2.chart-pie,
+.historical-detail-chart .default-color2.chart-pie { -fx-pie-color: #d5ad53; }
+.historical-analytics-band .default-color3.chart-pie,
+.historical-detail-chart .default-color3.chart-pie { -fx-pie-color: #c86e72; }
+.historical-analytics-band .default-color4.chart-pie,
+.historical-detail-chart .default-color4.chart-pie { -fx-pie-color: #718fc7; }
+.historical-analytics-band .default-color5.chart-pie,
+.historical-detail-chart .default-color5.chart-pie { -fx-pie-color: #87939d; }
+
+.historical-detail-metrics {
+    -fx-padding: 2 0;
+}
+
+.historical-detail-chart .chart-title {
+    -fx-text-fill: #dce7f1;
+    -fx-font-size: 11px;
+    -fx-font-weight: bold;
+}
+
+.routing-filters-bar {
+    -fx-padding: 6 12;
+    -fx-background-color: #111820;
+    -fx-border-color: #2d3b49;
+    -fx-border-width: 0 0 1 0;
+}
+
+.historical-orders-table .table-cell,
+.historical-orders-table .column-header .label,
+.historical-detail-table .table-cell,
+.historical-detail-table .column-header .label {
+    -fx-alignment: center;
+}
+
+.historical-refresh-button,
+.historical-detail-button,
+.historical-export-button {
+    -fx-background-color: #284d6c;
+    -fx-border-color: #4d7393;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-text-fill: #edf3f8;
+    -fx-font-weight: bold;
+    -fx-cursor: hand;
+}
+
+.historical-refresh-button:hover,
+.historical-detail-button:hover,
+.historical-export-button:hover {
+    -fx-background-color: #356383;
+}
+
+.historical-detail-total {
+    -fx-padding: 6 8;
+    -fx-background-color: #192430;
+    -fx-border-color: #34495c;
+    -fx-border-width: 1;
+    -fx-text-fill: #dce7f1;
+    -fx-font-weight: bold;
+}
+
+.historical-detail-dialog,
+.historical-detail-dialog > .content,
+.historical-detail-dialog > .button-bar,
+.historical-detail-content {
+    -fx-background-color: #111820;
+}
+
+.historical-detail-dialog > .header-panel {
+    -fx-background-color: #192430;
+    -fx-border-color: #34495c;
+    -fx-border-width: 0 0 1 0;
+}
+
+.historical-detail-dialog > .header-panel .label {
+    -fx-text-fill: #e7eef5;
+    -fx-font-weight: bold;
+}
+
+.historical-detail-dialog .historical-detail-table {
+    -fx-background-color: #171d24;
+    -fx-border-color: #34495c;
+    -fx-border-width: 1;
+}
+
+/* Settings */
+.settings-root {
+    -fx-padding: 18;
+    -fx-background-color: #111820;
+}
+
+.settings-header {
+    -fx-padding: 0 0 10 0;
+    -fx-border-color: transparent transparent #2f4152 transparent;
+    -fx-border-width: 0 0 1 0;
+}
+
+.settings-title {
+    -fx-text-fill: #eef4f8;
+    -fx-font-size: 20px;
+    -fx-font-weight: bold;
+}
+
+.settings-subtitle,
+.settings-section-copy {
+    -fx-text-fill: #93a6b8;
+}
+
+.settings-section {
+    -fx-padding: 12;
+    -fx-spacing: 8;
+    -fx-background-color: #17232e;
+    -fx-border-color: #34495c;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+}
+
+.settings-section-title {
+    -fx-text-fill: #e5edf4;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+}
+
+.settings-language-toggle {
+    -fx-min-height: 34;
+    -fx-background-color: #1d2a36;
+    -fx-border-color: #40576b;
+    -fx-border-width: 1;
+    -fx-background-radius: 4;
+    -fx-border-radius: 4;
+    -fx-text-fill: #c8d4de;
+}
+
+.settings-language-toggle:selected {
+    -fx-background-color: #285d7e;
+    -fx-border-color: #5792b8;
+    -fx-text-fill: #ffffff;
+}
+
+.settings-password-grid .label {
+    -fx-text-fill: #cbd7e1;
+}
+
+.settings-primary-button {
+    -fx-background-color: #2f805a;
+    -fx-border-color: #52a77d;
+    -fx-text-fill: #ffffff;
+    -fx-font-weight: bold;
+}
+
+.settings-primary-button:hover { -fx-background-color: #39966a; }
+
+.settings-secondary-button {
+    -fx-background-color: #24394b;
+    -fx-border-color: #49657d;
+    -fx-text-fill: #eef4f8;
+}
+
+.settings-footer {
+    -fx-padding: 10 0 0 0;
+    -fx-border-color: #2f4152 transparent transparent transparent;
+    -fx-border-width: 1 0 0 0;
+}
+
+/* ---- Configuración: navegación lateral ---- */
+.settings-nav { -fx-padding: 18 14 18 18; -fx-spacing: 2; }
+.settings-nav-item {
+    -fx-background-color: transparent; -fx-background-radius: 6;
+    -fx-alignment: CENTER-LEFT; -fx-padding: 8 12 8 12;
+    -fx-cursor: hand; -fx-font-size: 12px;
+}
+.settings-nav-item:hover { -fx-background-color: rgba(255,255,255,0.06); }
+.settings-nav-item:selected { -fx-background-color: rgba(37,99,235,0.22); -fx-font-weight: bold; }
+.settings-content { -fx-padding: 18; }
+.settings-content-scroll { -fx-background-color: transparent; }
+.settings-content-scroll > .viewport { -fx-background-color: transparent; }

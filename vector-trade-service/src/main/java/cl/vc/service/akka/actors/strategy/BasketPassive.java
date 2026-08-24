@@ -13,6 +13,7 @@ import cl.vc.module.protocolbuff.session.SessionsMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
 import cl.vc.service.MainApp;
 import cl.vc.service.util.BookSnapshot;
+import cl.vc.service.util.OrderStateSupport;
 
 import java.math.BigDecimal;
 
@@ -400,9 +401,7 @@ public class BasketPassive implements StrategyI {
             slog("ACK vivo (block=false) status=" + order.getOrdStatus());
 
 
-        } else if (order.getOrdStatus().equals(RoutingMessage.OrderStatus.FILLED) ||
-                order.getOrdStatus().equals(RoutingMessage.OrderStatus.REJECTED) ||
-                order.getOrdStatus().equals(RoutingMessage.OrderStatus.CANCELED)) {
+        } else if (OrderStateSupport.isConclusiveStrategyTerminal(order)) {
 
             blockOrders = true;
             slog("TERMINAL status=" + order.getOrdStatus() + " -> PoisonPill (fin de la estrategia)");
@@ -536,6 +535,32 @@ public class BasketPassive implements StrategyI {
             slog("ERROR rejectNoMarketData " + e);
             log.error(e.getMessage(), e);
         }
+    }
+
+    @Override
+    public boolean isTemporarilyBlocked() {
+        return blockOrders;
+    }
+
+    @Override
+    public void resumeAfterTemporaryBlock() {
+        blockOrders = false;
+    }
+
+    @Override
+    public void resetRejectRecovery() {
+        blockrejected = 0;
+    }
+
+    @Override
+    public boolean isAtConfiguredLimit() {
+        if (statistic == null) {
+            return false;
+        }
+        if (order.getSide().equals(RoutingMessage.Side.BUY)) {
+            return limit_calculate_buy > 0d && statistic.getBidPx() > limit_calculate_buy;
+        }
+        return limit_calculate_sell > 0d && statistic.getAskPx() < limit_calculate_sell;
     }
 
 }

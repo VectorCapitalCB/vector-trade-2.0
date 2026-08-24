@@ -8,24 +8,13 @@
         </encoder>
     </appender>
 
-    <!-- Archivo diario (1) -->
-    <appender name="TIME_BASED_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${user.home}/vc/VectorTrade/logs/vector-trade.log</file>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${user.home}/vc/VectorTrade/logs/vector-trade.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
-        </rollingPolicy>
-        <encoder>
-            <pattern>[%date{ISO8601}] [%level] [%logger:%L] [%thread] - %msg {%mdc}%n</pattern>
-        </encoder>
-    </appender>
-
-    <!-- Archivo diario (2) opcional -->
+    <!-- Unico archivo activo. A medianoche se archiva con la fecha del dia. -->
     <appender name="ROLLING" class="ch.qos.logback.core.rolling.RollingFileAppender">
         <file>${user.home}/vc/VectorTrade/logs/vector-trade-2.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <fileNamePattern>${user.home}/vc/VectorTrade/logs/vector-trade-2.%d{yyyy-MM-dd}.log</fileNamePattern>
-            <maxHistory>30</maxHistory>
+            <maxHistory>15</maxHistory>
+            <cleanHistoryOnStart>true</cleanHistoryOnStart>
         </rollingPolicy>
         <encoder>
             <pattern>%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n</pattern>
@@ -47,7 +36,6 @@
     <!-- ÚNICO root -->
     <root level="INFO">
         <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="TIME_BASED_FILE"/>
         <appender-ref ref="ROLLING"/>
     </root>
 

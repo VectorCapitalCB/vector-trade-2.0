@@ -135,6 +135,7 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
                 .match(MarketDataMessage.Statistic.class, this::onStatistic)
                 .match(MarketDataMessage.Subscribe.class, this::onSubscribe)
                 .match(Resubscribe.class, this::onResubscribe)
+                .match(RefreshPreviousClose.class, this::onRefreshPreviousClose)
                 .match(SendRejected.class, this::onSendRejected)
                 .match(MarketDataMessage.Rejected.class, this::onRejected)
                 .build();
@@ -171,6 +172,48 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
      * valor malo del feed y, si el simbolo no vuelve a tickear, se queda pegado con ese valor.
      * Solo BCS; si no hay cierre o precio, devuelve la original sin copiar.
      */
+    /**
+     * El Admin recargo el cierre de ayer en Mongo: reemplaza el valor cacheado en este actor y, si
+     * cambio, re-emite la Statistic corregida al cliente.
+     *
+     * Sin esto la recarga seria invisible para quien ya esta suscrito: previousDayClose es estado del
+     * actor y fixVarPct/onSnapshot solo lo releen cuando vale 0. Y si el papel no vuelve a tickear,
+     * el cliente se queda con la var% mala indefinidamente.
+     *
+     * Corre en el dispatcher del actor (ActorperMkd), asi que no hay carrera con onSnapshot/onStatistic.
+     */
+    private void onRefreshPreviousClose(RefreshPreviousClose msg) {
+        try {
+            if (!isBcs) return;                       // la var% solo se recalcula para BCS
+            String mySymbol = subscribe.getSymbol();
+            if (msg.getSymbol() != null && !msg.getSymbol().equals(mySymbol)) return;
+
+            double fresh = MongoCloseRepository.getPreviousClose(mySymbol);
+            if (fresh <= 0d) return;                  // sin dato nuevo: conserva el que ya tenia
+            if (Double.compare(fresh, previousDayClose) == 0) return;  // no cambio: no se emite nada
+
+            double old = previousDayClose;
+            previousDayClose = fresh;
+            varPctFallbackLogged = false;             // permite volver a loguear si vuelve a fallar
+
+            // Re-emite solo si ya hay una Statistic con precio: si el papel todavia no tickeo, el
+            // proximo snapshot/statistic la va a construir con el cierre nuevo de todas formas.
+            if (statistics != null) {
+                MarketDataMessage.Statistic corrected = fixVarPct(statistics.build());
+                if (corrected != null) {
+                    statistics.setPreviusClose(corrected.getPreviusClose());
+                    statistics.setImbalance(corrected.getImbalance());
+                    actorRef.tell(corrected, ActorRef.noSender());
+                    log.info("[VarPct] {} cierre recargado {} -> {}; var%={} re-emitida",
+                            mySymbol, old, fresh, String.format("%.2f", corrected.getImbalance()));
+                }
+            }
+        } catch (Exception ex) {
+            log.error("[VarPct] error refrescando cierre de {}: {}",
+                    subscribe != null ? subscribe.getSymbol() : "?", ex.getMessage(), ex);
+        }
+    }
+
     private MarketDataMessage.Statistic fixVarPct(MarketDataMessage.Statistic raw) {
         if (raw == null || !isBcs) return raw;
         if (previousDayClose <= 0d) {
@@ -458,6 +501,16 @@ public class ActorPerSubscriptionMkd extends AbstractActor {
     @Value
     public static class Resubscribe {
         private NotificationMessage.Notification msg;
+    }
+
+    /**
+     * El Admin recargo cierres en Mongo. symbol = null significa "todos los simbolos".
+     * Lo emite MainApp.broadcastPreviousCloseRefresh hacia los actores de sesion, que lo reparten
+     * a sus hijos MKD.
+     */
+    @Value
+    public static class RefreshPreviousClose {
+        private String symbol;
     }
 
 }

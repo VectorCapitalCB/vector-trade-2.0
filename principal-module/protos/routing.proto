@@ -70,6 +70,9 @@ enum SecurityType {
 	FUT = 3;
 	OPT = 4;
 	PAXOS = 5;
+	ETF = 6;
+	FI = 7;
+	CORP = 8;
 }
 
 enum HandlInst {
@@ -123,6 +126,11 @@ enum SecurityExchangeRouting {
 	XSGO_2 = 20;
 	XSGO_3 = 21;
 	XSGO_4 = 22;
+	XSGO_5 = 23;
+	XSGO_6 = 24;
+	XSGO_7 = 25;
+	XSGO_8 = 26;
+	XSGO_9 = 27;
 
 }
 
@@ -174,6 +182,7 @@ enum Currency {
 	BTC = 9;
 	ETH = 10;
 	EUR = 11;
+	BRL = 12;
 
 }
 
@@ -282,6 +291,10 @@ message OrderCancelRequest {
 	string id = 1;
 }
 
+message OrderCancelRequestDopCopy {
+	Order order = 1;
+}
+
 message OrdersCancelRequestList {
 	repeated string id = 1;
 }
@@ -293,4 +306,3 @@ message OrdersCancelUnsolicited {
 message OrderList {
 	repeated Order orders = 1;
 }
-

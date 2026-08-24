@@ -1,6 +1,7 @@
 package cl.vc.blotter.controller;
 
 import cl.vc.blotter.Repository;
+import cl.vc.blotter.utils.FlexibleNumberParser;
 import cl.vc.blotter.utils.Notifier;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.ticks.Ticks;
@@ -80,9 +81,9 @@ public class RoutingController {
     @FXML
     private TextField symbolFilter;
     @FXML
-    private CheckBox hideIDs;
-    @FXML
     public Tab tabRuteo;
+    @FXML
+    private TabPane ruteoTabPane;
     private boolean isVertical = true;
 
     private final ComboBox<String> accountFilterShim = new ComboBox<>();
@@ -257,10 +258,34 @@ public class RoutingController {
             });
 
             setupAccountFilterAutocomplete();
-
+            setupOrderColumnConfigHandlers();
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
         }
+    }
+
+    private void setupOrderColumnConfigHandlers() {
+        if (workingOrderController != null) {
+            workingOrderController.setOrderColumnConfigChangeHandler(this::applyOrderColumnConfigToAll);
+        }
+        if (executionsOrderController != null) {
+            executionsOrderController.setOrderColumnConfigChangeHandler(this::applyOrderColumnConfigToAll);
+        }
+        applyOrderColumnConfigToAll();
+    }
+
+    public void applyOrderColumnConfigToAll() {
+        if (workingOrderController != null) {
+            workingOrderController.applyOrderColumnConfig();
+        }
+        if (executionsOrderController != null) {
+            executionsOrderController.applyOrderColumnConfig();
+        }
+        Repository.getBasketTabController().values().forEach(controller -> {
+            if (controller != null && controller.getExecutionsOrderController() != null) {
+                controller.getExecutionsOrderController().applyOrderColumnConfig();
+            }
+        });
     }
 
     @FXML
@@ -279,12 +304,38 @@ public class RoutingController {
             return null;
         }
 
-        for (RoutingMessage.Order order : workingOrderController.getTableExecutionReports().getItems()) {
-            if (order.getId().equals(name.getId())) {
+        RoutingMessage.Order order = findOrderById(
+                workingOrderController == null ? null : workingOrderController.getTableExecutionReports().getItems(),
+                name.getId());
+        if (order != null) {
+            return order;
+        }
+
+        for (BasketTabController basketController : Repository.getBasketTabController().values()) {
+            if (basketController == null || basketController.getExecutionsOrderController() == null) {
+                continue;
+            }
+            order = findOrderById(
+                    basketController.getExecutionsOrderController().getTableExecutionReports().getItems(),
+                    name.getId());
+            if (order != null) {
                 return order;
             }
         }
+
         log.info("Order with ID {} not found.", name.getId());
+        return null;
+    }
+
+    private RoutingMessage.Order findOrderById(Iterable<RoutingMessage.Order> orders, String orderId) {
+        if (orders == null || orderId == null) {
+            return null;
+        }
+        for (RoutingMessage.Order order : orders) {
+            if (order != null && orderId.equals(order.getId())) {
+                return order;
+            }
+        }
         return null;
     }
 
@@ -317,7 +368,7 @@ public class RoutingController {
                     return;
                 }
                 tickMas.setDisable(false);
-                BigDecimal currentLimit = new BigDecimal(limitText.replace(",", ""));
+                BigDecimal currentLimit = FlexibleNumberParser.parseBigDecimal(limitText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentLimit);
                 BigDecimal newLimit = currentLimit.add(tick);
                 limit2.setText(newLimit.toPlainString());
@@ -329,7 +380,7 @@ public class RoutingController {
                     return;
                 }
                 tickMas.setDisable(false);
-                BigDecimal currentPrice = new BigDecimal(priceText.replace(",", ""));
+                BigDecimal currentPrice = FlexibleNumberParser.parseBigDecimal(priceText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentPrice);
                 BigDecimal newPrice = currentPrice.add(tick);
                 priceOrder2.setText(newPrice.toPlainString());
@@ -355,7 +406,7 @@ public class RoutingController {
                     return;
                 }
                 tickMenos.setDisable(false);
-                BigDecimal currentLimit = new BigDecimal(limitText.replace(",", ""));
+                BigDecimal currentLimit = FlexibleNumberParser.parseBigDecimal(limitText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentLimit);
                 BigDecimal newLimit = currentLimit.subtract(tick);
                 if (newLimit.compareTo(BigDecimal.ZERO) > 0) {
@@ -371,7 +422,7 @@ public class RoutingController {
                     return;
                 }
                 tickMenos.setDisable(false);
-                BigDecimal currentPrice = new BigDecimal(priceText.replace(",", ""));
+                BigDecimal currentPrice = FlexibleNumberParser.parseBigDecimal(priceText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentPrice);
                 BigDecimal newPrice = currentPrice.subtract(tick);
                 if (newPrice.compareTo(BigDecimal.ZERO) > 0) {
@@ -390,6 +441,17 @@ public class RoutingController {
 
     @FXML
     public void replaceOrderAction() {
+        try {
+            replaceSelectedOrder();
+        } catch (NumberFormatException e) {
+            Notifier.INSTANCE.notifyError("Error", "Revisa el formato de cantidad, precio, spread, límite o visible.");
+        } catch (Exception e) {
+            log.error("No se pudo modificar la orden", e);
+            Notifier.INSTANCE.notifyError("Error", "No se pudo modificar la orden seleccionada.");
+        }
+    }
+
+    private void replaceSelectedOrder() {
 
         if (Repository.getPrincipalController().getOrderSelected() == null) {
             log.error("No order selected to replace. `orderSelected` is null.");
@@ -408,8 +470,8 @@ public class RoutingController {
 
         if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.BEST)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setLimit(Double.parseDouble(limit2.getText().replace(",", "")))
-                    .setQuantity(Double.parseDouble(quantity2.getText().replace(",", "")));
+                    .setLimit(FlexibleNumberParser.parse(limit2.getText()))
+                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Límite: " + limit2.getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_PASSIVE)
@@ -417,73 +479,81 @@ public class RoutingController {
                 || (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_LAST)))) {
 
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setLimit(Double.parseDouble(limit2.getText().replace(",", "")))
-                    .setQuantity(Double.parseDouble(quantity2.getText().replace(",", "")));
+                    .setLimit(FlexibleNumberParser.parse(limit2.getText()))
+                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Límite: " + limit2.getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.HOLGURA)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setPrice(Double.parseDouble(priceOrder2.getText().replace(",", "")))
-                    .setSpread(Double.parseDouble(spread2.getText().replace(",", "")))
-                    .setQuantity(Double.parseDouble(quantity2.getText().replace(",", "")));
+                    .setPrice(FlexibleNumberParser.parse(priceOrder2.getText()))
+                    .setSpread(FlexibleNumberParser.parse(spread2.getText()))
+                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Precio: " + priceOrder2.getText() + " - Spread: " + spread2.getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.TRAILING)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setLimit(Double.parseDouble(Repository.getLanzadorController().getLimit().getText().replace(",", "")))
-                    .setQuantity(Double.parseDouble(Repository.getLanzadorController().getQuantity().getText().replace(",", "")));
+                    .setLimit(FlexibleNumberParser.parse(Repository.getLanzadorController().getLimit().getText()))
+                    .setQuantity(FlexibleNumberParser.parse(Repository.getLanzadorController().getQuantity().getText()));
             message = "Cantidad: " + Repository.getLanzadorController().getQuantity().getText() + " - Límite: " + Repository.getLanzadorController().getLimit().getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.OCO)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setSpread(Double.parseDouble(Repository.getLanzadorController().getSpread().getText().replace(",", "")))
-                    .setLimit(Double.parseDouble(Repository.getLanzadorController().getLimit().getText().replace(",", "")))
-                    .setQuantity(Double.parseDouble(Repository.getLanzadorController().getQuantity().getText().replace(",", "")));
+                    .setSpread(FlexibleNumberParser.parse(Repository.getLanzadorController().getSpread().getText()))
+                    .setLimit(FlexibleNumberParser.parse(Repository.getLanzadorController().getLimit().getText()))
+                    .setQuantity(FlexibleNumberParser.parse(Repository.getLanzadorController().getQuantity().getText()));
             message = "Cantidad: " + Repository.getLanzadorController().getQuantity().getText() + " - Spread: " + Repository.getLanzadorController().getSpread().getText() + " - Límite: " + Repository.getLanzadorController().getLimit().getText();
 
         } else {
 
-            if (!visibleid.getText().isEmpty()) {
-                double quantityValue = Double.parseDouble(quantity2.getText().replace(",", ""));
-                double icebergValue = Double.parseDouble(visibleid.getText().replace("%", "").replace(".", "").replace(",", ""));
-                double calculatedIceberg = (quantityValue * icebergValue) / 100;
-                double minIceberg = (quantityValue * 0.1);
-                if (calculatedIceberg < minIceberg) {
-                    calculatedIceberg = minIceberg;
-                }
-                int maxFloor = (int) Math.ceil(calculatedIceberg);
-                replace.setIcebergPercentage(String.valueOf(icebergValue));
-                replace.setMaxFloor(maxFloor);
-            }
-
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setPrice(Double.parseDouble(priceOrder2.getText().replace(",", "")))
-                    .setQuantity(Double.parseDouble(quantity2.getText().replace(",", "")));
+                    .setPrice(FlexibleNumberParser.parse(priceOrder2.getText()))
+                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Precio: " + priceOrder2.getText();
         }
 
-        if (Repository.getPrincipalController().getOrderSelected().getOrderQty() <= 0) {
+        if (replace.getQuantity() <= 0) {
             Notifier.INSTANCE.notifyError("Error", "La cantidad debe ser mayor que cero");
             return;
         }
 
-        if (!Repository.getPrincipalController().getOrderSelected().getOrdType().equals(RoutingMessage.OrdType.MARKET) && Repository.getPrincipalController().getOrderSelected().getPrice() <= 0
-                && !Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.OCO)) {
+        if (requiresPriceForReplace(Repository.getPrincipalController().getOrderSelected())
+                && replace.getPrice() <= 0) {
             Notifier.INSTANCE.notifyError("Error", "El precio debe ser mayor que cero para una orden no de mercado.");
             return;
         }
 
-        if (!visibleid.getText().isEmpty()) {
-            double maxFloor = Double.parseDouble(quantity2.getText().replace(",", "")) *
-                    Double.parseDouble(visibleid.getText().replace("%", "").replace(",", ".")) / 100;
-            long maxFloorInt = Math.round(maxFloor);
-            replace.setMaxFloor((double) maxFloorInt + 1);
-            replace.setIcebergPercentage(visibleid.getText());
+        if (visibleid.getText() != null && !visibleid.getText().isBlank()) {
+            double visiblePercentage = FlexibleNumberParser.parse(visibleid.getText());
+            if (visiblePercentage <= 0 || visiblePercentage > 100) {
+                Notifier.INSTANCE.notifyError("Error", "Visible debe estar entre 0 y 100%.");
+                return;
+            }
+            replace.setMaxFloor(calculateMaxFloor(replace.getQuantity(), visiblePercentage));
+            replace.setIcebergPercentage(String.valueOf(visiblePercentage));
         }
 
         if (Repository.getLanzadorController().alertRoute2(message)) {
             Repository.getClientService().sendMessage(replace.build());
         }
+    }
+
+    private boolean requiresPriceForReplace(RoutingMessage.Order order) {
+        if (order == null || order.getOrdType().equals(RoutingMessage.OrdType.MARKET)) {
+            return false;
+        }
+
+        RoutingMessage.StrategyOrder strategy = order.getStrategyOrder();
+        return !strategy.equals(RoutingMessage.StrategyOrder.BEST)
+                && !strategy.equals(RoutingMessage.StrategyOrder.BASKET_PASSIVE)
+                && !strategy.equals(RoutingMessage.StrategyOrder.BASKET_AGGRESSIVE)
+                && !strategy.equals(RoutingMessage.StrategyOrder.BASKET_LAST)
+                && !strategy.equals(RoutingMessage.StrategyOrder.TRAILING)
+                && !strategy.equals(RoutingMessage.StrategyOrder.OCO);
+    }
+
+    static long calculateMaxFloor(double quantity, double visiblePercentage) {
+        double effectivePercentage = Math.max(10d, visiblePercentage);
+        return (long) Math.ceil(quantity * effectivePercentage / 100d);
     }
 
     @FXML

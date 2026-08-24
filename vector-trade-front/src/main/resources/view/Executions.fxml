@@ -16,7 +16,7 @@
                     <TableColumn fx:id="time" minWidth="80" prefWidth="60" sortType="DESCENDING" text="Fecha Ingreso"/>
                     <TableColumn fx:id="side" prefWidth="40.0" text="Tipo"/>
                     <TableColumn fx:id="symbol" prefWidth="100" text="Instrumento"/>
-                    <TableColumn fx:id="settlType" prefWidth="30" text="Condición"/>
+                    <TableColumn fx:id="settlType" prefWidth="30" text="Condición" visible="false"/>
                     <TableColumn fx:id="market" prefWidth="60.0" text="Mercado"/>
                     <TableColumn fx:id="broker" prefWidth="75" text="Broker" visible="false"/>
                     <TableColumn fx:id="ordType" prefWidth="75" text="T Orden"/>
@@ -33,7 +33,7 @@
                     <TableColumn fx:id="handlInst" prefWidth="50" text="HandlInst" visible="false"/>
                     <TableColumn fx:id="id" prefWidth="50" text="ID" visible="true"/>
                     <TableColumn fx:id="clOrdID" prefWidth="50" text="ClOrdID" visible="false"/>
-                    <TableColumn fx:id="orderID" prefWidth="50" text="OrderID" visible="false"/>
+                    <TableColumn fx:id="orderID" prefWidth="90" text="OrderId FIX" visible="true"/>
                     <TableColumn fx:id="execID" prefWidth="50" text="ExecID" visible="false"/>
                     <TableColumn fx:id="execType" prefWidth="50" text="Tipo de Ejecución" visible="false"/>
                     <TableColumn fx:id="status" prefWidth="80" text="Estado"/>

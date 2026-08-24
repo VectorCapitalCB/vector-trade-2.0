@@ -27,6 +27,7 @@ import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Bounds;
+import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
@@ -38,6 +39,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.math.BigDecimal;
@@ -56,6 +58,18 @@ import static cl.vc.module.protocolbuff.generator.IDGenerator.conversorExdestina
 @Data
 @Slf4j
 public class LanzadorController {
+
+    static final String MULTIBOOK_DEFAULT_VISIBLE_PERCENTAGE = "10";
+    static final String INITIAL_INSTRUMENT = "SQM-B";
+    static final List<RoutingMessage.OrdType> ALLOWED_ORDER_TYPES = List.of(
+            RoutingMessage.OrdType.MARKET,
+            RoutingMessage.OrdType.LIMIT);
+    static final List<RoutingMessage.SecurityType> ALLOWED_SECURITY_TYPES = List.of(
+            RoutingMessage.SecurityType.CS,
+            RoutingMessage.SecurityType.CFI,
+            RoutingMessage.SecurityType.MON,
+            RoutingMessage.SecurityType.ETF,
+            RoutingMessage.SecurityType.CORP);
 
     private DateTimeFormatter TIME_FMT = DateTimeFormatter.ofPattern("HH:mm");
 
@@ -247,6 +261,7 @@ public class LanzadorController {
     private RoutingController routingController;
 
     private boolean isUpdatingFromOtherSource = false;
+    private boolean initialInstrumentApplied;
 
     public static String formatearNumeroBestHit(String numero) {
 
@@ -315,6 +330,76 @@ public class LanzadorController {
 
     private boolean canAutoSetSettlType() {
         return !isLightMode() || isPremiumLiquidationUser();
+    }
+
+    public void applyProfileVisualMode(boolean advanced) {
+        myHBox.getStyleClass().remove("launcher-advanced");
+        if (advanced) {
+            myHBox.getStyleClass().add("launcher-advanced");
+            gpLauncher.setAlignment(Pos.TOP_LEFT);
+            installLauncherIcon(addBookButton, "fth-book-open");
+            installLauncherIcon(addpreselect, "fth-edit-3");
+            installLauncherIcon(paste, "fth-clipboard");
+            installLauncherIcon(routeOrder, "fth-send");
+            installLauncherIcon(bestR, "fth-target");
+            installLauncherIcon(hitR, "fth-zap");
+            installLauncherIcon(clean, "fth-trash-2");
+            setAdvancedButtonSize(addBookButton, 120);
+            setAdvancedButtonSize(addpreselect, 120);
+            setAdvancedButtonSize(paste, 112);
+            setAdvancedButtonSize(routeOrder, 120);
+            setAdvancedButtonSize(bestR, 78);
+            setAdvancedButtonSize(hitR, 96);
+            setAdvancedButtonSize(clean, 104);
+        } else {
+            for (Button button : List.of(addBookButton, addpreselect, paste, routeOrder, bestR, hitR, clean)) {
+                button.setGraphic(null);
+            }
+        }
+
+        setVisibleManaged(VboxOPCI, false);
+        refreshAdvancedLiquidationVisibility();
+    }
+
+    static boolean shouldShowAdvancedLiquidation(
+            boolean lightMode,
+            RoutingMessage.SecurityExchangeRouting securityExchange) {
+        return !lightMode && securityExchange == RoutingMessage.SecurityExchangeRouting.IB_SMART;
+    }
+
+    private void refreshAdvancedLiquidationVisibility() {
+        if (isLightMode()) {
+            return;
+        }
+        RoutingMessage.SecurityExchangeRouting selected =
+                secExchOrder.getSelectionModel().getSelectedItem();
+        boolean showLiquidation = shouldShowAdvancedLiquidation(false, selected);
+        setVisibleManaged(VboxLiquidacion, showLiquidation);
+        GridPane.setColumnIndex(VboxEstrategia, showLiquidation ? 4 : 3);
+    }
+
+    private void setVisibleManaged(Node node, boolean visible) {
+        if (node != null) {
+            node.setVisible(visible);
+            node.setManaged(visible);
+        }
+    }
+
+    private void installLauncherIcon(Button button, String iconLiteral) {
+        FontIcon icon = new FontIcon(iconLiteral);
+        icon.setIconSize(15);
+        icon.setMouseTransparent(true);
+        boolean tradingAction = button == routeOrder || button == bestR || button == hitR || button == clean;
+        icon.getStyleClass().add(tradingAction ? "launcher-trade-icon" : "launcher-utility-icon");
+        button.setGraphic(icon);
+        button.setGraphicTextGap(6);
+    }
+
+    private void setAdvancedButtonSize(Button button, double width) {
+        button.setMinHeight(28);
+        button.setPrefHeight(28);
+        button.setMaxHeight(28);
+        button.setPrefWidth(width);
     }
 
     private void selectSettlTypeIfAllowed(RoutingMessage.SettlType st) {
@@ -518,6 +603,8 @@ public class LanzadorController {
         secExchOrder.setOnAction(event -> {
             RoutingMessage.SecurityExchangeRouting selectedOption = secExchOrder.getSelectionModel().getSelectedItem();
 
+            refreshAdvancedLiquidationVisibility();
+
             if (selectedOption == null) {
                 return;
             }
@@ -528,7 +615,7 @@ public class LanzadorController {
                 currency.getSelectionModel().select(RoutingMessage.Currency.valueOf(values.get(2)));
                 cOperador.getSelectionModel().select(values.get(3));
                 tifOrder.getSelectionModel().select(RoutingMessage.Tif.valueOf(values.get(4)));
-                typeOrder.getSelectionModel().select(RoutingMessage.OrdType.valueOf(values.get(5)));
+                selectAllowedOrderType(RoutingMessage.OrdType.valueOf(values.get(5)));
                 selectSettlTypeIfAllowed(RoutingMessage.SettlType.valueOf(values.get(6)), "secExch.onAction.defaultRouting");
                 brokerOrder.getSelectionModel().select(RoutingMessage.ExecBroker.valueOf(values.get(7)));
                 handInstOrder.getSelectionModel().select(RoutingMessage.HandlInst.valueOf(values.get(8)));
@@ -565,6 +652,7 @@ public class LanzadorController {
                     snapshotBasket.getOrdersList().size() + " órdenes con estrategia?";
 
             if (alertRoute(message)) {
+                cl.vc.blotter.utils.BasketTabs.openOrUpdate(snapshotBasket);
                 snapshotBasket.getOrdersList().forEach(s -> {
                     RoutingMessage.NewOrderRequest newOrderRequest =
                             RoutingMessage.NewOrderRequest.newBuilder().setOrder(s).build();
@@ -595,11 +683,10 @@ public class LanzadorController {
                 isProgrammaticChange = true;
                 ticket.setText(upper);
                 isProgrammaticChange = false;
-                return; // salimos y dejamos que el próximo evento siga
             }
 
             if (upper.isEmpty()) {
-                suggestionsPopup.hide();
+                hideSuggestions();
                 return;
             }
 
@@ -610,12 +697,12 @@ public class LanzadorController {
             RoutingMessage.SecurityExchangeRouting selectedEx = secExchOrder.getSelectionModel().getSelectedItem();
             if (selectedEx != null) {
                 MarketDataMessage.SecurityExchangeMarketData sec = conversorExdestination(selectedEx);
-                updateSecurityTypeComboBox(upper, sec);
+                if (sec != null && Repository.getSecurityListMaps().contains(upper, sec.name())) {
+                    updateSecurityTypeComboBox(upper, sec);
+                    routeOrder.setDisable(false);
+                    Repository.getPrincipalController().subscribeSymbol();
+                }
             }
-
-            // Esto es CLAVE: si estás buscando nuevo símbolo, no uses datos viejos.
-            routeOrder.setDisable(false);        // (o true si de verdad lo bloqueas hasta callback)
-            Repository.getPrincipalController().subscribeSymbol();
         });
 
 
@@ -664,10 +751,7 @@ public class LanzadorController {
         sideOrder.getItems().remove(RoutingMessage.Side.UNRECOGNIZED.name());
         sideOrder.getItems().remove(RoutingMessage.Side.NONE_SIDE.name());
         sideOrder.getItems().remove(RoutingMessage.Side.SELL_SHORT.name());
-        typeOrder.getItems().addAll(RoutingMessage.OrdType.values());
-        typeOrder.getItems().remove(RoutingMessage.OrdType.NONE);
-        typeOrder.getItems().remove(RoutingMessage.OrdType.UNRECOGNIZED);
-        typeOrder.getItems().remove(RoutingMessage.OrdType.STOP_LOSS);
+        typeOrder.getItems().setAll(ALLOWED_ORDER_TYPES);
 
         tifOrder.getItems().remove(RoutingMessage.OrdType.UNRECOGNIZED);
         tifOrder.getItems().remove(RoutingMessage.OrdType.NONE);
@@ -677,12 +761,8 @@ public class LanzadorController {
         tifOrder.getItems().addAll(RoutingMessage.Tif.values());
         tifOrder.getItems().remove(RoutingMessage.Tif.UNRECOGNIZED);
         tifOrder.getSelectionModel().select(RoutingMessage.Tif.DAY);
-        securityType.getItems().addAll(RoutingMessage.SecurityType.values());
+        securityType.getItems().setAll(ALLOWED_SECURITY_TYPES);
         securityType.getSelectionModel().select(RoutingMessage.SecurityType.CS);
-        securityType.getItems().remove(RoutingMessage.SecurityType.FUT);
-        securityType.getItems().remove(RoutingMessage.SecurityType.OPT);
-        securityType.getItems().remove(RoutingMessage.SecurityType.PAXOS);
-        securityType.getItems().remove(RoutingMessage.SecurityType.UNRECOGNIZED);
 
 
         handInstOrder.getItems().addAll(RoutingMessage.HandlInst.values());
@@ -758,6 +838,8 @@ public class LanzadorController {
             }
         } catch (Exception e) {
             log.error("Error aplicando DefaultRouting", e);
+        } finally {
+            refreshAdvancedLiquidationVisibility();
         }
     }
 
@@ -803,7 +885,7 @@ public class LanzadorController {
             try { getTifOrder().getSelectionModel().select(RoutingMessage.Tif.valueOf(tifStr)); }
             catch (IllegalArgumentException ex) { log.warn("TIF inválido en default: {}", tifStr); }
 
-            try { getTypeOrder().getSelectionModel().select(RoutingMessage.OrdType.valueOf(ordTypeStr)); }
+            try { selectAllowedOrderType(RoutingMessage.OrdType.valueOf(ordTypeStr)); }
             catch (IllegalArgumentException ex) { log.warn("OrdType inválido en default: {}", ordTypeStr); }
 
             try { selectSettlTypeIfAllowed(RoutingMessage.SettlType.valueOf(settlStr), "applyDefaultRoutingForKey"); }
@@ -817,6 +899,8 @@ public class LanzadorController {
 
         } catch (Exception e) {
             log.error("Error aplicando DefaultRouting para {}", secExchKey, e);
+        } finally {
+            refreshAdvancedLiquidationVisibility();
         }
     }
 
@@ -937,13 +1021,14 @@ public class LanzadorController {
         double cashValue = quantityValue * priceValue;
         getCash().setText(formatearNumero(String.valueOf(cashValue)));
 
-        getTypeOrder().getSelectionModel().select(value.getOrdType());
-        getSecurityType().getSelectionModel().select(value.getSecurityType());
+        selectAllowedOrderType(value.getOrdType());
+        selectAllowedSecurityType(value.getSecurityType());
         getBrokerOrder().getSelectionModel().select(value.getBroker());
         getHandInstOrder().getSelectionModel().select(value.getHandlInst());
         getAcAccount().getSelectionModel().select(value.getAccount());
         selectSettlTypeIfAllowed(value.getSettlType(), "setValues.orderSelected");
         getSecExchOrder().getSelectionModel().select(value.getSecurityExchange());
+        refreshAdvancedLiquidationVisibility();
         getStrategOrder().getSelectionModel().select(value.getStrategyOrder());
         getCOperador().getSelectionModel().select(value.getCodeOperator());
 
@@ -962,13 +1047,14 @@ public class LanzadorController {
         quantity.setText(String.valueOf(value.getOrderQty()));
         priceOrder.setText(String.valueOf(value.getPrice()));
         ticket.setText(value.getSymbol());
-        typeOrder.getSelectionModel().select(value.getOrdType());
-        securityType.getSelectionModel().select(value.getSecurityType());
+        selectAllowedOrderType(value.getOrdType());
+        selectAllowedSecurityType(value.getSecurityType());
         brokerOrder.getSelectionModel().select(value.getBroker());
         handInstOrder.getSelectionModel().select(value.getHandlInst());
         acAccount.getSelectionModel().select(value.getAccount());
         settltypeOrder.getSelectionModel().select(value.getSettlType());
         secExchOrder.getSelectionModel().select(value.getSecurityExchange());
+        refreshAdvancedLiquidationVisibility();
 
 
     }
@@ -986,6 +1072,9 @@ public class LanzadorController {
 
     public void setFormByStatistic(MarketDataMessage.Statistic selectedItem) {
         try {
+            islibrazo = false;
+            IdLibrazo = null;
+            libroEmergenteControllerList.clear();
 
             RoutingMessage.SettlType prevSettl =
                     (settltypeOrder != null) ? settltypeOrder.getSelectionModel().getSelectedItem() : null;
@@ -1049,6 +1138,7 @@ public class LanzadorController {
                     conversorExdestination(selectedItem.getSecurityExchange());
 
             secExchOrder.getSelectionModel().select(securityExchangeRouting);
+            refreshAdvancedLiquidationVisibility();
             strategOrder.getSelectionModel().select(RoutingMessage.StrategyOrder.NONE_STRATEGY);
             currency.getSelectionModel().select(RoutingMessage.Currency.CLP);
 
@@ -1166,14 +1256,7 @@ public class LanzadorController {
                 double icebergValue = Double.parseDouble(iceberg.getText().replace("%", "")
                         .replace(".", "").replace(",", ""));
 
-                double calculatedIceberg = (quantityValue * icebergValue) / 100;
-                double minIceberg = (quantityValue * 0.1);
-
-                if (calculatedIceberg < minIceberg) {
-                    calculatedIceberg = minIceberg;
-                }
-
-                int maxFloor = (int) Math.ceil(calculatedIceberg);
+                int maxFloor = calculateVisibleMaxFloor(quantityValue, icebergValue);
 
 
                 orderBuilder.setMaxFloor(maxFloor);
@@ -1203,6 +1286,15 @@ public class LanzadorController {
         }
 
         return orderBuilder;
+    }
+
+    static int calculateVisibleMaxFloor(double quantity, double visiblePercentage) {
+        if (visiblePercentage == 0d) {
+            return 0;
+        }
+        double calculatedVisible = (quantity * visiblePercentage) / 100d;
+        double minimumVisible = quantity * 0.1d;
+        return (int) Math.ceil(Math.max(calculatedVisible, minimumVisible));
     }
 
     @FXML
@@ -1245,22 +1337,72 @@ public class LanzadorController {
 
     private void updateSuggestions(String text) {
         if (text == null || text.isEmpty()) {
-            suggestionsPopup.hide();
+            hideSuggestions();
         } else {
             if (filteredList == null) {
-                allSymbols = Repository.getAllSymbols();
+                allSymbols = FXCollections.observableArrayList();
                 filteredList = new FilteredList<>(allSymbols);
+                suggestionsList.setItems(filteredList);
             }
 
-            filteredList.setPredicate(item -> item.toLowerCase().contains(text.toLowerCase()));
-            suggestionsList.setItems(filteredList);
+            if (allSymbols.isEmpty()) {
+                allSymbols.setAll(Repository.getAllSymbols());
+            }
+            String normalizedText = text.toUpperCase(Locale.ROOT);
+            filteredList.setPredicate(item -> item != null
+                    && item.toUpperCase(Locale.ROOT).contains(normalizedText));
+
+            // Si el primer snapshot se tomó mientras cargaban los instrumentos, vuelve a
+            // consultarlo solo cuando la búsqueda actual no encuentra coincidencias.
+            if (filteredList.isEmpty()) {
+                ObservableList<String> refreshedSymbols = Repository.getAllSymbols();
+                if (!refreshedSymbols.equals(allSymbols)) {
+                    allSymbols.setAll(refreshedSymbols);
+                }
+            }
 
             if (!filteredList.isEmpty()) {
+                int visibleRows = Math.min(filteredList.size(), 8);
+                suggestionsList.setPrefHeight(visibleRows * suggestionsList.getFixedCellSize() + 2);
                 showSuggestionsPopup();
             } else {
-                suggestionsPopup.hide();
+                hideSuggestions();
             }
         }
+    }
+
+    public void setInstrumentFromBook(String symbol) {
+        String exactSymbol = symbol == null ? "" : symbol.trim().toUpperCase(Locale.ROOT);
+        isProgrammaticChange = true;
+        try {
+            ticket.setText(exactSymbol);
+        } finally {
+            isProgrammaticChange = false;
+        }
+        hideSuggestions();
+    }
+
+    /** Carga una sola vez el papel inicial, sin convertirlo en placeholder permanente. */
+    public void applyInitialInstrumentOnce() {
+        if (initialInstrumentApplied) {
+            return;
+        }
+        initialInstrumentApplied = true;
+        if (ticket == null || !ticket.getText().isBlank()) {
+            return;
+        }
+
+        setInstrumentFromBook(INITIAL_INSTRUMENT);
+        if (Repository.getPrincipalController() != null) {
+            Repository.getPrincipalController().subscribeSymbol();
+        }
+    }
+
+    private void hideSuggestions() {
+        if (suggestionsPopup != null) {
+            suggestionsPopup.hide();
+        }
+        isPopupVisible = false;
     }
 
     private synchronized void updateSecurityTypeComboBox(String ticket, MarketDataMessage.SecurityExchangeMarketData securityExchangeMarketData) {
@@ -1280,12 +1422,32 @@ public class LanzadorController {
             MarketDataMessage.Security security = Repository.getSecurityListMaps().get(ticket, securityExchangeMarketData.name());
             if (security != null) {
                 String securityTypeString = security.getSecurityType();
-                securityType.getSelectionModel().select(RoutingMessage.SecurityType.valueOf(securityTypeString));
+                selectAllowedSecurityType(RoutingMessage.SecurityType.valueOf(securityTypeString));
             }
 
 
 
         });
+    }
+
+    private void selectAllowedOrderType(RoutingMessage.OrdType value) {
+        RoutingMessage.OrdType selected = ALLOWED_ORDER_TYPES.contains(value)
+                ? value
+                : RoutingMessage.OrdType.LIMIT;
+        typeOrder.getSelectionModel().select(selected);
+    }
+
+    private void selectAllowedSecurityType(RoutingMessage.SecurityType value) {
+        if (ALLOWED_SECURITY_TYPES.contains(value)) {
+            securityType.getSelectionModel().select(value);
+            return;
+        }
+
+        securityType.getSelectionModel().clearSelection();
+        routeOrder.setDisable(true);
+        log.warn("Clase no permitida en el lanzador: {}", value);
+        Notifier.INSTANCE.notifyWarning("Clase no permitida",
+                "El instrumento usa una clase que no esta habilitada para operar.");
     }
 
     public void setupTicketTextField() {
@@ -1304,6 +1466,13 @@ public class LanzadorController {
         Bounds bounds = ticket.localToScreen(ticket.getBoundsInLocal());
 
         if (bounds != null) {
+            String theme = Repository.isDayMode()
+                    ? "/blotter/css/daymode.css"
+                    : Repository.getSTYLE();
+            var css = getClass().getResource(theme);
+            if (css != null) {
+                suggestionsList.getStylesheets().setAll(css.toExternalForm());
+            }
             suggestionsPopup.show(ticket, bounds.getMinX(), bounds.getMaxY());
             isPopupVisible = true;
         }
@@ -1313,6 +1482,9 @@ public class LanzadorController {
 
         if (suggestionsPopup == null) {
             suggestionsList = new ListView<>();
+            suggestionsList.getStyleClass().add("launcher-suggestions");
+            suggestionsList.setFixedCellSize(24);
+            suggestionsList.setPrefWidth(250);
             suggestionsPopup = new Popup();
             suggestionsPopup.getContent().add(suggestionsList);
             suggestionsPopup.setAutoHide(true);
@@ -1702,6 +1874,7 @@ public class LanzadorController {
 
             this.getSecExchOrder().setItems(securityExchangeUser);
             this.getSecExchOrder().getSelectionModel().select(RoutingMessage.SecurityExchangeRouting.XSGO);
+            refreshAdvancedLiquidationVisibility();
 
             // Código operador
             ObservableList<String> codeOperator = FXCollections.observableArrayList();
@@ -1806,4 +1979,3 @@ public class LanzadorController {
     }
 
 }
-

@@ -14,6 +14,7 @@ import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.tcp.NettyProtobufClient;
 import cl.vc.module.protocolbuff.tcp.NettyProtobufServer;
 import cl.vc.service.akka.actors.SellsideConnect;
+import cl.vc.service.akka.actors.mkd.ActorPerSubscriptionMkd;
 import cl.vc.service.akka.actors.routing.ActorGroupPerAccount;
 import cl.vc.service.admin.AccountLoadTracker;
 import cl.vc.service.admin.AdminServer;
@@ -122,6 +123,8 @@ public class MainApp {
     /** Multibook 2.0: username -> documento JSON con las configuraciones nombradas del usuario. */
     @Getter
     private static RMap<String, String> multibook2Maps;
+    @Getter
+    private static RMap<String, String> manualSaldoOverridesRedis;
     @Getter
     private static HashMap<String, List<RoutingMessage.Order>> AllordersMap = new HashMap<>();
     @Getter
@@ -269,6 +272,7 @@ public class MainApp {
     private static final ConcurrentHashMap<String, List<BlotterMessage.Prestamos>> manualPrestamosOverrides = new ConcurrentHashMap<>();
     @Getter
     private static final ConcurrentHashMap<String, ManualSaldoOverride> manualSaldoOverrides = new ConcurrentHashMap<>();
+    private static final Gson redisJson = new Gson();
     private static final int MAX_OD_ATTEMPTS = 500;
     private static final String ADMIN_FLAG_OD_PROTECTION = "odProtectionEnabled";
     @Getter
@@ -286,6 +290,8 @@ public class MainApp {
     private static ConcurrentHashMap<String, Session> userActiveSessionsMap = new ConcurrentHashMap<>();
     @Getter
     private static ConcurrentHashMap<String, Long> userSessionConnectedAt = new ConcurrentHashMap<>();
+    @Getter
+    private static ConcurrentHashMap<String, ActorRef> userSessionActorsMap = new ConcurrentHashMap<>();
 
     /** Usuarios bloqueados por el admin. Sus conexiones son rechazadas al instante. */
     @Getter
@@ -947,20 +953,51 @@ public class MainApp {
             return null;
         }
 
-        ActorRef existing = accountGroupUser.get(account);
+        String accountKey = resolveAccountKey(account);
+        ActorRef existing = accountGroupUser.get(accountKey);
         if (existing != null) {
             return existing;
         }
 
-        Double margin = accountMarginCache.getOrDefault(account, 0.0);
-        Double leverage = accountLeverageCache.getOrDefault(account, 3.0);
-        ActorRef created = system.actorOf(ActorGroupPerAccount.props(account, margin, leverage).withDispatcher("ActorperAccount"));
-        ActorRef previous = accountGroupUser.putIfAbsent(account, created);
+        Double margin = accountMarginCache.getOrDefault(accountKey, 0.0);
+        Double leverage = accountLeverageCache.getOrDefault(accountKey, 3.0);
+        ActorRef created = system.actorOf(ActorGroupPerAccount.props(accountKey, margin, leverage).withDispatcher("ActorperAccount"));
+        ActorRef previous = accountGroupUser.putIfAbsent(accountKey, created);
         if (previous != null) {
             created.tell(akka.actor.PoisonPill.getInstance(), ActorRef.noSender());
             return previous;
         }
         return created;
+    }
+
+    public static String resolveAccountKey(String account) {
+        if (account == null) {
+            return "";
+        }
+        String exact = account.trim();
+        if (exact.isEmpty()) {
+            return exact;
+        }
+        if (accountGroupUser.containsKey(exact)
+                || accountMarginCache.containsKey(exact)
+                || accountLeverageCache.containsKey(exact)) {
+            return exact;
+        }
+
+        String slash = exact.replace('-', '/');
+        if (accountGroupUser.containsKey(slash)
+                || accountMarginCache.containsKey(slash)
+                || accountLeverageCache.containsKey(slash)) {
+            return slash;
+        }
+
+        String dash = exact.replace('/', '-');
+        if (accountGroupUser.containsKey(dash)
+                || accountMarginCache.containsKey(dash)
+                || accountLeverageCache.containsKey(dash)) {
+            return dash;
+        }
+        return slash;
     }
 
     public static List<BlotterMessage.Simultaneas> getManualSimultaneasOverride(String account) {
@@ -1021,29 +1058,48 @@ public class MainApp {
         if (account == null || account.isBlank()) {
             return null;
         }
-        return manualSaldoOverrides.get(account);
+        return manualSaldoOverrides.get(resolveAccountKey(account));
     }
 
     public static boolean hasManualSaldoOverride(String account) {
-        return account != null && !account.isBlank() && manualSaldoOverrides.containsKey(account);
+        return account != null && !account.isBlank()
+                && manualSaldoOverrides.containsKey(resolveAccountKey(account));
     }
 
     public static void replaceManualSaldoOverride(String account, ManualSaldoOverride override) {
         if (account == null || account.isBlank()) {
             return;
         }
+        String accountKey = resolveAccountKey(account);
         if (override == null) {
-            manualSaldoOverrides.remove(account);
+            clearManualSaldoOverride(accountKey);
             return;
         }
-        manualSaldoOverrides.put(account, override);
+        manualSaldoOverrides.put(accountKey, override);
+        if (manualSaldoOverridesRedis != null) {
+            try {
+                manualSaldoOverridesRedis.put(accountKey, redisJson.toJson(override));
+            } catch (Exception e) {
+                log.error("[Redis] no se pudo persistir saldo manual para {}: {}", accountKey, e.getMessage());
+                reportRedisFailure("manual-saldo-put", e);
+            }
+        }
     }
 
     public static void clearManualSaldoOverride(String account) {
         if (account == null || account.isBlank()) {
             return;
         }
-        manualSaldoOverrides.remove(account);
+        String accountKey = resolveAccountKey(account);
+        manualSaldoOverrides.remove(accountKey);
+        if (manualSaldoOverridesRedis != null) {
+            try {
+                manualSaldoOverridesRedis.remove(accountKey);
+            } catch (Exception e) {
+                log.error("[Redis] no se pudo eliminar saldo manual para {}: {}", accountKey, e.getMessage());
+                reportRedisFailure("manual-saldo-remove", e);
+            }
+        }
     }
 
     private static void initializeAccountActorSync(String account, ActorRef actorRef, String username, int currentUserIndex,
@@ -1148,6 +1204,22 @@ public class MainApp {
                 RMap<String, List<BlotterMessage.SubMultibook>> newMultiBookMaps = newRedisson.getMap("MultiBook");
                 RMap<String, String> newMultibook2Maps = newRedisson.getMap("MultiBook2.0",
                         org.redisson.client.codec.StringCodec.INSTANCE);
+                RMap<String, String> newManualSaldoOverridesRedis = newRedisson.getMap(
+                        "ManualSaldoOverrides", org.redisson.client.codec.StringCodec.INSTANCE);
+                Map<String, ManualSaldoOverride> restoredManualSaldoOverrides = new HashMap<>();
+                newManualSaldoOverridesRedis.readAllMap().forEach((storedAccount, json) -> {
+                    try {
+                        ManualSaldoOverride restored = redisJson.fromJson(json, ManualSaldoOverride.class);
+                        if (restored != null) {
+                            restoredManualSaldoOverrides.put(resolveAccountKey(storedAccount), restored);
+                        }
+                    } catch (Exception e) {
+                        log.error("[Redis] override manual de saldo invalido para {}: {}", storedAccount, e.getMessage());
+                    }
+                });
+                manualSaldoOverrides.forEach((localAccount, override) ->
+                        newManualSaldoOverridesRedis.put(localAccount, redisJson.toJson(override)));
+                restoredManualSaldoOverrides.putAll(manualSaldoOverrides);
 
                 RSet<String> newBlockedSymbolsRedis = newRedisson.getSet("RiskBlockedSymbols");
                 Set<String> newBlockedSymbols = new HashSet<>(newBlockedSymbolsRedis.readAll());
@@ -1193,6 +1265,9 @@ public class MainApp {
                 portfolioMaps = newPortfolioMaps;
                 multiBookMaps = newMultiBookMaps;
                 multibook2Maps = newMultibook2Maps;
+                manualSaldoOverridesRedis = newManualSaldoOverridesRedis;
+                manualSaldoOverrides.clear();
+                manualSaldoOverrides.putAll(restoredManualSaldoOverrides);
 
                 blockedSymbolsRedis = newBlockedSymbolsRedis;
                 blockedSymbols.clear();
@@ -1415,6 +1490,7 @@ public class MainApp {
         maps.put("PreSelectOrders", preSelectordersMap != null);
         maps.put("Portfolio", portfolioMaps != null);
         maps.put("MultiBook", multiBookMaps != null);
+        maps.put("ManualSaldoOverrides", manualSaldoOverridesRedis != null);
         maps.put("RiskBlockedSymbols", blockedSymbolsRedis != null);
         maps.put("BlockedUsers", blockedUsersRedis != null);
         maps.put("NotionalLimits", notionalLimitsRedis != null);
@@ -2128,6 +2204,61 @@ public class MainApp {
 
     private static boolean isCfiSymbol(String symbol) {
         return symbol != null && symbol.startsWith("CFI");
+    }
+
+    /**
+     * Simbolos BCS agrupados por SecurityType ("CS", "CFI", "ETF", ...), para que la recarga de
+     * cierres de Mongo pueda ir por tipo y por lotes en vez de leer la coleccion completa.
+     *
+     * El tipo NO esta en close_prices (sus documentos son { symbol, securityExchange, time,
+     * protobufData } y protobufData es un String JSON que Mongo no puede filtrar): la unica fuente
+     * es la SecurityList que manda el sellside y que ya vive en securityExchangeMaps.
+     *
+     * synchronized + copia defensiva: securityExchangeMaps es un HashMap escrito en el arranque
+     * (:439/:454) y esto lo lee desde el hilo "mongo-close-reload".
+     *
+     * Fallback: si un Security no trae securityType, se clasifica por convencion de nombre
+     * ({@link #isCfiSymbol}) y si no, como "CS", que es el default del resto del sistema.
+     */
+    public static synchronized Map<String, List<String>> snapshotBcsSymbolsBySecurityType() {
+        Map<String, List<String>> out = new LinkedHashMap<>();
+        MarketDataMessage.SecurityList list =
+                securityExchangeMaps.get(MarketDataMessage.SecurityExchangeMarketData.BCS);
+        if (list == null) return out;
+        for (MarketDataMessage.Security s : list.getListSecuritiesList()) {
+            String symbol = s.getSymbol();
+            if (symbol == null || symbol.isBlank()) continue;
+            String type = s.getSecurityType();
+            if (type == null || type.isBlank()) {
+                type = isCfiSymbol(symbol)
+                        ? RoutingMessage.SecurityType.CFI.name()
+                        : RoutingMessage.SecurityType.CS.name();
+            }
+            out.computeIfAbsent(type.trim().toUpperCase(), k -> new ArrayList<>()).add(symbol);
+        }
+        return out;
+    }
+
+    /**
+     * Avisa a los actores de suscripcion MKD que el cierre de ayer cambio en la cache de Mongo.
+     *
+     * Hace falta porque ActorPerSubscriptionMkd guarda previousDayClose en un campo propio y solo lo
+     * vuelve a leer de la cache cuando vale 0: sin este aviso, un cliente ya suscrito se queda con el
+     * cierre viejo hasta el proximo tick, y si el papel no vuelve a tickear, para siempre.
+     *
+     * @param symbol simbolo a refrescar, o null para todos.
+     */
+    public static void broadcastPreviousCloseRefresh(String symbol) {
+        ActorPerSubscriptionMkd.RefreshPreviousClose msg =
+                new ActorPerSubscriptionMkd.RefreshPreviousClose(symbol);
+        int sessions = 0;
+        for (ActorRef session : userSessionActorsMap.values()) {
+            if (session == null) continue;
+            session.tell(msg, ActorRef.noSender());
+            sessions++;
+        }
+        log.info("[Mongo/Reload] refresh de cierre enviado a {} sesiones (simbolo={})",
+                sessions, symbol == null ? "TODOS" : symbol);
     }
 
     private static void startStartupMkdWatchdog() {

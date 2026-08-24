@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.control.Label?>
+<?import javafx.scene.control.PasswordField?>
+<?import javafx.scene.control.ScrollPane?>
+<?import javafx.scene.control.ToggleButton?>
+<?import javafx.scene.layout.BorderPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Region?>
+<?import javafx.scene.layout.StackPane?>
+<?import javafx.scene.layout.VBox?>
+
+<!-- Configuración con navegación lateral: secciones a la izquierda, contenido al centro.
+
+ Los items del rail son ToggleButton y NO un ListView a propósito: I18n.translateNode excluye
+ ListCell del binding de texto, así que con un ListView los títulos se quedarían en español al
+ cambiar a inglés. -->
+<BorderPane xmlns="http://javafx.com/javafx/8"
+            xmlns:fx="http://javafx.com/fxml/1"
+            styleClass="settings-root"
+            prefWidth="820" prefHeight="560"
+            fx:controller="cl.vc.blotter.controller.SettingsController">
+
+    <left>
+        <VBox fx:id="rail" styleClass="settings-nav" prefWidth="220" spacing="2">
+            <Label text="Configuración" styleClass="settings-title"/>
+            <Label text="Personaliza la interfaz sin modificar la mensajería de trading."
+                   styleClass="settings-subtitle" wrapText="true"/>
+            <Region prefHeight="12"/>
+            <ToggleButton fx:id="navGeneral" text="General" styleClass="settings-nav-item" maxWidth="Infinity"/>
+            <ToggleButton fx:id="navBanner" text="Banner" styleClass="settings-nav-item" maxWidth="Infinity"/>
+            <ToggleButton fx:id="navSeguridad" text="Seguridad" styleClass="settings-nav-item" maxWidth="Infinity"/>
+        </VBox>
+    </left>
+
+    <center>
+        <ScrollPane fitToWidth="true" styleClass="settings-content-scroll">
+            <StackPane fx:id="content" styleClass="settings-content">
+
+                <!-- General: idioma -->
+                <VBox fx:id="paneGeneral" styleClass="settings-section" spacing="10">
+                    <Label text="Idioma de la interfaz" styleClass="settings-section-title"/>
+                    <Label text="El cambio es inmediato y se conserva para el próximo inicio."
+                           styleClass="settings-section-copy" wrapText="true"/>
+                    <HBox spacing="8">
+                        <ToggleButton fx:id="btnEspanol" text="Español"
+                                      styleClass="settings-language-toggle" maxWidth="Infinity"/>
+                        <ToggleButton fx:id="btnIngles" text="Inglés"
+                                      styleClass="settings-language-toggle" maxWidth="Infinity"/>
+                    </HBox>
+                </VBox>
+
+                <!-- Banner: instrumentos -->
+                <VBox fx:id="paneBanner" styleClass="settings-section" spacing="10" visible="false" managed="false">
+                    <Label text="Instrumentos del banner" styleClass="settings-section-title"/>
+                    <Label fx:id="lblBannerCopy" styleClass="settings-section-copy" wrapText="true"/>
+                    <HBox spacing="8">
+                        <ToggleButton fx:id="btnBannerRanking" text="Más transados del día"
+                                      styleClass="settings-language-toggle" maxWidth="Infinity"/>
+                        <ToggleButton fx:id="btnBannerPortafolio" text="Mi portafolio"
+                                      styleClass="settings-language-toggle" maxWidth="Infinity"/>
+                    </HBox>
+                    <Label text="Papeles a mostrar" styleClass="settings-section-copy"/>
+                    <HBox fx:id="boxCantidad" spacing="8"/>
+                    <Label fx:id="lblBannerAviso" styleClass="settings-section-copy" wrapText="true"/>
+                </VBox>
+
+                <!-- Seguridad: contraseña -->
+                <VBox fx:id="paneSeguridad" styleClass="settings-section" spacing="10" visible="false" managed="false">
+                    <Label text="Restablecer contraseña" styleClass="settings-section-title"/>
+                    <Label text="Al cambiarla se cierran todas tus sesiones abiertas."
+                           styleClass="settings-section-copy" wrapText="true"/>
+                    <VBox styleClass="settings-password-grid" spacing="8">
+                        <PasswordField fx:id="txtPassword" promptText="Nueva contraseña"/>
+                        <PasswordField fx:id="txtPassword2" promptText="Repetir contraseña"/>
+                    </VBox>
+                    <HBox spacing="8">
+                        <Button fx:id="btnCambiarPassword" text="Cambiar contraseña"
+                                styleClass="settings-primary-button"/>
+                    </HBox>
+                </VBox>
+
+            </StackPane>
+        </ScrollPane>
+    </center>
+
+    <bottom>
+        <HBox styleClass="settings-footer" spacing="8" alignment="CENTER_RIGHT">
+            <Button fx:id="btnCerrar" text="Cerrar" styleClass="settings-secondary-button"/>
+        </HBox>
+    </bottom>
+
+</BorderPane>
