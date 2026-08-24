@@ -6,8 +6,8 @@
   desde VelopackUpdater.
 
   Uso:
-    .\installer\windows\build-release.ps1 -Version 3.1.8 -Env qa
-    .\installer\windows\build-release.ps1 -Version 3.1.8 -Env qa -NoSign -NoPublish
+    .\installer\windows\build-release.ps1 -Version 2.0.0 -Env production
+    .\installer\windows\build-release.ps1 -Version 2.0.0 -Env production -NoSign -NoPublish
 
   Requisitos en esta maquina:
     - JDK 21 + Maven                         (ya)
@@ -36,7 +36,7 @@ if ($Version -notmatch '^\d+(\.\d+){1,3}$') { throw "Version invalida: '$Version
 # --- identidad por entorno ---------------------------------------------------
 $cfg = @{
   qa         = @{ PackId = 'VectorTradeQA'; Title = 'Vector Trade QA'; MainClass = 'cl.vc.blotter.MainAppQa' }
-  production = @{ PackId = 'VectorTrade';   Title = 'Vector Trade 2';  MainClass = 'cl.vc.blotter.MainApp' }
+  production = @{ PackId = 'VectorTrade2';  Title = 'Vector Trade 2.0'; MainClass = 'cl.vc.blotter.MainApp' }
 }[$Env]
 
 $propsFile = Join-Path $repo "src\main\resources\blotter\enviroment\application.$Env.properties"
@@ -48,7 +48,12 @@ if ($declared -ne $Version) {
   throw "version=$declared en $([System.IO.Path]::GetFileName($propsFile)) pero pediste -Version $Version. " +
         "Actualiza el properties primero o la app quedara en loop de update."
 }
-$declaredPackId = (Select-String -Path $propsFile -Pattern '^application=(.+)$').Matches.Groups[1].Value.Trim()
+$packIdMatch = Select-String -Path $propsFile -Pattern '^update\.packId=(.+)$'
+$declaredPackId = if ($packIdMatch) {
+  $packIdMatch.Matches.Groups[1].Value.Trim()
+} else {
+  (Select-String -Path $propsFile -Pattern '^application=(.+)$').Matches.Groups[1].Value.Trim()
+}
 if ($declaredPackId -ne $cfg.PackId) {
   throw "application=$declaredPackId en el properties pero el packId de $Env es $($cfg.PackId). Deben coincidir."
 }
