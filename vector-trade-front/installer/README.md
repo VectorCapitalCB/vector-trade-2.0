@@ -20,7 +20,7 @@ nativo sale de native-image sobre MSVC, o sea una maquina Windows).
 | Ruta | |
 |---|---|
 | `http://172.16.0.6:8092/` | portal interno de descargas |
-| `http://172.16.0.6:8092/updatevtautoupdate/` | feed produccion (`VectorTrade`) |
+| `http://172.16.0.6:8092/updatevtautoupdate/` | feed produccion (`VectorTrade2`) |
 | `http://172.16.0.6:8092/updatevtautoupdate/archive/` | instaladores historicos |
 
 **Promover QA a produccion es recompilar, no copiar.** El packId, la URL del feed y los
@@ -28,8 +28,8 @@ endpoints WebSocket quedan horneados en el exe nativo, asi que el binario de QA 
 convertirse en el de produccion. Sobre el mismo commit ya validado en QA:
 
 ```powershell
-# 1. application.production.properties -> version=3.1.8
-.\installer\windows\build-release.ps1 -Version 3.1.8 -Env production
+# 1. application.production.properties -> version=2.0.0
+.\installer\windows\build-release.ps1 -Version 2.0.0 -Env production
 ```
 
 El `archive/` sirve para rollback dentro de un mismo canal, no para mover entre canales.
@@ -38,9 +38,9 @@ El `archive/` sirve para rollback dentro de un mismo canal, no para mover entre 
 
 ```powershell
 # 1. subir la version en el properties del entorno (fuente unica de verdad)
-#    src\main\resources\blotter\enviroment\application.qa.properties -> version=3.1.8
+#    src\main\resources\blotter\enviroment\application.qa.properties -> version=X.Y.Z
 # 2. build + pack + publish
-.\installer\windows\build-release.ps1 -Version 3.1.8 -Env qa
+.\installer\windows\build-release.ps1 -Version X.Y.Z -Env qa
 ```
 
 El script aborta si `-Version` no coincide con `version=` del properties: si no coinciden,
@@ -53,10 +53,11 @@ Para probar sin firmar ni publicar: `-NoSign -NoPublish`.
 | Entorno | packId / `application` | Feed |
 |---|---|---|
 | qa | `VectorTradeQA` | `http://172.16.0.8:8101/updatevt2` |
-| production | `VectorTrade` | `http://172.16.0.6:8092/updatevtautoupdate` |
+| production | `VectorTrade2` | `http://172.16.0.6:8092/updatevtautoupdate` |
 
-El `packId` debe coincidir con la property `application`, porque `VelopackUpdater` lo usa
-para ubicar `%LOCALAPPDATA%\{packId}\Update.exe`. El script valida ambos.
+El `packId` debe coincidir con `update.packId`, porque `VelopackUpdater` lo usa para ubicar
+`%LOCALAPPDATA%\{packId}\Update.exe`. `application=VectorTrade` se mantiene como namespace
+de datos para conservar credenciales, configuraciones y layouts de la version anterior.
 
 Instalar QA no pisa una instalacion de produccion: distinto directorio, distinto acceso
 directo y distinto `credentials.enc`.
