@@ -49,6 +49,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.IOException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
@@ -943,8 +944,41 @@ public class MarketDataPortfolioViewController {
         if (symbol == null || symbol.isBlank() || market == null) {
             return null;
         }
-        return Repository.getSecurityListMaps()
-                .get(symbol.trim().toUpperCase(Locale.ROOT), market.name());
+        String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
+        MarketDataMessage.Security catalogSecurity = Repository.getSecurityListMaps()
+                .get(normalizedSymbol, market.name());
+        if (catalogSecurity != null) {
+            return catalogSecurity;
+        }
+
+        // La SecurityList puede llegar despues del portfolio inicial. Una suscripcion MKD
+        // activa ya fue validada por el core y es una fuente segura para completar esa ventana.
+        return findSubscribedSecurity(
+                normalizedSymbol,
+                market,
+                Repository.getSubscribeIdsMaps().values());
+    }
+
+    static MarketDataMessage.Security findSubscribedSecurity(
+            String symbol,
+            MarketDataMessage.SecurityExchangeMarketData market,
+            Collection<MarketDataMessage.Subscribe> subscriptions) {
+        if (symbol == null || symbol.isBlank() || market == null || subscriptions == null) {
+            return null;
+        }
+
+        String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
+        return subscriptions.stream()
+                .filter(subscription -> subscription != null
+                        && normalizedSymbol.equalsIgnoreCase(subscription.getSymbol())
+                        && market == subscription.getSecurityExchange())
+                .findFirst()
+                .map(subscription -> MarketDataMessage.Security.newBuilder()
+                        .setSymbol(normalizedSymbol)
+                        .setSecurityExchange(market)
+                        .setSecurityType(subscription.getSecurityType().name())
+                        .build())
+                .orElse(null);
     }
 
     @FXML
