@@ -28,7 +28,7 @@ env:
   FRONT_DIR: vector-trade-front
   RELEASES: vector-trade-front/target/velopack/releases
   STAGE: vector-trade-front/target/velopack/stage
-  FEED_URL: http://172.16.0.6:8092/updatevtautoupdate
+  FEED_URL: http://172.16.0.6:8080/updatevtautoupdate
   VPK_VERSION: 1.2.0
   CODESIGNTOOL_VERSION: 1.3.3
   CODESIGNTOOL_URL: https://ssl.com/download/codesigntool-for-windows/

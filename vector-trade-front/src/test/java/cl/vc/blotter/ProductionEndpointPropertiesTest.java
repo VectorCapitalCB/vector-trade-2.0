@@ -14,6 +14,7 @@ class ProductionEndpointPropertiesTest {
     void productionServiceEndpointTargetsProductionCore() throws Exception {
         Properties properties = loadProperties("/blotter/enviroment/application.production.properties");
 
+        assertEquals("http://172.16.0.6:8080/updatevtautoupdate", properties.getProperty("url"));
         assertEquals("ws://172.16.0.6:8096/websocket/", properties.getProperty("production"));
         assertEquals("ws://172.16.0.6:8096/websocket/", properties.getProperty("production.service"));
         assertEquals("ws://172.16.0.6:8098/ws/", properties.getProperty("production.candle"));
@@ -25,6 +26,7 @@ class ProductionEndpointPropertiesTest {
     void qaServiceEndpointTargetsSameProductionCore() throws Exception {
         Properties properties = loadProperties("/blotter/enviroment/application.qa.properties");
 
+        assertEquals("http://172.16.0.6:8080/updatevtautoupdate", properties.getProperty("url"));
         assertEquals("ws://172.16.0.6:8096/websocket/", properties.getProperty("qa.service"));
         assertEquals("ws://172.16.0.6:8098/ws/", properties.getProperty("qa.candle"));
         assertEquals("ws://172.16.0.6:8097/ws/", properties.getProperty("qa.chat"));
