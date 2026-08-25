@@ -39,6 +39,7 @@ import static java.lang.System.exit;
 @Slf4j
 public class MainApp extends Application {
 
+    private static final String FXML_SMOKE_ARG = "--fxml-smoke";
     private ScheduledExecutorService appShutdownScheduler;
 
     public static void main(String[] args) {
@@ -54,6 +55,11 @@ public class MainApp extends Application {
             Platform.runLater(() -> {
 
                 try {
+
+                    if (getParameters().getRaw().contains(FXML_SMOKE_ARG)) {
+                        runFxmlSmoke(principal);
+                        return;
+                    }
 
                     I18n.install();
                     log.info("Inicio UI: internacionalizacion instalada");
@@ -129,6 +135,27 @@ public class MainApp extends Application {
 
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
+        }
+    }
+
+    private void runFxmlSmoke(Stage principal) {
+        try {
+            Repository.principal = principal;
+            FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/PrincipalView.fxml"));
+            AnchorPane root = loader.load();
+            principal.setScene(new Scene(root));
+            principal.show();
+            root.applyCss();
+            root.layout();
+            log.info("NATIVE_FXML_SMOKE_OK: PrincipalView.fxml loaded");
+            System.out.println("NATIVE_FXML_SMOKE_OK");
+            Platform.exit();
+            System.exit(0);
+        } catch (Throwable throwable) {
+            log.error("NATIVE_FXML_SMOKE_FAILED", throwable);
+            System.err.println("NATIVE_FXML_SMOKE_FAILED: " + throwable);
+            Platform.exit();
+            System.exit(2);
         }
     }
 
