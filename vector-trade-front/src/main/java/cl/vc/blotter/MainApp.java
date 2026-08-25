@@ -56,6 +56,7 @@ public class MainApp extends Application {
                 try {
 
                     I18n.install();
+                    log.info("Inicio UI: internacionalizacion instalada");
 
                     Repository.getProperties().load(LoginController.class.getResourceAsStream("/blotter/enviroment/application.production.properties"));
 
@@ -64,6 +65,7 @@ public class MainApp extends Application {
                     principal.setTitle("Vector Trade 2.0  ·  " + appVer);
 
                     NativeLibraryLoader.loadNativeLibraries();
+                    log.info("Inicio UI: librerias nativas cargadas");
                     // Migracion gradual: las instalaciones nuevas (Velopack) usan el updater
                     // nuevo; las viejas siguen con ConfigGenerator hasta que se reinstalen.
                     if (VelopackUpdater.isInstalled()) {
@@ -73,11 +75,13 @@ public class MainApp extends Application {
                     }
 
                     SoundPlayer.initialize();
+                    log.info("Inicio UI: sonidos inicializados; cargando Login.fxml");
 
 
                     FXMLLoader fxmlLoader = new FXMLLoader();
                     fxmlLoader.setLocation(getClass().getResource("/view/Login.fxml"));
                     AnchorPane loginLoader = fxmlLoader.load();
+                    log.info("Inicio UI: Login.fxml cargado");
                     LoginController loginController = fxmlLoader.getController();
 
                     loginLoader.addEventHandler(KeyEvent.KEY_PRESSED, ev -> {
@@ -105,7 +109,9 @@ public class MainApp extends Application {
 
                     principal.setScene(stage);
                     I18n.apply(stage);
+                    log.info("Inicio UI: escena preparada; mostrando ventana principal");
                     principal.show();
+                    log.info("Inicio UI: ventana principal visible");
 
                     Notifier.setStage(principal);
                     scheduleAppShutdown(principal);
@@ -114,8 +120,9 @@ public class MainApp extends Application {
 
 
 
-                } catch (IOException e) {
-                    log.error(e.getMessage(), e);
+                } catch (Throwable e) {
+                    log.error("Error fatal iniciando la interfaz", e);
+                    Platform.exit();
                 }
 
             });

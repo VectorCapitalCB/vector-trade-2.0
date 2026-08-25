@@ -1813,12 +1813,14 @@
 },
 {
   "name":"javafx.scene.shape.Circle",
+  "allPublicMethods":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"javafx.scene.shape.Line",
+  "allPublicMethods":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -1837,6 +1839,7 @@
 },
 {
   "name":"javafx.scene.shape.Path",
+  "allPublicMethods":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -1847,24 +1850,28 @@
 },
 {
   "name":"javafx.scene.shape.Polygon",
+  "allPublicMethods":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"javafx.scene.shape.Polyline",
+  "allPublicMethods":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"javafx.scene.shape.Rectangle",
+  "allPublicMethods":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"javafx.scene.shape.SVGPath",
+  "allPublicMethods":true,
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
