@@ -412,6 +412,14 @@
                     <bundlesList>
                         <bundle>media</bundle>
                         <bundle>javafx.web</bundle>
+                        <!-- JFreeChart carga estos ResourceBundle en caliente. Sin registrarlos, la
+                             imagen nativa tira MissingResourceException al construir el grafico; y como
+                             eso pasa al instanciar ChartViewer desde el FXML, falla la carga COMPLETA de
+                             Candle.fxml y no se abre ninguna ventana. -->
+                        <bundle>org.jfree.chart.ui.LocalizationBundle</bundle>
+                        <bundle>org.jfree.chart.plot.LocalizationBundle</bundle>
+                          <!-- JFreeChart dibuja sobre AWT; este bundle se carga solo al inicializarlo. -->
+                          <bundle>sun.awt.resources.awt</bundle>
                     </bundlesList>
 
                     <reflectionList>
@@ -720,6 +728,31 @@
                         <list>cl.vc.blotter.controller.SettingsController</list>
                         <list>cl.vc.blotter.controller.StadisticsController</list>
 
+                        <!-- Observado con el agente de GraalVM cargando Candle.fxml y Settings.fxml.
+                             Las SUPERCLASES son imprescindibles: FXMLLoader busca los setters
+                             recorriendo la jerarquia (setText vive en Labeled, no en Label), y si la
+                             superclase no esta registrada no encuentra el setter y falla la carga
+                             COMPLETA del FXML. Las de org.jfree las busca ChartViewer por reflexion
+                             para habilitar exportar a SVG/PDF. -->
+                        <list>javafx.fxml.FXMLLoader</list>
+                        <list>javafx.geometry.Pos</list>
+                        <list>javafx.scene.Parent</list>
+                        <list>javafx.scene.Scene</list>
+                        <list>javafx.scene.control.ButtonBase</list>
+                        <list>javafx.scene.control.ComboBoxBase</list>
+                        <list>javafx.scene.control.Control</list>
+                        <list>javafx.scene.control.Labeled</list>
+                        <list>javafx.scene.control.TextInputControl</list>
+                        <list>javafx.scene.layout.Priority</list>
+                        <list>javafx.scene.shape.Shape</list>
+                        <list>javafx.scene.text.Font</list>
+                        <list>javafx.scene.text.Text</list>
+                        <list>javafx.scene.transform.Transform</list>
+                        <list>javafx.stage.PopupWindow</list>
+                        <list>javafx.stage.Window</list>
+                        <list>org.jfree.graphics2d.svg.SVGGraphics2D</list>
+                        <list>org.jfree.pdf.PDFDocument</list>
+                        <list>org.jfree.svg.SVGGraphics2D</list>
                     </reflectionList>
 
                     <!--nativeImageArgs>
