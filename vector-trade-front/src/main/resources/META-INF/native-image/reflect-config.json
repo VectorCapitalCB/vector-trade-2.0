@@ -1422,6 +1422,12 @@
   "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
+  "name":"javafx.scene.chart.PieChart",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"javafx.scene.chart.ValueAxis",
   "queryAllDeclaredMethods":true
 },
@@ -1523,6 +1529,12 @@
 },
 {
   "name":"javafx.scene.control.ListView",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.control.MenuButton",
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
   "methods":[{"name":"<init>","parameterTypes":[] }]
@@ -1639,6 +1651,12 @@
   "methods":[{"name":"<init>","parameterTypes":[] }, {"name":"getItems","parameterTypes":[] }]
 },
 {
+  "name":"javafx.scene.control.ToggleButton",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
   "name":"javafx.scene.control.TreeTableColumn",
   "queryAllDeclaredMethods":true,
   "queryAllPublicConstructors":true,
@@ -1652,6 +1670,12 @@
 },
 {
   "name":"javafx.scene.control.VBox"
+},
+{
+  "name":"javafx.scene.canvas.Canvas",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"javafx.scene.effect.Effect"
@@ -1783,28 +1807,74 @@
   "methods":[{"name":"valueOf","parameterTypes":["java.lang.String"] }]
 },
 {
-  "name":"javafx.scene.shape.ClosePath"
+  "name":"javafx.scene.shape.ClosePath",
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"javafx.scene.shape.Line"
+  "name":"javafx.scene.shape.Circle",
+  "allPublicMethods":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"javafx.scene.shape.LineTo"
+  "name":"javafx.scene.shape.Line",
+  "allPublicMethods":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"javafx.scene.shape.MoveTo"
+  "name":"javafx.scene.shape.LineTo",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"javafx.scene.shape.Path"
+  "name":"javafx.scene.shape.MoveTo",
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"javafx.scene.shape.PathElement"
+  "name":"javafx.scene.shape.Path",
+  "allPublicMethods":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
-  "name":"javafx.scene.shape.Rectangle"
+  "name":"javafx.scene.shape.PathElement",
+  "queryAllDeclaredMethods":true
 },
 {
-  "name":"javafx.scene.shape.SVGPath"
+  "name":"javafx.scene.shape.Polygon",
+  "allPublicMethods":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.shape.Polyline",
+  "allPublicMethods":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.shape.Rectangle",
+  "allPublicMethods":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
+},
+{
+  "name":"javafx.scene.shape.SVGPath",
+  "allPublicMethods":true,
+  "queryAllDeclaredMethods":true,
+  "queryAllPublicConstructors":true,
+  "methods":[{"name":"<init>","parameterTypes":[] }]
 },
 {
   "name":"javafx.scene.shape.Shape"
@@ -3090,5 +3160,272 @@
 {
   "name":"sun.security.x509.SubjectKeyIdentifierExtension",
   "methods":[{"name":"<init>","parameterTypes":["java.lang.Boolean","java.lang.Object"] }]
+},
+{
+  "name":"java.lang.Double", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.geometry.Insets", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.canvas.Canvas", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.chart.BarChart", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.chart.CategoryAxis", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.chart.LineChart", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.chart.NumberAxis", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.chart.PieChart", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.Button", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ButtonBar", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.CheckBox", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ChoiceBox", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ComboBox", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.DatePicker", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.Label", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ListView", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.MenuButton", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.PasswordField", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ScrollBar", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ScrollPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.Separator", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.Spinner", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.SplitPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.Tab", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.TableColumn", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.TableView", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.TabPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.TextField", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.TitledPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ToggleButton", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.ToolBar", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.Tooltip", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.TreeTableColumn", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.control.TreeTableView", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.image.Image", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.image.ImageView", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.AnchorPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.BorderPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.ColumnConstraints", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.FlowPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.GridPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.HBox", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.Pane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.Region", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.RowConstraints", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.StackPane", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.layout.VBox", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.shape.Circle", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.shape.Line", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.shape.Polygon", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.shape.Polyline", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"javafx.scene.shape.Rectangle", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"org.jfree.chart.fx.ChartViewer", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"org.kordamp.ikonli.javafx.FontIcon", "allPublicMethods":true, "allPublicConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.AddUserController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.AdminController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.BalanceController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.BasketController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.BasketTabController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.BookHorizontalController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.BookVerticalController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.CandleController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.ChatController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.DatosdeMercadoControler", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.ExecutionsController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.FooterController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.GraficoController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.HistoricalOrdersController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.HuinchaController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.LanzadorController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.LibroEmergenteController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.LibroEmergentePrincipalController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.LoginController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.MarketDataPortfolioViewController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.MarketDataViewerController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.MultibookController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.NewsController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.NotificationController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.PositionHistoricalController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.PositionsController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.PositionSimultaneasController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.PreDigitadosController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.PrestamosController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.PrincipalController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.RoutingController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.SettingsController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.StadisticsController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.TradeGeneralesController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
+},
+{
+  "name":"cl.vc.blotter.controller.TradeMKDController", "allDeclaredFields":true, "allDeclaredMethods":true, "allDeclaredConstructors":true
 }
 ]
