@@ -130,6 +130,8 @@ public class LibroEmergenteController implements Initializable {
     private Stage stage;
     private PauseTransition subscriptionHealthCheck;
     private int subscriptionRetryCount = 0;
+    private boolean updatingSecurityTypeProgrammatically;
+    private boolean securityTypeManuallySelected;
     private static final int MAX_SUBSCRIPTION_RETRIES = 2;
 
 
@@ -147,6 +149,11 @@ public class LibroEmergenteController implements Initializable {
 
             securityType.setItems(FXCollections.observableArrayList(RoutingMessage.SecurityType.values()));
             securityType.getSelectionModel().selectFirst();
+            securityType.getSelectionModel().selectedItemProperty().addListener((obs, oldValue, newValue) -> {
+                if (!updatingSecurityTypeProgrammatically && newValue != null) {
+                    securityTypeManuallySelected = true;
+                }
+            });
 
             settlType.setItems(FXCollections.observableArrayList(RoutingMessage.SettlType.values()));
             settlType.getItems().removeAll(RoutingMessage.SettlType.UNRECOGNIZED, RoutingMessage.SettlType.REGULAR);
@@ -165,6 +172,7 @@ public class LibroEmergenteController implements Initializable {
                 refreshSettlementVisibility(newValue);
                 String currentSymbol = ticket.getText();
                 if (currentSymbol != null && !currentSymbol.isBlank()) {
+                    securityTypeManuallySelected = false;
                     updateSecurityTypeComboBox(currentSymbol.trim().toUpperCase(Locale.ROOT), newValue);
                 }
             });
@@ -173,6 +181,7 @@ public class LibroEmergenteController implements Initializable {
                 if (newValue == null || newValue.isBlank()) {
                     return;
                 }
+                securityTypeManuallySelected = false;
                 updateSecurityTypeComboBox(newValue.trim().toUpperCase(Locale.ROOT),
                         cbMarket.getSelectionModel().getSelectedItem());
             });
@@ -555,16 +564,11 @@ public class LibroEmergenteController implements Initializable {
             return subscribe.getSecurityType();
         }
         RoutingMessage.SecurityType selected = securityType.getSelectionModel().getSelectedItem();
-        if (selected != null && selected != RoutingMessage.SecurityType.UNRECOGNIZED) {
-            return selected;
-        }
-        RoutingMessage.SecurityType configured = Repository.getStaticSecurityType().get(symbol);
-        if (configured != null) {
-            return configured;
-        }
-        return symbol != null && symbol.contains("CFI")
-                ? RoutingMessage.SecurityType.CFI
-                : RoutingMessage.SecurityType.CS;
+        return Repository.resolveSecurityType(
+                symbol,
+                cbMarket.getSelectionModel().getSelectedItem(),
+                selected
+        );
     }
 
 
@@ -604,7 +608,13 @@ public class LibroEmergenteController implements Initializable {
                 return;
             }
 
+            boolean manualSecurityType = securityTypeManuallySelected;
+            RoutingMessage.SecurityType selectedSecurityType = securityType.getSelectionModel().getSelectedItem();
             ticket.setText(symbol);
+            if (manualSecurityType) {
+                selectSecurityTypeProgrammatically(selectedSecurityType);
+                securityTypeManuallySelected = true;
+            }
 
             if (!Repository.getLibroEmergenteMap().containsKey(positions)) {
                 Repository.getLibroEmergenteMap().put(positions, this);
@@ -616,23 +626,29 @@ public class LibroEmergenteController implements Initializable {
             }
 
 
-            if(Repository.getStaticSecurityType().containsKey(symbol)){
-                securityType.getSelectionModel().select(RoutingMessage.SecurityType.CS);
-            }
-
-            updateSecurityTypeComboBox(symbol, cbMarket.getSelectionModel().getSelectedItem());
+            RoutingMessage.SecurityType suggestedSecurityType = Repository.resolveSecurityType(
+                    symbol,
+                    cbMarket.getSelectionModel().getSelectedItem(),
+                    securityType.getSelectionModel().getSelectedItem()
+            );
+            RoutingMessage.SecurityType resolvedSecurityType = chooseSubscriptionSecurityType(
+                    securityTypeManuallySelected,
+                    securityType.getSelectionModel().getSelectedItem(),
+                    suggestedSecurityType
+            );
+            selectSecurityTypeProgrammatically(resolvedSecurityType);
 
             idSubscribeBook = Repository.createSuscripcion(symbol,
                     cbMarket.getSelectionModel().getSelectedItem(),
                     settlType.getSelectionModel().getSelectedItem(),
-                    securityType.getSelectionModel().getSelectedItem());
+                    resolvedSecurityType);
 
             subscribe = MarketDataMessage.Subscribe.newBuilder()
                     .setId(idSubscribeBook)
                     .setSymbol(symbol)
                     .setSecurityExchange(cbMarket.getSelectionModel().getSelectedItem())
                     .setSettlType(settlType.getSelectionModel().getSelectedItem())
-                    .setSecurityType(securityType.getSelectionModel().getSelectedItem()).build();
+                    .setSecurityType(resolvedSecurityType).build();
 
             log.info("MULTIBOOK subscribe position={} id={} symbol={} market={} settl={} securityType={}",
                     positions,
@@ -640,7 +656,7 @@ public class LibroEmergenteController implements Initializable {
                     symbol,
                     cbMarket.getSelectionModel().getSelectedItem(),
                     settlType.getSelectionModel().getSelectedItem(),
-                    securityType.getSelectionModel().getSelectedItem());
+                    resolvedSecurityType);
 
 
             bidViewTable.setItems(FXCollections.observableArrayList());
@@ -763,7 +779,10 @@ public class LibroEmergenteController implements Initializable {
 
             cbMarket.getSelectionModel().select(subscribe.getSecurityExchange());
             settlType.getSelectionModel().select(subscribe.getSettlType());
-            securityType.getSelectionModel().select(subscribe.getSecurityType());
+            selectSecurityTypeProgrammatically(subscribe.getSecurityType());
+            // La configuracion restaurada viene del documento persistido del usuario en Redis.
+            // Debe prevalecer incluso si el catalogo recomienda otro SecurityType para el simbolo.
+            securityTypeManuallySelected = true;
 
             Repository.createBook(subscribe);
             subscribeSymbol();
@@ -794,7 +813,11 @@ public class LibroEmergenteController implements Initializable {
                     if (security != null) {
                         String securityTypeString = security.getSecurityType();
                         RoutingMessage.SecurityType securityTypeValue = RoutingMessage.SecurityType.valueOf(securityTypeString);
-                        securityType.getSelectionModel().select(securityTypeValue);
+                        selectSecurityTypeProgrammatically(Repository.resolveSecurityType(
+                                ticket,
+                                securityExchangeMarketData,
+                                securityTypeValue
+                        ));
                     }
                 } catch (IllegalArgumentException e) {
                     throw new RuntimeException(e);
@@ -803,6 +826,30 @@ public class LibroEmergenteController implements Initializable {
         } catch (Exception e) {
             log.error(e.getMessage(), e);
         }
+    }
+
+    private void selectSecurityTypeProgrammatically(RoutingMessage.SecurityType value) {
+        updatingSecurityTypeProgrammatically = true;
+        try {
+            securityType.getSelectionModel().select(value);
+        } finally {
+            updatingSecurityTypeProgrammatically = false;
+        }
+    }
+
+    static RoutingMessage.SecurityType chooseSubscriptionSecurityType(
+            boolean manuallySelected,
+            RoutingMessage.SecurityType selected,
+            RoutingMessage.SecurityType suggested) {
+        if (manuallySelected && selected != null && selected != RoutingMessage.SecurityType.UNRECOGNIZED) {
+            return selected;
+        }
+        if (suggested != null && suggested != RoutingMessage.SecurityType.UNRECOGNIZED) {
+            return suggested;
+        }
+        return selected == null || selected == RoutingMessage.SecurityType.UNRECOGNIZED
+                ? RoutingMessage.SecurityType.CS
+                : selected;
     }
 
     public void unsubscribe() {

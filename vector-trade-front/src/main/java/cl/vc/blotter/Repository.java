@@ -715,12 +715,17 @@ public class Repository {
                                            RoutingMessage.SecurityType securityType) {
 
         try {
+            String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
+            RoutingMessage.SecurityType requestedSecurityType =
+                    securityType == null || securityType == RoutingMessage.SecurityType.UNRECOGNIZED
+                            ? resolveSecurityType(normalizedSymbol, securityExchangeMarketData, securityType)
+                            : securityType;
 
             MarketDataMessage.Subscribe.Builder subscribe = MarketDataMessage.Subscribe.newBuilder()
-                    .setSymbol(symbol.toUpperCase())
+                    .setSymbol(normalizedSymbol)
                     .setBook(true)
                     .setSecurityExchange(securityExchangeMarketData)
-                    .setSecurityType(securityType)
+                    .setSecurityType(requestedSecurityType)
                     .setSettlType(settlType)
                     .setStatistic(true)
                     .setTrade(true)
@@ -756,6 +761,34 @@ public class Repository {
 
         return null;
 
+    }
+
+    public static RoutingMessage.SecurityType resolveSecurityType(String symbol,
+                                                                  MarketDataMessage.SecurityExchangeMarketData exchange,
+                                                                  RoutingMessage.SecurityType fallback) {
+        if (symbol == null || exchange == null) {
+            return fallback;
+        }
+
+        String normalizedSymbol = symbol.trim().toUpperCase(Locale.ROOT);
+        RoutingMessage.SecurityType configured = staticSecurityType.get(normalizedSymbol);
+        if (configured != null && configured != RoutingMessage.SecurityType.UNRECOGNIZED) {
+            return configured;
+        }
+
+        MarketDataMessage.Security security = securityListMaps.get(normalizedSymbol, exchange.name());
+        if (security != null && security.getSecurityType() != null && !security.getSecurityType().isBlank()) {
+            try {
+                return RoutingMessage.SecurityType.valueOf(security.getSecurityType().trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                log.warn("SecurityType desconocido '{}' para {}; usando fallback.",
+                        security.getSecurityType(), normalizedSymbol);
+            }
+        }
+
+        return fallback == null || fallback == RoutingMessage.SecurityType.UNRECOGNIZED
+                ? RoutingMessage.SecurityType.CS
+                : fallback;
     }
 
     public static void refreshSubscription(MarketDataMessage.Subscribe subscribe, String reason) {
@@ -810,11 +843,19 @@ public class Repository {
     public static BookVO createBook(MarketDataMessage.Statistic statistic) {
 
         try {
+            RoutingMessage.SecurityType resolvedSecurityType = resolveSecurityType(
+                    statistic.getSymbol(),
+                    statistic.getSecurityExchange(),
+                    statistic.getSecurityType()
+            );
+            MarketDataMessage.Statistic normalizedStatistic = statistic.toBuilder()
+                    .setSecurityType(resolvedSecurityType)
+                    .build();
 
-            String id = TopicGenerator.getTopicMKD(statistic);
+            String id = TopicGenerator.getTopicMKD(normalizedStatistic);
 
             if (!bookPortMaps.containsKey(id)) {
-                BookVO bookVO = new BookVO(statistic);
+                BookVO bookVO = new BookVO(normalizedStatistic);
                 bookPortMaps.put(id, bookVO);
                 return bookVO;
             } else {
@@ -831,7 +872,6 @@ public class Repository {
     public static BookVO createBook(MarketDataMessage.Subscribe subscribe) {
 
         try {
-
             String id = TopicGenerator.getTopicMKD(subscribe);
 
             if (!bookPortMaps.containsKey(id)) {

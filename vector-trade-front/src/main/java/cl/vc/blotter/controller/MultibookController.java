@@ -38,6 +38,9 @@ import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * Ventana del Multibook 2.0: un libro con paginas numeradas.
@@ -54,11 +57,16 @@ import java.util.concurrent.Executors;
 @Slf4j
 public class MultibookController implements Initializable {
 
+    private static final String CLIENT_UPDATED_AT = "clientUpdatedAt";
+    private static final long CLOSE_SAVE_WAIT_SECONDS = 4L;
+
     private static final ExecutorService IO = Executors.newSingleThreadExecutor(runnable -> {
         Thread thread = new Thread(runnable, "multibook-api");
         thread.setDaemon(true);
         return thread;
     });
+
+    private static volatile Future<?> lastRemoteSave;
 
     /** Documento del usuario, compartido por todas las ventanas abiertas. */
     private static JSONObject document;
@@ -154,16 +162,21 @@ public class MultibookController implements Initializable {
             return;
         }
 
-        // La del OMS manda: es la compartida entre maquinas. Si no responde, seguimos con la local.
+        // La del OMS manda salvo que la copia local tenga un cambio mas reciente aun no sincronizado.
         IO.submit(() -> {
             JSONObject remote = MultibookApi.load();
             if (remote == null || remote.optJSONArray("layouts") == null) {
                 return;
             }
             Platform.runLater(() -> {
-                document = remote;
+                JSONObject local = new JSONObject(document.toString());
+                boolean localIsNewer = preferLocalDocument(local, remote);
+                document = localIsNewer ? local : remote;
                 MultibookLayoutStore.saveDocument(document);
                 Repository.getControllerMultibook().values().forEach(MultibookController::remount);
+                if (localIsNewer) {
+                    queueRemoteSave(new JSONObject(document.toString()));
+                }
             });
         });
     }
@@ -196,6 +209,7 @@ public class MultibookController implements Initializable {
     private static JSONObject emptyDocument() {
         return new JSONObject()
                 .put("version", 3)
+                .put(CLIENT_UPDATED_AT, System.currentTimeMillis())
                 .put("active", "Default")
                 .put("layouts", new JSONArray().put(newLayoutJson("Default")));
     }
@@ -250,14 +264,46 @@ public class MultibookController implements Initializable {
 
     /** Guarda local (sincrono, es lo que salva el multibook) y sube al OMS en segundo plano. */
     private static void saveDocument() {
+        document.put(CLIENT_UPDATED_AT, System.currentTimeMillis());
         MultibookLayoutStore.saveDocument(document);
-        JSONObject snapshot = new JSONObject(document.toString());
-        IO.submit(() -> {
+        queueRemoteSave(new JSONObject(document.toString()));
+    }
+
+    private static void queueRemoteSave(JSONObject snapshot) {
+        lastRemoteSave = IO.submit(() -> {
             if (MultibookApi.save(snapshot) == null) {
                 Platform.runLater(() -> Notifier.INSTANCE.notifyError("Multibook",
                         "Guardado local: el servicio no respondió."));
             }
         });
+    }
+
+    static boolean preferLocalDocument(JSONObject local, JSONObject remote) {
+        if (local == null) {
+            return false;
+        }
+        if (remote == null) {
+            return true;
+        }
+        long localUpdatedAt = local.optLong(CLIENT_UPDATED_AT, 0L);
+        long remoteUpdatedAt = remote.optLong(CLIENT_UPDATED_AT, 0L);
+        return localUpdatedAt > 0L && localUpdatedAt > remoteUpdatedAt;
+    }
+
+    private static void awaitLastRemoteSave() {
+        Future<?> pending = lastRemoteSave;
+        if (pending == null || pending.isDone()) {
+            return;
+        }
+        try {
+            pending.get(CLOSE_SAVE_WAIT_SECONDS, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            log.warn("[Multibook2] El guardado remoto sigue pendiente al cerrar; la copia local queda vigente.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (Exception e) {
+            log.warn("[Multibook2] No se pudo confirmar el guardado remoto al cerrar: {}", e.getMessage());
+        }
     }
 
     /**
@@ -871,6 +917,7 @@ public class MultibookController implements Initializable {
     private void close() {
         writePage();
         saveDocument();
+        awaitLastRemoteSave();
         persist();
         release();
         Repository.getControllerMultibook().remove(windowIndex);

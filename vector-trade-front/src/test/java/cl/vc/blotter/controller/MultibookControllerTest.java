@@ -5,6 +5,8 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MultibookControllerTest {
 
@@ -35,5 +37,22 @@ class MultibookControllerTest {
                 assertEquals(slot, book.getInt("slot"));
             }
         }
+    }
+
+    @Test
+    void keepsLocalDocumentWhenItHasAnUnsynchronizedNewerChange() {
+        JSONObject local = new JSONObject().put("clientUpdatedAt", 200L);
+        JSONObject remote = new JSONObject().put("clientUpdatedAt", 100L);
+
+        assertTrue(MultibookController.preferLocalDocument(local, remote));
+    }
+
+    @Test
+    void keepsRemoteDocumentWhenItIsAtLeastAsRecent() {
+        JSONObject local = new JSONObject().put("clientUpdatedAt", 100L);
+        JSONObject remote = new JSONObject().put("clientUpdatedAt", 200L);
+
+        assertFalse(MultibookController.preferLocalDocument(local, remote));
+        assertFalse(MultibookController.preferLocalDocument(new JSONObject(), remote));
     }
 }

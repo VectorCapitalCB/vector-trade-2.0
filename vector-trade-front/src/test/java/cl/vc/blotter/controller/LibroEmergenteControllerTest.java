@@ -1,6 +1,7 @@
 package cl.vc.blotter.controller;
 
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
+import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -8,6 +9,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class LibroEmergenteControllerTest {
+
+    @Test
+    void manualSecurityTypeOverridesAutomaticSuggestion() {
+        assertEquals(RoutingMessage.SecurityType.CS,
+                LibroEmergenteController.chooseSubscriptionSecurityType(
+                        true,
+                        RoutingMessage.SecurityType.CS,
+                        RoutingMessage.SecurityType.ETF));
+    }
+
+    @Test
+    void automaticSuggestionIsUsedUntilUserChangesSecurityType() {
+        assertEquals(RoutingMessage.SecurityType.ETF,
+                LibroEmergenteController.chooseSubscriptionSecurityType(
+                        false,
+                        RoutingMessage.SecurityType.CS,
+                        RoutingMessage.SecurityType.ETF));
+    }
 
     @Test
     void hidesSettlementForBcs() {

@@ -82,18 +82,18 @@ public class LoginController {
 
             enviroment.getItems().add("PRODUCCTION");
 
-            Repository.getStaticSecurityType().put("CFINASDAQ", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFISP500", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFIETFIPSA", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFIETFGE", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFIGC", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFIETFCC", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFIETFCD", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFMITNIPSA", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFMDIVO", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFIETFLP", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFI-ETFUSD", RoutingMessage.SecurityType.CS);
-            Repository.getStaticSecurityType().put("CFIETF4060", RoutingMessage.SecurityType.CS);
+            Repository.getStaticSecurityType().put("CFINASDAQ", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFISP500", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFIETFIPSA", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFIETFGE", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFIGC", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFIETFCC", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFIETFCD", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFMITNIPSA", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFMDIVO", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFIETFLP", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFI-ETFUSD", RoutingMessage.SecurityType.ETF);
+            Repository.getStaticSecurityType().put("CFIETF4060", RoutingMessage.SecurityType.ETF);
 
 
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(System::gc, 0, 1, TimeUnit.MINUTES);
@@ -548,4 +548,3 @@ public class LoginController {
 
 
 }
-
