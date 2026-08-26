@@ -134,6 +134,10 @@ public class CandleController implements Initializable {
         this.initialSymbol = initialSymbol == null ? "" : initialSymbol.trim().toUpperCase(Locale.ROOT);
     }
 
+    public boolean hasChartViewer() {
+        return chartViewer != null;
+    }
+
     @Override
     public void initialize(URL url, ResourceBundle rb) {
         configureChartInteractions();

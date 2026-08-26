@@ -138,6 +138,17 @@ jobs:
         shell: pwsh
         run: mvn -B -f "$env:FRONT_DIR/pom.xml" -Pwindows gluonfx:build
 
+      - name: Validar interfaz y grafico en el ejecutable nativo
+        shell: pwsh
+        run: |
+          $exe = Join-Path $env:FRONT_DIR "target/gluonfx/x86_64-windows/$env:EXE_NAME"
+          if (!(Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Gluon no genero $exe" }
+          $process = Start-Process -FilePath $exe -ArgumentList '--fxml-smoke' -PassThru -Wait
+          if ($process.ExitCode -ne 0) {
+            throw "PrincipalView.fxml o Candle.fxml fallo en el nativo con codigo $($process.ExitCode)."
+          }
+          Write-Host 'PrincipalView.fxml y Candle.fxml cargaron correctamente en el ejecutable nativo.'
+
       - name: Preparar ejecutable
         shell: pwsh
         run: |

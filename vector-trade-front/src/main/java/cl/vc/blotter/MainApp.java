@@ -2,6 +2,7 @@ package cl.vc.blotter;
 
 import cl.vc.blotter.controller.LoginController;
 import cl.vc.blotter.utils.ConfigGenerator;
+import cl.vc.blotter.utils.CandleWindow;
 import cl.vc.blotter.utils.I18n;
 import cl.vc.blotter.utils.NativeLibraryLoader;
 import cl.vc.blotter.utils.Notifier;
@@ -147,7 +148,8 @@ public class MainApp extends Application {
             principal.show();
             root.applyCss();
             root.layout();
-            log.info("NATIVE_FXML_SMOKE_OK: PrincipalView.fxml loaded");
+            CandleWindow.verifyNativeOpen("SQM-B");
+            log.info("NATIVE_FXML_SMOKE_OK: PrincipalView.fxml and Candle.fxml loaded");
             System.out.println("NATIVE_FXML_SMOKE_OK");
             Platform.exit();
             System.exit(0);
