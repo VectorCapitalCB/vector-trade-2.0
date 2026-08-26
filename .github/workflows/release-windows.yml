@@ -143,8 +143,24 @@ jobs:
         run: |
           $exe = Join-Path $env:FRONT_DIR "target/gluonfx/x86_64-windows/$env:EXE_NAME"
           if (!(Test-Path -LiteralPath $exe -PathType Leaf)) { throw "Gluon no genero $exe" }
-          $process = Start-Process -FilePath $exe -ArgumentList '--fxml-smoke' -PassThru -Wait
+          $stdout = Join-Path $env:RUNNER_TEMP 'native-fxml-smoke.stdout.log'
+          $stderr = Join-Path $env:RUNNER_TEMP 'native-fxml-smoke.stderr.log'
+          $process = Start-Process -FilePath $exe -ArgumentList '--fxml-smoke' -PassThru -Wait `
+            -RedirectStandardOutput $stdout -RedirectStandardError $stderr
+          if (Test-Path -LiteralPath $stdout) {
+            Write-Host '--- stdout del smoke nativo ---'
+            Get-Content -LiteralPath $stdout
+          }
+          if (Test-Path -LiteralPath $stderr) {
+            Write-Host '--- stderr del smoke nativo ---'
+            Get-Content -LiteralPath $stderr
+          }
           if ($process.ExitCode -ne 0) {
+            $appLog = Join-Path $HOME 'vc/VectorTrade/logs/vector-trade-2.log'
+            if (Test-Path -LiteralPath $appLog) {
+              Write-Host '--- log diario de VectorTrade ---'
+              Get-Content -LiteralPath $appLog -Tail 300
+            }
             throw "PrincipalView.fxml o Candle.fxml fallo en el nativo con codigo $($process.ExitCode)."
           }
           Write-Host 'PrincipalView.fxml y Candle.fxml cargaron correctamente en el ejecutable nativo.'
