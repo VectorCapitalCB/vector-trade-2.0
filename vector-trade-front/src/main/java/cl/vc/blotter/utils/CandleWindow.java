@@ -105,8 +105,8 @@ public final class CandleWindow {
         }
         Parent root = loader.load();
         CandleController controller = loader.getController();
-        if (controller == null || !controller.hasChartViewer()) {
-            throw new IllegalStateException("Candle.fxml no inicializo CandleController/ChartViewer");
+        if (controller == null || !controller.hasChartSurface()) {
+            throw new IllegalStateException("Candle.fxml no inicializo CandleController/superficie de grafico");
         }
 
         Rectangle2D bounds = Screen.getPrimary().getVisualBounds();

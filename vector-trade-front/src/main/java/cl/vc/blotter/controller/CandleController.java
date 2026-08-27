@@ -14,6 +14,7 @@ import javafx.scene.control.CheckMenuItem;
 import javafx.scene.control.SeparatorMenuItem;
 import javafx.scene.control.ComboBox;
 import javafx.scene.control.Label;
+import javafx.scene.layout.StackPane;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +22,7 @@ import cl.vc.blotter.utils.ChartIndicator;
 import cl.vc.blotter.utils.IndicatorSettings;
 import cl.vc.blotter.utils.IndicatorSettingsDialog;
 import cl.vc.blotter.utils.Indicators;
+import cl.vc.blotter.utils.NativeCandleChart;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.axis.DateAxis;
 import org.jfree.chart.axis.NumberAxis;
@@ -84,7 +86,9 @@ public class CandleController implements Initializable {
     private static final Color DOWN_COLOR = new Color(0xef, 0x44, 0x44);
 
     @FXML
+    private StackPane chartHost;
     private ChartViewer chartViewer;
+    private NativeCandleChart nativeChart;
     @FXML
     private ComboBox<String> cmbSymbol;
     @FXML
@@ -134,12 +138,13 @@ public class CandleController implements Initializable {
         this.initialSymbol = initialSymbol == null ? "" : initialSymbol.trim().toUpperCase(Locale.ROOT);
     }
 
-    public boolean hasChartViewer() {
-        return chartViewer != null;
+    public boolean hasChartSurface() {
+        return chartViewer != null || nativeChart != null;
     }
 
     @Override
     public void initialize(URL url, ResourceBundle rb) {
+        initializeChartSurface();
         configureChartInteractions();
         Repository.closePriceHistoryVersionProperty().addListener((obs, oldV, newV) -> renderChart());
         Repository.tradeCandlesVersionProperty().addListener((obs, oldV, newV) -> renderChart());
@@ -174,6 +179,24 @@ public class CandleController implements Initializable {
             requestCurrentData();
         }
         renderChart();
+    }
+
+    private void initializeChartSurface() {
+        if (chartHost == null) {
+            return;
+        }
+        if (isNativeImage()) {
+            nativeChart = new NativeCandleChart();
+            chartHost.getChildren().setAll(nativeChart);
+        } else {
+            chartViewer = new ChartViewer();
+            chartViewer.setStyle("-fx-background-color: #121820;");
+            chartHost.getChildren().setAll(chartViewer);
+        }
+    }
+
+    private static boolean isNativeImage() {
+        return System.getProperty("org.graalvm.nativeimage.imagecode") != null;
     }
 
     /**
@@ -265,6 +288,13 @@ public class CandleController implements Initializable {
         DatasetBuildResult built = daily
                 ? buildDatasetFromHistory(history)
                 : buildDatasetFromTradeCandles(intraday);
+        if (nativeChart != null) {
+            renderNativeChart(symbol, timeframeMinutes, built);
+            renderedViewKey = viewKey;
+            renderedHasData = !built.items.isEmpty();
+            updateDataState(daily, history, intraday, responseReceived, built);
+            return;
+        }
         OHLCDataset dataset = built.dataset;
 
         DateAxis timeAxis = new DateAxis("Tiempo");
@@ -438,6 +468,36 @@ public class CandleController implements Initializable {
         renderedViewKey = viewKey;
         renderedHasData = !built.items.isEmpty();
 
+        updateDataState(daily, history, intraday, responseReceived, built);
+    }
+
+    private void renderNativeChart(String symbol, int timeframeMinutes, DatasetBuildResult built) {
+        Ohlcv ohlcv = Ohlcv.from(built.items);
+        double[] sma = on(ChartIndicator.SMA20)
+                ? Indicators.sma(ohlcv.close, params.smaPeriod) : null;
+        double[] ema = on(ChartIndicator.EMA20)
+                ? Indicators.ema(ohlcv.close, params.emaPeriod) : null;
+        String tf = cmbTimeframe == null || cmbTimeframe.getValue() == null
+                ? "1D" : cmbTimeframe.getValue();
+        String title = symbol == null || symbol.isBlank()
+                ? "Velas (" + tf + ")"
+                : "Velas (" + tf + ") - " + symbol;
+        List<NativeCandleChart.CandlePoint> points = built.items.stream()
+                .map(item -> new NativeCandleChart.CandlePoint(
+                        item.getDate().toInstant(),
+                        item.getOpen().doubleValue(),
+                        item.getHigh().doubleValue(),
+                        item.getLow().doubleValue(),
+                        item.getClose().doubleValue()))
+                .toList();
+        nativeChart.setData(title, points, timeframeMinutes, sma, ema);
+    }
+
+    private void updateDataState(boolean daily,
+                                 List<HistoricalCandle> history,
+                                 List<TradeCandle> intraday,
+                                 boolean responseReceived,
+                                 DatasetBuildResult built) {
         if (daily) {
             updateHistoricalDataState(history, responseReceived);
             updateHistoricalRange(history);
