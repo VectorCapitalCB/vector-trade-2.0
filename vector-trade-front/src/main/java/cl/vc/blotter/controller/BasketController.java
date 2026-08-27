@@ -66,7 +66,9 @@ public class BasketController {
             File excelFile = new File(BasketController.class.getResource("/excel/basket.xlsx").toURI());
             Desktop.getDesktop().open(excelFile);
 
-        } catch (Exception e) {
+            // catch de Throwable, no de Exception: sin AWT en el ejecutable nativo esto lanza
+            // UnsatisfiedLinkError, que es un Error y se escaparia del handler de FX.
+        } catch (Throwable e) {
             log.error("Could not open the baskets format excel.", e);
         }
     }

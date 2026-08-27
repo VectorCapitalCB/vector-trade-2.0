@@ -558,7 +558,10 @@ public class ChatController {
         if (incomingFromOtherUser && !suppressChatAlerts) {
             try {
                 Toolkit.getDefaultToolkit().beep();
-            } catch (Exception ignored) {
+                // catch de Throwable, no de Exception: sin AWT en el ejecutable nativo esto
+                // lanza UnsatisfiedLinkError, que es un Error y se escaparia del handler de FX
+                // al llegar un mensaje de chat, en vez de degradarse en silencio.
+            } catch (Throwable ignored) {
                 log.debug("No se pudo reproducir beep de chat");
             }
         }

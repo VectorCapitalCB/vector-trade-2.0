@@ -137,7 +137,10 @@ public class NewsController {
                 if (Desktop.isDesktopSupported()) {
                     Desktop.getDesktop().browse(new URI(url));
                 }
-            } catch (Exception ignored) {
+                // catch de Throwable, no de Exception: sin AWT en el ejecutable nativo esto
+                // lanza UnsatisfiedLinkError, que es un Error y se escaparia del handler de FX.
+                // Queda pendiente migrar a HostServices.showDocument(), que si funciona en nativo.
+            } catch (Throwable ignored) {
             }
         }
 

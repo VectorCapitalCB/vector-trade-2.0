@@ -39,6 +39,7 @@ public final class NativeCandleChart extends Region {
     private double viewCount;
     private double dragStartX;
     private double dragStartView;
+    private int lastDrawnCandles;
 
     public NativeCandleChart() {
         getChildren().add(canvas);
@@ -115,7 +116,21 @@ public final class NativeCandleChart extends Region {
         return Math.max(1, points.size() - first);
     }
 
+    /**
+     * Velas efectivamente pintadas en la ultima pasada de {@link #redraw()}.
+     *
+     * <p>Es la asercion que usa el smoke nativo ({@code --fxml-smoke}). Un valor {@code > 0}
+     * implica las tres cosas a la vez: el canvas tenia ancho y alto reales, habia serie
+     * cargada, y el bucle de dibujo corrio. Antes el smoke solo comprobaba que el objeto
+     * del grafico no fuera null, cosa que se cumple igual con la ventana mostrando
+     * "Sin datos para mostrar", y por eso dejaba pasar releases con el grafico muerto.
+     */
+    public int getLastDrawnCandles() {
+        return lastDrawnCandles;
+    }
+
     private void redraw() {
+        lastDrawnCandles = 0;
         double width = canvas.getWidth();
         double height = canvas.getHeight();
         if (width <= 1d || height <= 1d) return;
@@ -164,6 +179,7 @@ public final class NativeCandleChart extends Region {
             g.fillRect(x - bodyWidth / 2d, Math.min(openY, closeY), bodyWidth,
                     Math.max(1d, Math.abs(closeY - openY)));
         }
+        lastDrawnCandles = to - from;
         drawLine(g, sma, SMA, from, to, min, max, plotWidth, plotHeight);
         drawLine(g, ema, EMA, from, to, min, max, plotWidth, plotHeight);
         drawTimeLabels(g, from, to, width, height, plotWidth);

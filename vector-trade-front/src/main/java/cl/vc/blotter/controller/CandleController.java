@@ -82,8 +82,27 @@ public class CandleController implements Initializable {
     private static final DateTimeFormatter DAY_MARKER_FMT = DateTimeFormatter.ofPattern("dd/MM");
     private static final LocalTime MARKET_OPEN = LocalTime.of(9, 5);
     private static final LocalTime MARKET_CLOSE = LocalTime.of(17, 0);
-    private static final Color UP_COLOR = new Color(0x22, 0xc5, 0x5e);
-    private static final Color DOWN_COLOR = new Color(0xef, 0x44, 0x44);
+
+    /**
+     * Colores AWT del renderer JFreeChart, aislados en un holder para que NO se inicialicen
+     * al instanciar el controller.
+     *
+     * <p>Estaban como {@code static final} de CandleController, asi que vivian en su
+     * {@code <clinit>} y se ejecutaban en {@code loader.load()} de {@link CandleWindow},
+     * mucho antes del {@code if (nativeChart != null)} de {@link #renderChart()}. Y
+     * {@code java.awt.Color.<clinit>} llama {@code Toolkit.loadLibraries()}, que hace
+     * {@code System.loadLibrary("awt")}: en el ejecutable nativo de Gluon no hay awt,
+     * asi que el doble click en Tendencia moria con UnsatisfiedLinkError antes de poder
+     * elegir la superficie JavaFX. La rama nativa llegaba tarde por construccion.
+     *
+     * <p>Con el holder, la clase recien se inicializa al leer {@code JfreeColors.UP}, que
+     * solo ocurre despues del early-return nativo. Si se vuelven a subir a campos estaticos
+     * del controller, el grafico nativo se rompe de nuevo y en silencio.
+     */
+    private static final class JfreeColors {
+        static final Color UP = new Color(0x22, 0xc5, 0x5e);
+        static final Color DOWN = new Color(0xef, 0x44, 0x44);
+    }
 
     @FXML
     private StackPane chartHost;
@@ -140,6 +159,29 @@ public class CandleController implements Initializable {
 
     public boolean hasChartSurface() {
         return chartViewer != null || nativeChart != null;
+    }
+
+    /** true si la superficie activa es el Canvas JavaFX, es decir el ejecutable nativo. */
+    public boolean isNativeSurface() {
+        return nativeChart != null;
+    }
+
+    /** true si el ultimo render recibio velas. Complementa a {@link #drawnCandles()}. */
+    public boolean hasRenderedData() {
+        return renderedHasData;
+    }
+
+    /**
+     * Velas efectivamente pintadas en la ultima pasada del Canvas nativo, o -1 si la superficie
+     * activa es JFreeChart.
+     *
+     * <p>Lo consume el smoke de CI para distinguir un grafico dibujado de una ventana mostrando
+     * "Sin datos para mostrar". {@link #hasChartSurface()} no alcanza: se cumple con solo tener
+     * el objeto construido, que es justo lo que pasaba en los releases que salieron verdes con
+     * el grafico muerto.
+     */
+    public int drawnCandles() {
+        return nativeChart == null ? -1 : nativeChart.getLastDrawnCandles();
     }
 
     @Override
@@ -328,14 +370,14 @@ public class CandleController implements Initializable {
         priceAxis.setLabelPaint(Color.WHITE);
         priceAxis.setTickLabelPaint(Color.WHITE);
 
-        CandlestickRenderer candleRenderer = new DirectionalCandlestickRenderer(dataset, UP_COLOR, DOWN_COLOR);
+        CandlestickRenderer candleRenderer = new DirectionalCandlestickRenderer(dataset, JfreeColors.UP, JfreeColors.DOWN);
         candleRenderer.setAutoWidthMethod(CandlestickRenderer.WIDTHMETHOD_SMALLEST);
         candleRenderer.setAutoWidthFactor(0.72d);
         candleRenderer.setAutoWidthGap(1.0d);
         candleRenderer.setMaxCandleWidthInMilliseconds(maxCandleWidthMillis(timeframeMinutes));
         candleRenderer.setDrawVolume(false);
-        candleRenderer.setUpPaint(UP_COLOR);
-        candleRenderer.setDownPaint(DOWN_COLOR);
+        candleRenderer.setUpPaint(JfreeColors.UP);
+        candleRenderer.setDownPaint(JfreeColors.DOWN);
         candleRenderer.setUseOutlinePaint(true);
 
         // Series OHLCV como arreglos para alimentar Indicators (que trabaja con double[]).
