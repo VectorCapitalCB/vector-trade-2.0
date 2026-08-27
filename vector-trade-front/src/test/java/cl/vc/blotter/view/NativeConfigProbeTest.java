@@ -1,8 +1,13 @@
 package cl.vc.blotter.view;
 
-import cl.vc.blotter.controller.CandleController;
+import cl.vc.blotter.Repository;
+import cl.vc.blotter.utils.CandleWindow;
 import javafx.application.Platform;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Parent;
+import javafx.scene.Scene;
+import javafx.scene.layout.AnchorPane;
+import javafx.stage.Stage;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CountDownLatch;
@@ -14,19 +19,17 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 /**
  * Sonda para capturar la configuracion que necesita native-image.
  *
- * NO valida nada: su unico proposito es EJERCITAR en la JVM exactamente lo que falla en el
- * ejecutable nativo de Windows — cargar Candle.fxml y Settings.fxml — para que el agente de
- * GraalVM registre toda la reflexion, los recursos y los ResourceBundle involucrados.
+ * NO valida nada: replica EXACTAMENTE lo que hace MainApp.runFxmlSmoke() —el paso que esta
+ * fallando en el pipeline— para que el agente de GraalVM registre toda la reflexion involucrada.
  *
- * Se corre asi (el agente escribe al terminar):
+ * IMPORTANTE: hace applyCss() y layout(), no solo load(). La primera version de esta sonda solo
+ * cargaba el FXML y por eso capturo de menos: JavaFX resuelve el CSS por reflexion y JFreeChart
+ * recien DIBUJA durante el layout. Ahi esta la reflexion que faltaba.
+ *
+ * Uso:
  *   mvn test -Dtest=NativeConfigProbeTest \
  *     -DargLine="-agentlib:native-image-agent=config-output-dir=/tmp/ni-config"
- *
- * y despues:
  *   python3 tools/diff-native-config.py /tmp/ni-config
- *
- * No necesita login ni conexion al OMS: solo instancia el arbol de nodos del FXML, que es
- * justo donde revienta el nativo (al construir ChartViewer).
  */
 public class NativeConfigProbeTest {
 
@@ -37,43 +40,52 @@ public class NativeConfigProbeTest {
         } catch (IllegalStateException alreadyStarted) {
             started.countDown();
         }
-        assertTrue(started.await(15, TimeUnit.SECONDS), "el toolkit de JavaFX no arranco");
-    }
-
-    /** Carga un FXML en el hilo de FX y devuelve el error si lo hubo (no falla el test). */
-    private static Throwable cargar(String recurso, javafx.util.Callback<Class<?>, Object> factory)
-            throws Exception {
-        AtomicReference<Throwable> fallo = new AtomicReference<>();
-        CountDownLatch listo = new CountDownLatch(1);
-        Platform.runLater(() -> {
-            try {
-                FXMLLoader loader = new FXMLLoader(NativeConfigProbeTest.class.getResource(recurso));
-                if (factory != null) loader.setControllerFactory(factory);
-                loader.load();
-            } catch (Throwable t) {
-                fallo.set(t);
-            } finally {
-                listo.countDown();
-            }
-        });
-        assertTrue(listo.await(30, TimeUnit.SECONDS), "timeout cargando " + recurso);
-        return fallo.get();
+        assertTrue(started.await(20, TimeUnit.SECONDS), "el toolkit de JavaFX no arranco");
     }
 
     @Test
-    public void ejercitaLosFxmlQueFallanEnNativo() throws Exception {
+    public void replicaElSmokeDelPipeline() throws Exception {
         arrancarToolkit();
 
-        // Candle.fxml: es el que abre el doble click en Tendencia y el boton de velas de
-        // Estadisticas. Instancia ChartViewer (JFreeChart), que es el sospechoso principal.
-        Throwable candle = cargar("/view/Candle.fxml", type -> new CandleController("SQM-B"));
-        System.out.println("[SONDA] Candle.fxml   -> " + (candle == null ? "OK" : candle));
+        AtomicReference<Throwable> falloPrincipal = new AtomicReference<>();
+        AtomicReference<Throwable> falloCandle = new AtomicReference<>();
+        CountDownLatch listo = new CountDownLatch(1);
 
-        // Settings.fxml: pantalla nueva, su controller podria no estar completo en reflect-config.
-        Throwable settings = cargar("/view/Settings.fxml", null);
-        System.out.println("[SONDA] Settings.fxml -> " + (settings == null ? "OK" : settings));
+        Platform.runLater(() -> {
+            Stage principal = new Stage();
+            try {
+                // ---- Igual que runFxmlSmoke: PrincipalView + css + layout ----
+                Repository.principal = principal;
+                FXMLLoader loader = new FXMLLoader(getClass().getResource("/view/PrincipalView.fxml"));
+                AnchorPane root = loader.load();
+                principal.setScene(new Scene(root));
+                principal.show();
+                root.applyCss();
+                root.layout();
+            } catch (Throwable t) {
+                falloPrincipal.set(t);
+            }
 
-        // En la JVM ambos deberian cargar; si aca fallan, el problema no es de nativo.
-        assertTrue(candle == null, "Candle.fxml no carga ni en la JVM: " + candle);
+            try {
+                // ---- Y el grafico, que es el que revienta en Windows ----
+                CandleWindow.verifyNativeOpen("SQM-B");
+            } catch (Throwable t) {
+                falloCandle.set(t);
+            }
+
+            try {
+                principal.close();
+            } catch (Throwable ignore) {
+                // nada: la sonda ya capturo lo que importaba
+            }
+            listo.countDown();
+        });
+
+        assertTrue(listo.await(90, TimeUnit.SECONDS), "timeout ejecutando la sonda");
+        System.out.println("[SONDA] PrincipalView.fxml -> "
+                + (falloPrincipal.get() == null ? "OK" : falloPrincipal.get()));
+        System.out.println("[SONDA] Candle (verifyNativeOpen) -> "
+                + (falloCandle.get() == null ? "OK" : falloCandle.get()));
+        // No se afirma nada: en la JVM esto pasa; el valor esta en lo que capturo el agente.
     }
 }

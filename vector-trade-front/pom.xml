@@ -420,6 +420,12 @@
                         <bundle>org.jfree.chart.plot.LocalizationBundle</bundle>
                           <!-- JFreeChart dibuja sobre AWT; este bundle se carga solo al inicializarlo. -->
                           <bundle>sun.awt.resources.awt</bundle>
+                          <!-- Bundle de los skins de los controles: lo carga
+                               com.sun.javafx.scene.control.skin.Utils durante applyCss(). Va con barras y
+                               no con puntos porque asi lo pide JavaFX. Sin el, crear el skin de cualquier
+                               control tira MissingResourceException y el layout completo falla. -->
+                          <bundle>com/sun/javafx/scene/control/skin/resources/controls</bundle>
+                          <bundle>com.sun.javafx.tk.quantum.QuantumMessagesBundle</bundle>
                     </bundlesList>
 
                     <reflectionList>
@@ -753,6 +759,36 @@
                         <list>org.jfree.graphics2d.svg.SVGGraphics2D</list>
                         <list>org.jfree.pdf.PDFDocument</list>
                         <list>org.jfree.svg.SVGGraphics2D</list>
+                        <!-- Segunda captura del agente, replicando MainApp.runFxmlSmoke() completo:
+                             load + applyCss + layout. La primera pasada solo hacia load() y se perdio
+                             todo esto, que es donde JavaFX crea los SKINS por reflexion y JFreeChart
+                             recien dibuja. De las 67 clases observadas solo estas existen de verdad; las
+                             otras 44 eran sondeos de FXMLLoader resolviendo los <?import?> (prueba
+                             javafx.geometry.AnchorPane, javafx.scene.Button, etc. hasta que una carga). -->
+                        <list>com.sun.javafx.font.coretext.CTFactory</list>
+                        <list>com.sun.javafx.font.directwrite.DWFactory</list>
+                        <list>com.sun.javafx.logging.PrintLogger</list>
+                        <list>com.sun.javafx.logging.jfr.JFRPulseLogger</list>
+                        <list>com.sun.javafx.reflect.Trampoline</list>
+                        <list>com.sun.javafx.scene.control.skin.Utils</list>
+                        <list>com.sun.javafx.tk.quantum.QuantumToolkit</list>
+                        <list>javafx.geometry.HPos</list>
+                        <list>javafx.geometry.NodeOrientation</list>
+                        <list>javafx.geometry.Orientation</list>
+                        <list>javafx.scene.Camera</list>
+                        <list>javafx.scene.Group</list>
+                        <list>javafx.scene.ParallelCamera</list>
+                        <list>javafx.scene.control.TabPane$TabClosingPolicy</list>
+                        <list>javafx.scene.control.TableColumn$SortType</list>
+                        <list>javafx.scene.control.TableColumnBase</list>
+                        <list>javafx.scene.effect.Effect</list>
+                        <list>javafx.scene.layout.ConstraintsBase</list>
+                        <list>javafx.scene.shape.LineTo</list>
+                        <list>javafx.scene.shape.MoveTo</list>
+                        <list>javafx.scene.shape.Path</list>
+                        <list>javafx.scene.shape.PathElement</list>
+                        <list>javafx.scene.shape.SVGPath</list>
+                        <list>javafx.stage.Stage</list>
                     </reflectionList>
 
                     <!--nativeImageArgs>
