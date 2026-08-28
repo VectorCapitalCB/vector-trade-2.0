@@ -59,7 +59,8 @@ import static cl.vc.module.protocolbuff.generator.IDGenerator.conversorExdestina
 @Slf4j
 public class LanzadorController {
 
-    static final String MULTIBOOK_DEFAULT_VISIBLE_PERCENTAGE = "10";
+    static final String MULTIBOOK_DEFAULT_VISIBLE_PERCENTAGE = "50";
+    static final RoutingMessage.StrategyOrder MULTIBOOK_DEFAULT_STRATEGY = RoutingMessage.StrategyOrder.HOLGURA;
     static final String INITIAL_INSTRUMENT = "SQM-B";
     static final List<RoutingMessage.OrdType> ALLOWED_ORDER_TYPES = List.of(
             RoutingMessage.OrdType.MARKET,

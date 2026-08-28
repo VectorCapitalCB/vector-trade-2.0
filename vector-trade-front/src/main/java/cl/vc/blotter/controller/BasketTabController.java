@@ -172,7 +172,11 @@ public class BasketTabController {
     }
 
     private void updateTitle(int done, int total) {
-        if (tab != null) tab.setText(basketId + " (" + done + "/" + total + ")");
+        if (tab != null) tab.setText(basketTabTitle(done, total));
+    }
+
+    static String basketTabTitle(int done, int total) {
+        return "BKT (" + done + "/" + total + ")";
     }
 
     private void setText(Label l, String v) {

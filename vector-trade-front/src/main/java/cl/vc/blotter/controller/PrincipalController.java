@@ -612,11 +612,31 @@ public class PrincipalController {
                 dataBook.getPriceValue() * (10 / 10_000d)));
         floating.getSecurityType().getSelectionModel().select(type);
         floating.getIceberg().setText(LanzadorController.MULTIBOOK_DEFAULT_VISIBLE_PERCENTAGE);
+        selectStrategyIfAvailable(floating, LanzadorController.MULTIBOOK_DEFAULT_STRATEGY);
 
         if (Repository.getUser() != null
                 && Repository.getUser().getUsername().contains("fricci")) {
-            floating.getAcAccount().getItems().setAll("47024924/0");
-            floating.getAcAccount().getSelectionModel().select("47024924/0");
+            selectAccountIfAvailable(floating, "47024924/0");
+        }
+    }
+
+    private void selectStrategyIfAvailable(LanzadorController launcher, RoutingMessage.StrategyOrder strategy) {
+        if (launcher == null || launcher.getStrategOrder() == null || strategy == null) {
+            return;
+        }
+        ComboBox<RoutingMessage.StrategyOrder> strategies = launcher.getStrategOrder();
+        if (strategies.getItems().contains(strategy)) {
+            strategies.getSelectionModel().select(strategy);
+        }
+    }
+
+    private void selectAccountIfAvailable(LanzadorController launcher, String account) {
+        if (launcher == null || launcher.getAcAccount() == null || account == null) {
+            return;
+        }
+        ComboBox<String> accounts = launcher.getAcAccount();
+        if (accounts.getItems().contains(account)) {
+            accounts.getSelectionModel().select(account);
         }
     }
 

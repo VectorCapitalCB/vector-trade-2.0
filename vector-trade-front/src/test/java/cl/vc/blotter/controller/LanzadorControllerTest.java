@@ -12,8 +12,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class LanzadorControllerTest {
 
     @Test
-    void usesTenPercentVisibleByDefaultFromMultibook() {
-        assertEquals("10", LanzadorController.MULTIBOOK_DEFAULT_VISIBLE_PERCENTAGE);
+    void usesFiftyPercentVisibleByDefaultFromMultibook() {
+        assertEquals("50", LanzadorController.MULTIBOOK_DEFAULT_VISIBLE_PERCENTAGE);
+    }
+
+    @Test
+    void usesHolguraStrategyByDefaultFromMultibook() {
+        assertEquals(RoutingMessage.StrategyOrder.HOLGURA, LanzadorController.MULTIBOOK_DEFAULT_STRATEGY);
     }
 
     @Test
