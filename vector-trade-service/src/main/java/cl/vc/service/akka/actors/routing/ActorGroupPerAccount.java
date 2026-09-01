@@ -1026,7 +1026,7 @@ public class ActorGroupPerAccount extends AbstractActor {
                 double targetQuantity = effectiveMsg.getQuantity() > 0d
                         ? effectiveMsg.getQuantity()
                         : order.getOrderQty();
-                double leavesQuantity = Math.max(0d, targetQuantity - order.getCumQty());
+                double leavesQuantity = remainingQuantityForReplace(order, targetQuantity);
                 log.info("[Replace/NONE_STRATEGY] maxFloor ajustado {} -> {} cuenta={} id={} cumQty={} leaves={}",
                         msg.getMaxFloor(), effectiveMsg.getMaxFloor(), account, msg.getId(),
                         order.getCumQty(), leavesQuantity);
@@ -1376,7 +1376,7 @@ public class ActorGroupPerAccount extends AbstractActor {
             } else {
 
                 RoutingMessage.Order orderold = ordersMap.get(incomingOrder.getId());
-                incomingOrder = preserveKnownOrderQuantity(orderold, incomingOrder);
+                incomingOrder = preserveKnownOrderState(orderold, incomingOrder);
                 boolean tradeExecution = incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_TRADE);
                 String tradeExecutionKey = tradeExecution ? tradeExecutionKey(incomingOrder) : "";
                 boolean duplicateExecId = tradeExecution && exceIdProcess.containsKey(tradeExecutionKey);
@@ -1841,8 +1841,12 @@ public class ActorGroupPerAccount extends AbstractActor {
                     return;
                 }
 
-                RoutingMessage.Order restoredOrderValue = normalizeInconsistentFilledState(value1);
-                restoredToday.put(key1, restoredOrderValue);
+                RoutingMessage.Order normalizedOrder = normalizeInconsistentFilledState(value1);
+                String canonicalOrderId = canonicalOrderId(key1, normalizedOrder);
+                RoutingMessage.Order restoredOrderValue = canonicalOrderId.equals(normalizedOrder.getId())
+                        ? normalizedOrder
+                        : normalizedOrder.toBuilder().setId(canonicalOrderId).build();
+                restoredToday.put(canonicalOrderId, restoredOrderValue);
 
                 boolean recoveryBlocked = OrigClOrdIdRecoverySupport.isMarked(restoredOrderValue);
                 if (recoveryBlocked) {
@@ -1860,8 +1864,14 @@ public class ActorGroupPerAccount extends AbstractActor {
 
                 actorSession.forEach((key, value) -> value.tell(restoredOrderValue, ActorRef.noSender()));
 
-                MainApp.getIdOrders().put(key1, restoredOrderValue);
-                MainApp.getMessageEventBus().subscribe(getSelf(), restoredOrderValue.getId());
+                MainApp.getIdOrders().put(canonicalOrderId, restoredOrderValue);
+                if (!canonicalOrderId.equals(key1)) {
+                    // Compatibilidad con snapshots antiguos que quedaron indexados por ClOrdId.
+                    MainApp.getIdOrders().put(key1, restoredOrderValue);
+                    log.info("[OrderRecovery][ID_ALIAS] account={} persistedKey={} canonicalId={}",
+                            account, key1, canonicalOrderId);
+                }
+                MainApp.getMessageEventBus().subscribe(getSelf(), canonicalOrderId);
 
             });
 
@@ -2092,13 +2102,38 @@ public class ActorGroupPerAccount extends AbstractActor {
         return merged.build();
     }
 
-    private RoutingMessage.Order preserveKnownOrderQuantity(RoutingMessage.Order previous,
-                                                              RoutingMessage.Order incoming) {
-        if (previous == null || incoming == null
-                || incoming.getOrderQty() > 0d || previous.getOrderQty() <= 0d) {
+    private RoutingMessage.Order preserveKnownOrderState(RoutingMessage.Order previous,
+                                                           RoutingMessage.Order incoming) {
+        if (previous == null || incoming == null) {
             return incoming;
         }
-        return incoming.toBuilder().setOrderQty(previous.getOrderQty()).build();
+
+        RoutingMessage.Order.Builder merged = incoming.toBuilder();
+        boolean changed = false;
+        if (incoming.getOrderQty() <= 0d && previous.getOrderQty() > 0d) {
+            merged.setOrderQty(previous.getOrderQty());
+            changed = true;
+        }
+        if (incoming.getClOrdId().isBlank() && !previous.getClOrdId().isBlank()) {
+            merged.setClOrdId(previous.getClOrdId());
+            changed = true;
+        }
+        if (incoming.getOrigClOrdID().isBlank() && !previous.getOrigClOrdID().isBlank()) {
+            merged.setOrigClOrdID(previous.getOrigClOrdID());
+            changed = true;
+        }
+        if (incoming.getOrderID().isBlank() && !previous.getOrderID().isBlank()) {
+            merged.setOrderID(previous.getOrderID());
+            changed = true;
+        }
+        return changed ? merged.build() : incoming;
+    }
+
+    static String canonicalOrderId(String persistedKey, RoutingMessage.Order order) {
+        if (order != null && !order.getId().isBlank()) {
+            return order.getId();
+        }
+        return persistedKey == null ? "" : persistedKey;
     }
 
     private void publishIntradayPositionState() {
@@ -2270,7 +2305,7 @@ public class ActorGroupPerAccount extends AbstractActor {
         double targetQuantity = replace.getQuantity() > 0d
                 ? replace.getQuantity()
                 : order.getOrderQty();
-        double leavesQuantity = Math.max(0d, targetQuantity - order.getCumQty());
+        double leavesQuantity = remainingQuantityForReplace(order, targetQuantity);
         if (leavesQuantity <= 0d) {
             return replace;
         }
@@ -2282,6 +2317,16 @@ public class ActorGroupPerAccount extends AbstractActor {
         return replace.toBuilder()
                 .setMaxFloor(normalizedMaxFloor)
                 .build();
+    }
+
+    private static double remainingQuantityForReplace(
+            RoutingMessage.Order order, double targetQuantity) {
+        double leavesQuantity = Math.max(0d, targetQuantity - Math.max(0d, order.getCumQty()));
+        if (targetQuantity == order.getOrderQty() && order.getLeaves() > 0d) {
+            // Algunos ACK de replace NUAM reinician CumQty, pero conservan LeavesQty.
+            leavesQuantity = Math.min(leavesQuantity, order.getLeaves());
+        }
+        return leavesQuantity;
     }
 
     private OdAttempt buildOdAttempt(RoutingMessage.Order incoming, RoutingMessage.Order conflicting, String reason) {

@@ -8,6 +8,7 @@ import cl.vc.service.MainApp;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.jupiter.api.Test;
 import org.keycloak.representations.idm.UserRepresentation;
+import org.mockito.ArgumentCaptor;
 import org.mockito.MockedStatic;
 
 import java.lang.reflect.Constructor;
@@ -152,6 +153,28 @@ class ActorPerSessionOrderRoutingTest {
         }
     }
 
+    @Test
+    void replaceConAliasPersistidoUsaIdInternoEstable() throws Exception {
+        try (Env env = new Env()) {
+            ActorRef account = mock(ActorRef.class);
+            env.accounts.put("ACC1", account);
+            env.idOrders.put("CL-OLD", order("O1", "ACC1", "trader").toBuilder()
+                    .setClOrdId("CL-OLD")
+                    .build());
+
+            ActorPerSession s = newSession();
+            s.onReplaceRequest(RoutingMessage.OrderReplaceRequest.newBuilder()
+                    .setId("CL-OLD")
+                    .setPrice(100d)
+                    .build());
+
+            ArgumentCaptor<RoutingMessage.OrderReplaceRequest> sent =
+                    ArgumentCaptor.forClass(RoutingMessage.OrderReplaceRequest.class);
+            verify(account).tell(sent.capture(), isNull());
+            assertEquals("O1", sent.getValue().getId());
+        }
+    }
+
     // ── onCancelRequest ─────────────────────────────────────────────────────
 
     @Test
@@ -180,6 +203,27 @@ class ActorPerSessionOrderRoutingTest {
             s.onCancelRequest(RoutingMessage.OrderCancelRequest.newBuilder().setId("DESCONOCIDA").build());
 
             verifyNoInteractions(account);
+        }
+    }
+
+    @Test
+    void cancelConAliasPersistidoUsaIdInternoEstable() throws Exception {
+        try (Env env = new Env()) {
+            ActorRef account = mock(ActorRef.class);
+            env.accounts.put("ACC1", account);
+            env.idOrders.put("CL-OLD", order("O1", "ACC1", "trader").toBuilder()
+                    .setClOrdId("CL-OLD")
+                    .build());
+
+            ActorPerSession s = newSession();
+            s.onCancelRequest(RoutingMessage.OrderCancelRequest.newBuilder()
+                    .setId("CL-OLD")
+                    .build());
+
+            ArgumentCaptor<RoutingMessage.OrderCancelRequest> sent =
+                    ArgumentCaptor.forClass(RoutingMessage.OrderCancelRequest.class);
+            verify(account).tell(sent.capture(), isNull());
+            assertEquals("O1", sent.getValue().getId());
         }
     }
 

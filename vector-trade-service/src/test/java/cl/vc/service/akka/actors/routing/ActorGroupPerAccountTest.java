@@ -399,11 +399,11 @@ class ActorGroupPerAccountTest {
         return (RoutingMessage.Order) m.invoke(actor, previous, incoming);
     }
 
-    private RoutingMessage.Order preserveKnownOrderQuantity(ActorGroupPerAccount actor,
-                                                              RoutingMessage.Order previous,
-                                                              RoutingMessage.Order incoming) throws Exception {
+    private RoutingMessage.Order preserveKnownOrderState(ActorGroupPerAccount actor,
+                                                           RoutingMessage.Order previous,
+                                                           RoutingMessage.Order incoming) throws Exception {
         Method m = ActorGroupPerAccount.class.getDeclaredMethod(
-                "preserveKnownOrderQuantity", RoutingMessage.Order.class, RoutingMessage.Order.class);
+                "preserveKnownOrderState", RoutingMessage.Order.class, RoutingMessage.Order.class);
         m.setAccessible(true);
         return (RoutingMessage.Order) m.invoke(actor, previous, incoming);
     }
@@ -421,9 +421,32 @@ class ActorGroupPerAccountTest {
                 .setCumQty(1_000d)
                 .build();
 
-        RoutingMessage.Order merged = preserveKnownOrderQuantity(rawActor(), original, fill);
+        RoutingMessage.Order merged = preserveKnownOrderState(rawActor(), original, fill);
 
         assertEquals(10_000d, merged.getOrderQty(), 1e-9);
+    }
+
+    @Test
+    void reporteParcialConservaIdentificadoresFixConocidos() throws Exception {
+        RoutingMessage.Order original = baseOrder("identity-known", RoutingMessage.Side.BUY)
+                .setOrderQty(10_000d)
+                .setClOrdId("CL-100")
+                .setOrigClOrdID("CL-099")
+                .setOrderID("EXCHANGE-77")
+                .build();
+        RoutingMessage.Order partial = original.toBuilder()
+                .clearClOrdId()
+                .clearOrigClOrdID()
+                .clearOrderID()
+                .setExecType(RoutingMessage.ExecutionType.EXEC_REPLACED)
+                .setOrdStatus(RoutingMessage.OrderStatus.REPLACED)
+                .build();
+
+        RoutingMessage.Order merged = preserveKnownOrderState(rawActor(), original, partial);
+
+        assertEquals("CL-100", merged.getClOrdId());
+        assertEquals("CL-099", merged.getOrigClOrdID());
+        assertEquals("EXCHANGE-77", merged.getOrderID());
     }
 
     @Test

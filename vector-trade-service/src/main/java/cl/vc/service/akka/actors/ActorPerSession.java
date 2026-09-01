@@ -889,7 +889,10 @@ public class ActorPerSession extends AbstractActor {
             if (op.contains("voultech")) {
                 ensureActorForVoultechAndBindSession(base.getAccount());
             }
-            MainApp.getAccountGroupUser().get(base.getAccount()).tell(msg, ActorRef.noSender());
+            RoutingMessage.OrderReplaceRequest effectiveMsg = msg.getId().equals(base.getId())
+                    ? msg
+                    : msg.toBuilder().setId(base.getId()).build();
+            MainApp.getAccountGroupUser().get(base.getAccount()).tell(effectiveMsg, ActorRef.noSender());
 
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);
@@ -912,7 +915,10 @@ public class ActorPerSession extends AbstractActor {
             if (op.contains("voultech")) {
                 ensureActorForVoultechAndBindSession(base.getAccount());
             }
-            MainApp.getAccountGroupUser().get(base.getAccount()).tell(msg, ActorRef.noSender());
+            RoutingMessage.OrderCancelRequest effectiveMsg = msg.getId().equals(base.getId())
+                    ? msg
+                    : msg.toBuilder().setId(base.getId()).build();
+            MainApp.getAccountGroupUser().get(base.getAccount()).tell(effectiveMsg, ActorRef.noSender());
 
         } catch (Exception ex) {
             log.error(ex.getMessage(), ex);

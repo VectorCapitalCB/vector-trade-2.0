@@ -52,6 +52,34 @@ class ActorGroupPerAccountReplaceTest {
     }
 
     @Test
+    void usesReportedLeavesWhenNuamReplaceAckResetsCumQty() {
+        RoutingMessage.Order order = order(
+                RoutingMessage.StrategyOrder.NONE_STRATEGY,
+                123_123d,
+                0d).toBuilder()
+                .setLeaves(5_219d)
+                .build();
+        RoutingMessage.OrderReplaceRequest replace = replace(123_123d, 12_313d);
+
+        RoutingMessage.OrderReplaceRequest normalized =
+                ActorGroupPerAccount.normalizeNoneStrategyReplace(order, replace);
+
+        assertEquals(5_219d, normalized.getMaxFloor(), 1e-9);
+    }
+
+    @Test
+    void restoresOrdersUsingInternalIdInsteadOfPersistedAlias() {
+        RoutingMessage.Order order = RoutingMessage.Order.newBuilder()
+                .setId("internal-123")
+                .setClOrdId("clord-456")
+                .build();
+
+        assertEquals("internal-123", ActorGroupPerAccount.canonicalOrderId("clord-456", order));
+        assertEquals("legacy-key", ActorGroupPerAccount.canonicalOrderId(
+                "legacy-key", RoutingMessage.Order.getDefaultInstance()));
+    }
+
+    @Test
     void leavesNonIcebergNoneStrategyReplaceUntouched() {
         RoutingMessage.Order order = order(
                 RoutingMessage.StrategyOrder.NONE_STRATEGY,
