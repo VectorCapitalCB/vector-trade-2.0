@@ -1250,18 +1250,20 @@ public class LanzadorController {
 
             orderBuilder.setSymbol(ticket.getText().trim());
 
-            if (!iceberg.getText().isEmpty()) {
+            // Paridad con produccion: el campo se recorta y solo se marca iceberg cuando el
+            // porcentaje es positivo. Antes un campo con un espacio, o un "0", mandaba
+            // maxFloor/icebergPercentage igual y la bolsa lo rechazaba.
+            String icebergText = iceberg.getText() == null ? "" : iceberg.getText().trim();
+            if (!icebergText.isEmpty()) {
 
                 double quantityValue = Double.parseDouble(quantity.getText().replace(",", ""));
+                double icebergValue = parseIcebergPercentage(icebergText);
 
-                double icebergValue = Double.parseDouble(iceberg.getText().replace("%", "")
-                        .replace(".", "").replace(",", ""));
-
-                int maxFloor = calculateVisibleMaxFloor(quantityValue, icebergValue);
-
-
-                orderBuilder.setMaxFloor(maxFloor);
-                orderBuilder.setIcebergPercentage(iceberg.getText());
+                if (icebergValue > 0d) {
+                    int maxFloor = calculateVisibleMaxFloor(quantityValue, icebergValue);
+                    orderBuilder.setMaxFloor(maxFloor);
+                    orderBuilder.setIcebergPercentage(icebergText);
+                }
             }
 
 
@@ -1287,6 +1289,27 @@ public class LanzadorController {
         }
 
         return orderBuilder;
+    }
+
+    /**
+     * Porcentaje visible tal como lo escribe el operador ("20", "20%", "020"). Misma limpieza
+     * que produccion; devuelve 0 si el campo no trae un numero, para que el llamador no marque
+     * iceberg. El punto y la coma se quitan (no se interpretan como decimal): es el
+     * comportamiento historico de produccion y aca solo se replica.
+     */
+    static double parseIcebergPercentage(String text) {
+        if (text == null) {
+            return 0d;
+        }
+        String cleaned = text.trim().replace("%", "").replace(".", "").replace(",", "");
+        if (cleaned.isEmpty()) {
+            return 0d;
+        }
+        try {
+            return Double.parseDouble(cleaned);
+        } catch (NumberFormatException e) {
+            return 0d;
+        }
     }
 
     static int calculateVisibleMaxFloor(double quantity, double visiblePercentage) {

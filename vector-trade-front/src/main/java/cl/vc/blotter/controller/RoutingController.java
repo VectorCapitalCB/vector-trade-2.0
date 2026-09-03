@@ -368,7 +368,7 @@ public class RoutingController {
                     return;
                 }
                 tickMas.setDisable(false);
-                BigDecimal currentLimit = FlexibleNumberParser.parseBigDecimal(limitText);
+                BigDecimal currentLimit = FlexibleNumberParser.parseBlotterFieldBigDecimal(limitText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentLimit);
                 BigDecimal newLimit = currentLimit.add(tick);
                 limit2.setText(newLimit.toPlainString());
@@ -380,7 +380,7 @@ public class RoutingController {
                     return;
                 }
                 tickMas.setDisable(false);
-                BigDecimal currentPrice = FlexibleNumberParser.parseBigDecimal(priceText);
+                BigDecimal currentPrice = FlexibleNumberParser.parseBlotterFieldBigDecimal(priceText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentPrice);
                 BigDecimal newPrice = currentPrice.add(tick);
                 priceOrder2.setText(newPrice.toPlainString());
@@ -406,7 +406,7 @@ public class RoutingController {
                     return;
                 }
                 tickMenos.setDisable(false);
-                BigDecimal currentLimit = FlexibleNumberParser.parseBigDecimal(limitText);
+                BigDecimal currentLimit = FlexibleNumberParser.parseBlotterFieldBigDecimal(limitText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentLimit);
                 BigDecimal newLimit = currentLimit.subtract(tick);
                 if (newLimit.compareTo(BigDecimal.ZERO) > 0) {
@@ -422,7 +422,7 @@ public class RoutingController {
                     return;
                 }
                 tickMenos.setDisable(false);
-                BigDecimal currentPrice = FlexibleNumberParser.parseBigDecimal(priceText);
+                BigDecimal currentPrice = FlexibleNumberParser.parseBlotterFieldBigDecimal(priceText);
                 BigDecimal tick = Ticks.getTick(Repository.getLanzadorController().getSecExchOrder().getSelectionModel().getSelectedItem(), currentPrice);
                 BigDecimal newPrice = currentPrice.subtract(tick);
                 if (newPrice.compareTo(BigDecimal.ZERO) > 0) {
@@ -470,8 +470,8 @@ public class RoutingController {
 
         if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.BEST)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setLimit(FlexibleNumberParser.parse(limit2.getText()))
-                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
+                    .setLimit(FlexibleNumberParser.parseBlotterField(limit2.getText()))
+                    .setQuantity(FlexibleNumberParser.parseBlotterField(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Límite: " + limit2.getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_PASSIVE)
@@ -479,35 +479,35 @@ public class RoutingController {
                 || (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_LAST)))) {
 
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setLimit(FlexibleNumberParser.parse(limit2.getText()))
-                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
+                    .setLimit(FlexibleNumberParser.parseBlotterField(limit2.getText()))
+                    .setQuantity(FlexibleNumberParser.parseBlotterField(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Límite: " + limit2.getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.HOLGURA)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setPrice(FlexibleNumberParser.parse(priceOrder2.getText()))
-                    .setSpread(FlexibleNumberParser.parse(spread2.getText()))
-                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
+                    .setPrice(FlexibleNumberParser.parseBlotterField(priceOrder2.getText()))
+                    .setSpread(FlexibleNumberParser.parseBlotterField(spread2.getText()))
+                    .setQuantity(FlexibleNumberParser.parseBlotterField(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Precio: " + priceOrder2.getText() + " - Spread: " + spread2.getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.TRAILING)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setLimit(FlexibleNumberParser.parse(Repository.getLanzadorController().getLimit().getText()))
-                    .setQuantity(FlexibleNumberParser.parse(Repository.getLanzadorController().getQuantity().getText()));
+                    .setLimit(FlexibleNumberParser.parseBlotterField(Repository.getLanzadorController().getLimit().getText()))
+                    .setQuantity(FlexibleNumberParser.parseBlotterField(Repository.getLanzadorController().getQuantity().getText()));
             message = "Cantidad: " + Repository.getLanzadorController().getQuantity().getText() + " - Límite: " + Repository.getLanzadorController().getLimit().getText();
 
         } else if (Repository.getPrincipalController().getOrderSelected().getStrategyOrder().equals(RoutingMessage.StrategyOrder.OCO)) {
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setSpread(FlexibleNumberParser.parse(Repository.getLanzadorController().getSpread().getText()))
-                    .setLimit(FlexibleNumberParser.parse(Repository.getLanzadorController().getLimit().getText()))
-                    .setQuantity(FlexibleNumberParser.parse(Repository.getLanzadorController().getQuantity().getText()));
+                    .setSpread(FlexibleNumberParser.parseBlotterField(Repository.getLanzadorController().getSpread().getText()))
+                    .setLimit(FlexibleNumberParser.parseBlotterField(Repository.getLanzadorController().getLimit().getText()))
+                    .setQuantity(FlexibleNumberParser.parseBlotterField(Repository.getLanzadorController().getQuantity().getText()));
             message = "Cantidad: " + Repository.getLanzadorController().getQuantity().getText() + " - Spread: " + Repository.getLanzadorController().getSpread().getText() + " - Límite: " + Repository.getLanzadorController().getLimit().getText();
 
         } else {
 
             replace.setId(Repository.getPrincipalController().getOrderSelected().getId())
-                    .setPrice(FlexibleNumberParser.parse(priceOrder2.getText()))
-                    .setQuantity(FlexibleNumberParser.parse(quantity2.getText()));
+                    .setPrice(FlexibleNumberParser.parseBlotterField(priceOrder2.getText()))
+                    .setQuantity(FlexibleNumberParser.parseBlotterField(quantity2.getText()));
             message = "Cantidad: " + quantity2.getText() + " - Precio: " + priceOrder2.getText();
         }
 
