@@ -4,7 +4,6 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.routing.RoundRobinPool;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -89,7 +88,7 @@ public class NettyProtobufClientAuth extends Thread implements InterfaceTcp {
         fileLog.setLevel(Level.ALL);
         fileLog.addAppender(appender);
 
-        actorLogger = system.actorOf(new RoundRobinPool(10).props(LoggerActor.props(fileLog, true)), "actorPool");
+        actorLogger = LoggerActor.create(system, fileLog, true);
 
     }
 
@@ -128,7 +127,7 @@ public class NettyProtobufClientAuth extends Thread implements InterfaceTcp {
         fileLog.setLevel(Level.ALL);
         fileLog.addAppender(appender);
 
-        actorLogger = system.actorOf(new RoundRobinPool(10).props(LoggerActor.props(fileLog, islog)), "actorPool");
+        actorLogger = LoggerActor.create(system, fileLog, islog);
 
     }
 
@@ -160,7 +159,7 @@ public class NettyProtobufClientAuth extends Thread implements InterfaceTcp {
         fileLog.setLevel(Level.ALL);
         fileLog.addAppender(appender);
 
-        actorLogger = system.actorOf(new RoundRobinPool(10).props(LoggerActor.props(fileLog, islog)), "actorPool");
+        actorLogger = LoggerActor.create(system, fileLog, islog);
 
     }
 
@@ -195,7 +194,7 @@ public class NettyProtobufClientAuth extends Thread implements InterfaceTcp {
         fileLog.setLevel(Level.ALL);
         fileLog.addAppender(appender);
 
-        actorLogger = system.actorOf(new RoundRobinPool(10).props(LoggerActor.props(fileLog, islog)), "actorPool");
+        actorLogger = LoggerActor.create(system, fileLog, islog);
 
     }
 

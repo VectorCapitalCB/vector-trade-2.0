@@ -5,6 +5,7 @@ import cl.vc.module.protocolbuff.blotter.BlotterMessage;
 import cl.vc.module.protocolbuff.generalstrategy.GeneralStrategy;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.notification.NotificationMessage;
+import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.module.protocolbuff.session.SessionsMessage;
 import com.google.protobuf.InvalidProtocolBufferException;
 import com.google.protobuf.Message;
@@ -78,6 +79,10 @@ public class MessageUtilBKT {
                     builder = BktStrategyProtos.EtfConfig.newBuilder();
                     break;
 
+                case SnapshotBasket:
+                    builder = BktStrategyProtos.SnapshotBasket.newBuilder();
+                    break;
+
                 case SnapshotBasketRequest:
                     builder = BktStrategyProtos.SnapshotBasketRequest.newBuilder();
                     break;
@@ -101,6 +106,15 @@ public class MessageUtilBKT {
                 case Notification:
                     builder = NotificationMessage.Notification.newBuilder();
                     break;
+
+                case Order:
+                    builder = RoutingMessage.Order.newBuilder();
+                    break;
+
+                case OrderCancelReject:
+                    builder = RoutingMessage.OrderCancelReject.newBuilder();
+                    break;
+
 
                 default:
                     log.error("Unknown topic: " + topic);

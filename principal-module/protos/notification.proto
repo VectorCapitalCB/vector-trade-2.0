@@ -2,10 +2,9 @@ syntax = "proto3";
 
 package messages;
 
-import "google/protobuf/any.proto";
+import "google/protobuf/timestamp.proto";
 option java_package = "cl.vc.module.protocolbuff.notification";
 option java_outer_classname = "NotificationMessage";
-import "google/protobuf/timestamp.proto";
 
 enum ConnectionSource {
   BUYSIDE= 0;
@@ -28,6 +27,8 @@ enum TypeState {
   CONNECTION = 1;
   TEST_REQUEST = 2;
   REJECT = 3;
+  ALERT = 4;
+  WARNING = 5;
 }
 
 enum Component {
@@ -63,6 +64,17 @@ enum Component {
 
 
   ALGO_AVN = 26;
+
+  ETF_IPSA_1_V2 = 27;
+  ETF_IPSA_2_V2 = 28;
+  ETF_IPSA_3_V2 = 29;
+
+  MARKET_MAKER = 30;
+
+  ALGO_MM = 31;
+  ALGO_MM_CFI = 32;
+  ETF_COMPASS_A = 33;
+  ETF_COMPASS_B = 34;
 
 }
 

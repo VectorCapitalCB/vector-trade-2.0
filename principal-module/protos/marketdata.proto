@@ -37,6 +37,7 @@ enum SecurityExchangeMarketData {
 	ORIONX_MKD = 15;
 	NONE_MKD = 16;
 	NUAM_MKD = 17;
+	BLOOMBERG_MKD = 18;
 
 }
 
@@ -234,6 +235,8 @@ message Statistic {
 	double low = 63;
 	double high = 64;
 	double volume = 65;
+	double pxMax = 66;
+	double pxMin = 67;
 
 }
 

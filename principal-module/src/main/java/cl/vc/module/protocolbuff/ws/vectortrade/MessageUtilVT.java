@@ -206,12 +206,15 @@ public class MessageUtilVT {
                 case HistoricalOrdersRequest:
                     builder = BlotterMessage.HistoricalOrdersRequest.newBuilder();
                     break;
+
                 case HistoricalOrdersSnapshot:
                     builder = BlotterMessage.HistoricalOrdersSnapshot.newBuilder();
                     break;
+
                 case ClientLogRequest:
                     builder = BlotterMessage.ClientLogRequest.newBuilder();
                     break;
+
                 case ClientLogResponse:
                     builder = BlotterMessage.ClientLogResponse.newBuilder();
                     break;

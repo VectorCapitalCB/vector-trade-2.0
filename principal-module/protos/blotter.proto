@@ -1,6 +1,5 @@
 syntax = "proto3";
 import "routing.proto";
-import "notification.proto";
 import "marketdata.proto";
 import "google/protobuf/timestamp.proto";
 
@@ -199,49 +198,6 @@ message TradesTotals {
 message SnapshotOrders {
   string id = 1;
   repeated Order orders = 2;
-}
-
-message HistoricalOrdersRequest {
-  string requestId = 1;
-  repeated string accounts = 2;
-  string symbol = 3;
-  string from = 4;
-  string to = 5;
-  int32 limit = 6;
-}
-
-message HistoricalOrderGroup {
-  Order summary = 1;
-  repeated Order executions = 2;
-}
-
-message HistoricalOrdersSnapshot {
-  string requestId = 1;
-  repeated HistoricalOrderGroup orders = 2;
-  string error = 3;
-  bool truncated = 4;
-}
-
-message ClientLogRequest {
-  string requestId = 1;
-  string username = 2;
-  int32 minutes = 3;
-  int32 maxBytes = 4;
-  int64 requestedAt = 5;
-}
-
-message ClientLogResponse {
-  string requestId = 1;
-  string username = 2;
-  string deviceId = 3;
-  string appVersion = 4;
-  string os = 5;
-  int64 generatedAt = 6;
-  int32 minutes = 7;
-  bool truncated = 8;
-  string error = 9;
-  bytes content = 10;
-  string hardware = 11;
 }
 
 message SnapshotTrades {
@@ -476,4 +432,61 @@ enum StatusUser {
 message UserList {
   repeated User users = 1;
   StatusUser statusUser = 2;
+}
+
+// =============================================================================
+//  Ordenes historicas y recoleccion de logs del cliente.
+//
+//  Estos mensajes existian en el artefacto 1.4.5 publicado al .m2 pero nunca se
+//  commitearon a este repo, asi que vector-trade-service no compilaba desde un
+//  checkout limpio. Se reponen con los MISMOS numeros de campo y tipos que 1.4.5
+//  (verificado contra el descriptor embebido), de modo que el formato de cable es
+//  identico y no rompe nada ya desplegado.
+//
+//  Consumidores: ActorPerSession (HistoricalOrders*), ClientLogDiagnosticsStore y
+//  ClientLogsServlet (ClientLog*) en vector-trade-service; HistoricalOrdersController
+//  y ClientActor en vector-trade-front.
+// =============================================================================
+
+message HistoricalOrdersRequest {
+  string requestId = 1;
+  repeated string accounts = 2;
+  string symbol = 3;
+  string from = 4;
+  string to = 5;
+  int32 limit = 6;
+}
+
+message HistoricalOrderGroup {
+  Order summary = 1;
+  repeated Order executions = 2;
+}
+
+message HistoricalOrdersSnapshot {
+  string requestId = 1;
+  repeated HistoricalOrderGroup orders = 2;
+  string error = 3;
+  bool truncated = 4;
+}
+
+message ClientLogRequest {
+  string requestId = 1;
+  string username = 2;
+  int32 minutes = 3;
+  int32 maxBytes = 4;
+  int64 requestedAt = 5;
+}
+
+message ClientLogResponse {
+  string requestId = 1;
+  string username = 2;
+  string deviceId = 3;
+  string appVersion = 4;
+  string os = 5;
+  int64 generatedAt = 6;
+  int32 minutes = 7;
+  bool truncated = 8;
+  string error = 9;
+  bytes content = 10;
+  string hardware = 11;
 }

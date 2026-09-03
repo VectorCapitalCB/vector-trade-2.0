@@ -1,0 +1,187 @@
+syntax = "proto3";
+
+package messages;
+
+import "google/protobuf/timestamp.proto";
+import "generalstrategy.proto";
+import "marketdata.proto";
+import "routing.proto";
+import "notification.proto";
+import "sessions.proto";
+
+option java_package = "cl.vc.algos.mm.proto";
+option java_outer_classname = "MarketMakerProtos";
+
+// ── Snapshot request ─────────────────────────────────────────────────────────
+message MarketMakerSnapshot {
+  string id = 1;
+}
+
+// ── Runtime status por estrategia ────────────────────────────────────────────
+message MakerStatus {
+  string  strategyId    = 1;
+  bool    subscribed    = 2;
+  bool    active        = 3;
+  double  position      = 4;    // inventario actual (neto)
+  double  bidPx         = 5;    // quote bid actual
+  double  askPx         = 6;    // quote ask actual
+  double  bidQty        = 7;
+  double  askQty        = 8;
+  string  bidAsk        = 9;    // display "bid x ask"
+  double  tradedUf      = 10;   // UF acumulada tradada
+  double  screenUfOnBook= 11;   // UF efectiva en pantalla (bid+ask)
+  double  pnl           = 12;   // P&L estimado (position * midPx)
+}
+
+// ── Operaciones específicas de Market Maker ──────────────────────────────────
+enum MakerOperationEnum {
+  START_QUOTES    = 0;
+  STOP_QUOTES     = 1;
+  SUBSCRIBE_MM    = 2;
+  UNSUBSCRIBE_MM  = 3;
+  CANCEL_QUOTES   = 4;
+  SKEW_BID        = 5;
+  SKEW_ASK        = 6;
+  RESET_SKEW      = 7;
+  CANCEL_ALL_MM   = 8;
+}
+
+message MakerOperationsControl {
+  string             strategyId        = 1;
+  MakerOperationEnum operationControl  = 2;
+  string             username          = 3;
+  int64              timestamp         = 4;
+}
+
+// ── Modos de cotización ───────────────────────────────────────────────────────
+enum QuoteMode {
+  QM_FIXED   = 0;    // spread fijo en bps
+  QM_DYNAMIC = 1;    // spread ajustado por volatilidad
+  QM_SKEWED  = 2;    // asimetría bid/ask por inventario
+}
+
+enum MakerType {
+  MT_SINGLE = 0;
+  MT_DUAL   = 1;
+  MT_CROSS  = 2;
+}
+
+// ── Configuración global de la UF ────────────────────────────────────────────
+message UfConfig {
+  double  ufValue    = 1;    // valor actual de la UF en CLP
+  string  ufSource   = 2;    // URL de la fuente (vacío = manual)
+  bool    autoFetch  = 3;    // true: ir a buscar a la web
+  int64   lastUpdate = 4;    // timestamp epoch ms del último update
+  string  lastError  = 5;    // último error de fetch (vacío = OK)
+}
+
+// ── Tipos de alerta ───────────────────────────────────────────────────────────
+enum AlertType {
+  MAX_TRADE_UF_EXCEEDED = 0;   // se superó el límite de UF tradadas
+  POSITION_LIMIT        = 1;   // posición supera maxPosition
+  SPREAD_VIOLATION      = 2;   // spread real < minSpreadBps
+  SCREEN_AMOUNT_LOW     = 3;   // UF en pantalla < 50% del target
+  QUOTE_FAILURE         = 4;   // fallo al colocar/reemplazar quote
+  UF_FETCH_ERROR        = 5;   // error al obtener valor UF de la web
+}
+
+// ── Mensaje de alerta ─────────────────────────────────────────────────────────
+message MakerAlert {
+  string     strategyId  = 1;
+  AlertType  alertType   = 2;
+  string     message     = 3;
+  double     value       = 4;    // valor que disparó la alerta
+  double     threshold   = 5;    // umbral configurado
+  Level      level       = 6;    // reutiliza Level de notification.proto
+  int64      timestamp   = 7;
+}
+
+// ── Estrategia principal ──────────────────────────────────────────────────────
+message MarketMakerStrategy {
+  string   strategyId   = 1;
+  string   strategyName = 2;
+
+  // ── Instrumento ──────────────────────────────────────────────────────────
+  string                     symbol              = 3;
+  string                     symbolReference     = 4;
+  SecurityExchangeMarketData exchangeSource      = 5;
+  SecurityExchangeRouting    exchangeDestination = 6;
+  string                     account             = 7;
+  string                     ordersPrefix        = 8;
+  Currency                   currency            = 9;
+  SecurityType               securityType        = 10;
+  SettlType                  settlType           = 11;
+
+  // ── Spread (ambos lados cotizados en bps sobre el mid) ────────────────────
+  double  bidSpreadBps  = 12;   // bid = mid * (1 - bidSpreadBps/10000)
+  double  askSpreadBps  = 13;   // ask = mid * (1 + askSpreadBps/10000)
+  double  minSpreadBps  = 14;   // alerta si spread real < esto
+  double  maxSpreadBps  = 15;   // límite máximo aceptado
+
+  // ── Cantidades / monto en pantalla ────────────────────────────────────────
+  double  screenUf      = 16;   // UF target a mantener en pantalla (c/lado)
+  double  minQty        = 17;   // cantidad mínima por orden
+  double  maxQty        = 18;   // cantidad máxima por orden
+  double  percentageQty = 19;   // % del vol de mercado (0 = no usar)
+
+  // ── Riesgo / límites ──────────────────────────────────────────────────────
+  double  maxPosition   = 20;   // inventario máximo (|position| <= este valor)
+  double  maxTradeUf    = 21;   // UF acumulada máxima antes de detener algo
+
+  // ── Replace ───────────────────────────────────────────────────────────────
+  double  deltabps      = 22;   // umbral de cambio de precio para replace (bps)
+  double  ntick         = 23;   // tick mínimo de mejora de precio
+
+  // ── Iceberg ───────────────────────────────────────────────────────────────
+  double  percentageIceberg = 24;
+
+  // ── Modo ──────────────────────────────────────────────────────────────────
+  QuoteMode quoteMode   = 25;
+  MakerType makerType   = 26;
+
+  // ── Skew por inventario ───────────────────────────────────────────────────
+  double  skewFactor      = 27;   // bps de sesgo por unidad de posición
+  double  inventoryTarget = 28;   // posición objetivo (0 = neutral)
+
+  // ── Valor de la UF por estrategia (override del global) ───────────────────
+  double  ufValueOverride = 29;   // 0 = usar el global de App
+  string  ufSource        = 30;   // URL personalizada (vacío = usar global)
+  bool    autoFetchUf     = 31;   // true: el core va a buscar la UF
+
+  // ── Estado ────────────────────────────────────────────────────────────────
+  StatusStrategy statusStrategy = 32;
+  MakerStatus    makerStatus    = 33;
+
+  // ── Display / misc ────────────────────────────────────────────────────────
+  string  bidAskDisplay = 34;
+  double  pxTheoric     = 35;
+  bool    isDelete      = 36;
+
+  // ── Precios fijos (estrategia estática Ameris) ────────────────────────────
+  // Cuando staticPrices=true el actor NO recalcula precios con el mid de mercado.
+  // Coloca exactamente fixedBidPx / fixedAskPx sin modificarlos.
+  bool    staticPrices  = 37;   // true = estrategia de precio fijo
+  double  fixedBidPx    = 38;   // precio de compra en CLP (del correo)
+  double  fixedAskPx    = 39;   // precio de venta en CLP (del correo)
+  double  navPx         = 40;   // NAV de referencia (para display)
+
+  // ── Código operado ────────────────────────────────────────────────────────
+  string  codeOperator  = 41;   // código operado (codeOperator en la orden)
+}
+
+// ── Log ───────────────────────────────────────────────────────────────────────
+message MakerLogRequest {
+  string id = 1;
+}
+
+message MakerLogResponse {
+  repeated MakerLogMessage message = 1;
+  string id = 2;
+}
+
+message MakerLogMessage {
+  google.protobuf.Timestamp time    = 1;
+  Level                     level   = 2;
+  string                    message = 3;
+}
+

@@ -4,7 +4,6 @@ import akka.actor.AbstractActor;
 import akka.actor.ActorRef;
 import akka.actor.ActorSystem;
 import akka.actor.Props;
-import akka.routing.RoundRobinPool;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
@@ -79,7 +78,7 @@ public class NettyProtobufServer extends Thread {
         fileLog.setLevel(Level.ALL);
         fileLog.addAppender(appender);
 
-        actorLogger = system.actorOf(new RoundRobinPool(10).props(LoggerActor.props(fileLog, true)), "actorPool");
+        actorLogger = LoggerActor.create(system, fileLog, true);
     }
 
     public NettyProtobufServer(String host, ActorRef receiverActor, String path, String destination, Boolean isLog) throws Exception {
@@ -112,7 +111,7 @@ public class NettyProtobufServer extends Thread {
         fileLog.setLevel(Level.ALL);
         fileLog.addAppender(appender);
 
-        actorLogger = system.actorOf(new RoundRobinPool(10).props(LoggerActor.props(fileLog, isLog)), "actorPool");
+        actorLogger = LoggerActor.create(system, fileLog, isLog);
     }
 
     public void run() {

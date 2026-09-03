@@ -97,7 +97,7 @@
         <dependency>
             <groupId>com.github.VectorCapitalCB</groupId>
             <artifactId>principal-module</artifactId>
-            <version>1.4.5</version>
+            <version>1.4.7</version>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>

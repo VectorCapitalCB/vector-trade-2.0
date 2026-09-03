@@ -2,10 +2,7 @@ syntax = "proto3";
 
 package messages;
 import "routing.proto";
-
-import "notification.proto";
 import "marketdata.proto";
-import "generalstrategy.proto";
 
 option java_package = "cl.vc.algos.bkt.proto";
 option java_outer_classname = "BktStrategyProtos";
@@ -123,6 +120,21 @@ message EtfConfig {
 
   string account = 43;
   string operator = 44;
+  double maxQtyPremium = 45;
+  double maxQtyDiscount = 46;
+  double minQtyBasquet = 47;
+  string accountPremium = 48;
+  string accountDiscount = 49;
+
+  // Holgura de cruce en bps. Si la punta contraria del mercado esta dentro de
+  // esta holgura respecto del precio calculado, se cruza pagando/pegando esa
+  // punta. 0 = deshabilitado. Inflow=compra(discount), Flowback=venta(premium).
+  double holguraInflow = 50;
+  double holguraFlowback = 51;
+
+  // Tipo de instrumento del ETF para suscripcion MKD y orden (lo define el front).
+  // Debe ser ETF; por defecto proto (0) es CS.
+  SecurityType securityType = 52;
 
 }
 
@@ -167,6 +179,36 @@ message SnapshotBasket {
   Basket basket = 2;
 }
 
+message BktAuditSymbolStats {
+  string symbol       = 1;
+  double targetQty    = 2;
+  double tradedQty    = 3;
+  double tradedAmount = 4;
+  double pctFilled    = 5;
+  double remainingQty = 6;
+}
 
+message BktAuditCycle {
+  int32                       cycleNumber     = 1;
+  double                      etfTradedQty    = 2;
+  double                      etfTradedAmount = 3;
+  double                      pctBasket       = 4;
+  string                      startedAt       = 5;
+  StatusStrategyBasket        status          = 6;
+  repeated BktAuditSymbolStats symbols        = 7;
+}
 
-
+message BktAuditSnapshot {
+  ConfigType                   configType         = 1;
+  string                       algoName           = 2;
+  string                       basketName         = 3;
+  int32                        currentCycle       = 4;
+  double                       totalEtfQty        = 5;
+  double                       totalEtfAmount     = 6;
+  double                       overallPctBasket   = 7;
+  StatusStrategyBasket         currentStatus      = 8;
+  repeated BktAuditSymbolStats currentSymbols     = 9;
+  double                       totalBasketQty     = 10;
+  double                       totalBasketAmount  = 11;
+  repeated BktAuditCycle       cycles             = 12;
+}

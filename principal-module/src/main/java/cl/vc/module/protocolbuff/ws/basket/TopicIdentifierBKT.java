@@ -21,7 +21,9 @@ public enum TopicIdentifierBKT {
     SnapshotBasketRequest((byte) 11),
     BktSymbol((byte) 12),
     OperationsControl((byte) 13),
-    Notification((byte) 14);
+    Notification((byte) 14),
+    Order((byte) 15),
+    OrderCancelReject((byte) 16);
 
     private final byte id;
 

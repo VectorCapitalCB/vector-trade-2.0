@@ -25,7 +25,6 @@ public class ProtoMapping {
         ORDER_CANCEL_REQUEST,
         ORDERS_CANCEL_REQUEST_LIST,
         ORDERS_CANCEL_UNSOLICITED,
-
         // Routing Responses
         ORDER,
         REPLACE_CANCEL_EXECUTION,
@@ -51,7 +50,6 @@ public class ProtoMapping {
         // Market Data Responses
         NEWS,
         SNAPSHOT,
-
         SNAPSHOT_NEWS,
         INCREMENTAL,
         TRADE,
@@ -84,7 +82,8 @@ public class ProtoMapping {
         SNAPSHOT_BASKET,
         SNAPSHOT_BASKET_REQUEST,
         DELETE_BASKET,
-        BOLSA_STATS;
+        BOLSA_STATS,
+        ORDERS_CANCEL_REQUEST_DROP_COPY;
 
 
 
@@ -107,7 +106,8 @@ public class ProtoMapping {
             messageCode = MessageCodes.ORDERS_CANCEL_REQUEST_LIST.ordinal();
         } else if (message instanceof RoutingMessage.OrdersCancelUnsolicited) {
             messageCode = MessageCodes.ORDERS_CANCEL_UNSOLICITED.ordinal();
-
+        } else if (message instanceof RoutingMessage.OrderCancelRequestDopCopy) {
+            messageCode = MessageCodes.ORDERS_CANCEL_REQUEST_DROP_COPY.ordinal();
         // Routing Responses
         } else if (message instanceof RoutingMessage.Order) {
             messageCode = MessageCodes.ORDER.ordinal();
@@ -227,6 +227,8 @@ public class ProtoMapping {
                 return RoutingMessage.OrdersCancelRequestList.parseFrom(messageBytes);
             case ORDERS_CANCEL_UNSOLICITED:
                 return RoutingMessage.OrdersCancelUnsolicited.parseFrom(messageBytes);
+            case ORDERS_CANCEL_REQUEST_DROP_COPY:
+                return RoutingMessage.OrderCancelRequestDopCopy.parseFrom(messageBytes);
 
             // Routing Responses
             case ORDER:
