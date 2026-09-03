@@ -187,9 +187,17 @@ public class MongoHistoryRepository {
         offer(new PendingWrite(WriteKind.SUMMARY, toOrderDocument(order)));
     }
 
-    /** Alias compatible con el flujo anterior; canceladas y rechazadas se descartan. */
+    /**
+     * Encola el estado FINAL de una orden: FILLED, CANCELED o REJECTED.
+     *
+     * <p>A diferencia de {@link #recordOrderSummary}, NO exige que la orden haya ejecutado. Una
+     * cancelada o rechazada que nunca alcanzo un fill igual tiene que quedar en el historico: si
+     * no, se pierde el rastro del id y el operador no puede reconstruir que paso con su orden.
+     * Es el comportamiento de produccion (MongoHistoryRepository.recordOrderTerminal en PROD CORE).
+     */
     public static void recordOrderTerminal(RoutingMessage.Order order) {
-        recordOrderSummary(order);
+        if (!connected || order == null) return;
+        offer(new PendingWrite(WriteKind.SUMMARY, toOrderDocument(order)));
     }
 
     static boolean isPersistableFill(RoutingMessage.Order order) {

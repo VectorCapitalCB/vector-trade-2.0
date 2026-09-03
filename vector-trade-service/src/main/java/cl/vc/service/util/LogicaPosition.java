@@ -180,6 +180,33 @@ public class LogicaPosition {
         return true;
     }
 
+    /**
+     * Posicion historica del instrumento, o {@code null} si la cuenta todavia no la tiene cargada.
+     *
+     * <p>Existe por un incidente real: al reiniciar el core con la rueda abierta, los updates de
+     * orden llegan mientras la cuenta aun esta restaurando desde Redis/SQL y
+     * {@code snapshotPositionHistoryMaps} esta vacio. Los cuatro accesos de los caminos de VENTA
+     * hacian {@code get(...).getAvailableQuantity()} directo y lanzaban NullPointerException, que
+     * abortaba TODO el orderUpdate: se perdia tambien la actualizacion de saldo, no solo la de
+     * posicion, y el log se llenaba de stack traces.
+     *
+     * <p>Se limita a avisar y devolver null: NO crea la entrada. Crearla en cero desbalancearia la
+     * cuenta, porque en el alta de una venta se RESTA la reserva y al cancelarla se SUMA de vuelta;
+     * sin la resta previa, el cancel inflaria la cantidad disponible. Que la posicion no exista
+     * significa que la cuenta no tiene ese papel, y entonces no hay nada que ajustar.
+     * El camino de COMPRA en EXEC_TRADE si crea la entrada, porque una compra genera posicion.
+     */
+    private BlotterMessage.PositionHistory.Builder positionHistoryOrNull(
+            RoutingMessage.Order order, String contexto) {
+        BlotterMessage.PositionHistory.Builder positionHistory =
+                snapshotPositionHistoryMaps.get(order.getSymbol());
+        if (positionHistory == null) {
+            log.warn("[Position] sin posicion historica para {} cuenta={} execType={} status={} - se omite el ajuste ({})",
+                    order.getSymbol(), order.getAccount(), order.getExecType(), order.getOrdStatus(), contexto);
+        }
+        return positionHistory;
+    }
+
     public boolean orderUpdate(RoutingMessage.Order order, RoutingMessage.Order orderOld) {
 
         if (margin == -1 || order.getOperator().toLowerCase().contains("voultech")) {
@@ -244,9 +271,14 @@ public class LogicaPosition {
 
             } else if (order.getSide().equals(RoutingMessage.Side.SELL) && order.getOrdStatus().equals(RoutingMessage.OrderStatus.NEW)) {
 
-                Double qtyvalida = positionHIstory.getAvailableQuantity() - order.getOrderQty();
-                positionHIstory.setAvailableQuantity(qtyvalida);
-                snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                if (positionHIstory == null) {
+                    log.warn("[Position] sin posicion historica para {} cuenta={} execType={} status={} - se omite el ajuste (EXEC_NEW/SELL)",
+                            order.getSymbol(), order.getAccount(), order.getExecType(), order.getOrdStatus());
+                } else {
+                    Double qtyvalida = positionHIstory.getAvailableQuantity() - order.getOrderQty();
+                    positionHIstory.setAvailableQuantity(qtyvalida);
+                    snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                }
             }
 
 
@@ -270,19 +302,25 @@ public class LogicaPosition {
 
                 } else if (oldActiveQty < newActiveQty) {
 
-                    BlotterMessage.PositionHistory.Builder positionHIstory = snapshotPositionHistoryMaps.get(order.getSymbol());
-                    Double aux = positionHIstory.getAvailableQuantity() - (newActiveQty - oldActiveQty);
-                    positionHIstory.setAvailableQuantity(aux);
-                    snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                    BlotterMessage.PositionHistory.Builder positionHIstory =
+                            positionHistoryOrNull(order, "EXEC_REPLACED/aumenta");
+                    if (positionHIstory != null) {
+                        Double aux = positionHIstory.getAvailableQuantity() - (newActiveQty - oldActiveQty);
+                        positionHIstory.setAvailableQuantity(aux);
+                        snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                    }
 
 
                 } else if (oldActiveQty > newActiveQty) {
                     //aumentar la diferencia
 
-                    BlotterMessage.PositionHistory.Builder positionHIstory = snapshotPositionHistoryMaps.get(order.getSymbol());
-                    Double aux = positionHIstory.getAvailableQuantity() + (oldActiveQty - newActiveQty);
-                    positionHIstory.setAvailableQuantity(aux);
-                    snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                    BlotterMessage.PositionHistory.Builder positionHIstory =
+                            positionHistoryOrNull(order, "EXEC_REPLACED/disminuye");
+                    if (positionHIstory != null) {
+                        Double aux = positionHIstory.getAvailableQuantity() + (oldActiveQty - newActiveQty);
+                        positionHIstory.setAvailableQuantity(aux);
+                        snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                    }
                 }
 
             }
@@ -359,10 +397,13 @@ public class LogicaPosition {
 
             } else if (order.getSide().equals(RoutingMessage.Side.SELL)) {
 
-                BlotterMessage.PositionHistory.Builder positionHIstory = snapshotPositionHistoryMaps.get(order.getSymbol());
-                double qtyPositions = positionHIstory.getAvailableQuantity() + activeQuantity(order);
-                positionHIstory.setAvailableQuantity(qtyPositions);
-                snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                BlotterMessage.PositionHistory.Builder positionHIstory =
+                        positionHistoryOrNull(order, "cancel/SELL");
+                if (positionHIstory != null) {
+                    double qtyPositions = positionHIstory.getAvailableQuantity() + activeQuantity(order);
+                    positionHIstory.setAvailableQuantity(qtyPositions);
+                    snapshotPositionHistoryMaps.put(positionHIstory.getInstrument(), positionHIstory);
+                }
 
 
             }

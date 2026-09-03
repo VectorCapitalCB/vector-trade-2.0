@@ -134,7 +134,7 @@ public class Oco implements StrategyI {
         if (orderReplaceRequest.getSpread() > orderReplaceRequest.getLimit() && order.getSide().equals(RoutingMessage.Side.BUY) && orderReplaceRequest.getSpread() > 0 && orderReplaceRequest.getLimit() > 0) {
             RoutingMessage.OrderCancelReject reject = RoutingMessage.OrderCancelReject.newBuilder()
                     .setId(order.getId()).setText("el take profit es menos que el stop loss").build();
-            MainApp.getMessageEventBus().publish(new Envelope(order.getId(), order));
+            MainApp.getMessageEventBus().publish(new Envelope(order.getId(), reject));
             return;
         }
 

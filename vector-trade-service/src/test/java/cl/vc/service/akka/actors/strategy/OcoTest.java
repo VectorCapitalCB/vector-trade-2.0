@@ -37,7 +37,9 @@ import static org.mockito.Mockito.*;
  * dos rarezas hoy vigentes:
  *   1) En el alta feliz (PENDING_NEW válida) se publica al front la orden ORIGINAL
  *      (no la versión EXEC_NEW/price=0 que se guarda en this.order).
- *   2) En onReplace con BUY inválido se publica la ORDEN (no un OrderCancelReject).
+ *
+ * La rareza que existía en onReplace (BUY inválido publicaba la ORDEN y no el reject, a
+ * diferencia de la rama SELL) se corrigió: ambas ramas publican el OrderCancelReject.
  */
 class OcoTest {
 
@@ -264,6 +266,65 @@ class OcoTest {
     // ------------------------------------------------------------------
 
     /** Cancelar una orden en PENDING_NEW se resuelve localmente (CANCELED al bus, nada al exchange). */
+    // ------------------------------------------------------------------
+    // Replace
+    // ------------------------------------------------------------------
+
+    /**
+     * BUY: un replace con take profit (spread) por encima del stop loss (limit) debe publicar
+     * el OrderCancelReject con el motivo. Regresión: la rama BUY construía el reject y publicaba
+     * la orden, así que el operador nunca veía por qué no tomaba el cambio (la rama SELL sí lo
+     * publicaba). Ahora las dos ramas se comportan igual.
+     */
+    @Test
+    void replaceBuyTakeProfitMenorQueStopLoss_publicaElReject() {
+        try (Harness h = new Harness()) {
+            RoutingMessage.Order o = base(RoutingMessage.Side.BUY)
+                    .setOrdStatus(RoutingMessage.OrderStatus.NEW)
+                    .setLimit(110).setSpread(90).setPrice(100).build();
+            Oco s = h.strat(o);
+            clearInvocations(h.bus);
+
+            s.onReplace(RoutingMessage.OrderReplaceRequest.newBuilder()
+                    .setId(o.getId()).setQuantity(o.getOrderQty())
+                    .setLimit(90).setSpread(110)   // invertidos: take profit > stop loss en BUY
+                    .build());
+
+            ArgumentCaptor<Envelope> cap = ArgumentCaptor.forClass(Envelope.class);
+            verify(h.bus).publish(cap.capture());
+            Object payload = cap.getValue().getPayload();
+            assertInstanceOf(RoutingMessage.OrderCancelReject.class, payload,
+                    "la rama BUY debe publicar el reject, no la orden");
+            RoutingMessage.OrderCancelReject rej = (RoutingMessage.OrderCancelReject) payload;
+            assertEquals(o.getId(), rej.getId());
+            assertEquals("el take profit es menos que el stop loss", rej.getText());
+            assertTrue(h.sent.isEmpty(), "un replace rechazado localmente no llega al exchange");
+        }
+    }
+
+    /** SELL: la rama simétrica ya publicaba el reject; se fija para que las dos queden iguales. */
+    @Test
+    void replaceSellTakeProfitMayorQueStopLoss_publicaElReject() {
+        try (Harness h = new Harness()) {
+            RoutingMessage.Order o = base(RoutingMessage.Side.SELL)
+                    .setOrdStatus(RoutingMessage.OrderStatus.NEW)
+                    .setLimit(90).setSpread(110).setPrice(100).build();
+            Oco s = h.strat(o);
+            clearInvocations(h.bus);
+
+            s.onReplace(RoutingMessage.OrderReplaceRequest.newBuilder()
+                    .setId(o.getId()).setQuantity(o.getOrderQty())
+                    .setLimit(110).setSpread(90)   // invertidos: take profit < stop loss en SELL
+                    .build());
+
+            ArgumentCaptor<Envelope> cap = ArgumentCaptor.forClass(Envelope.class);
+            verify(h.bus).publish(cap.capture());
+            assertInstanceOf(RoutingMessage.OrderCancelReject.class, cap.getValue().getPayload());
+            assertEquals("el take profit es mayor que el stop loss",
+                    ((RoutingMessage.OrderCancelReject) cap.getValue().getPayload()).getText());
+        }
+    }
+
     @Test
     void cancelEnPendingNewPublicaCanceladoLocal() {
         try (Harness h = new Harness()) {
@@ -414,23 +475,4 @@ class OcoTest {
         }
     }
 
-    /**
-     * BUY inválido (spread>limit) en replace: hoy se publica la ORDEN (no el reject).
-     * Se fija esta rareza como comportamiento actual.
-     */
-    @Test
-    void replaceBuyInvalidoPublicaLaOrdenNoElReject() {
-        try (Harness h = new Harness()) {
-            Oco s = h.strat(liveBuy(110, 90));
-            clearInvocations(h.bus);
-
-            s.onReplace(RoutingMessage.OrderReplaceRequest.newBuilder()
-                    .setId("oco1").setLimit(90).setSpread(110).setQuantity(100).build());
-
-            ArgumentCaptor<Envelope> cap = ArgumentCaptor.forClass(Envelope.class);
-            verify(h.bus).publish(cap.capture());
-            assertInstanceOf(RoutingMessage.Order.class, cap.getValue().getPayload(),
-                    "hoy se publica la Order, no un OrderCancelReject");
-        }
-    }
 }

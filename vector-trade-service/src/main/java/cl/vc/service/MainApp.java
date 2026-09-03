@@ -59,6 +59,7 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -113,9 +114,17 @@ public class MainApp {
     @Getter
     private static ActorRef sellSideManager;
     @Getter
-    private static Map<String, NotificationMessage.Notification> notificationConectionMap = new HashMap<>();
+    // Concurrentes a proposito: los escriben varios actores a la vez (un SellsideConnect por
+    // conexion, mas ActorPerSubscriptionMkd) y en el arranque conectan todos en el mismo
+    // milisegundo. Con HashMap/ArrayList planos eso corrompe el estado interno: se vio en
+    // produccion el 2026-09-03 como
+    // "ArrayIndexOutOfBoundsException: Index 1 out of bounds for length 0" en
+    // SellsideConnect.onConnect. Los usos son solo put/add y una lectura masiva (.values() /
+    // addAllNotificationlist), asi que CopyOnWriteArrayList es barato: las escrituras son raras
+    // (conexion y desconexion), las lecturas iteran sobre un snapshot estable.
+    private static Map<String, NotificationMessage.Notification> notificationConectionMap = new ConcurrentHashMap<>();
     @Getter
-    private static List<NotificationMessage.Notification> notificationMap = new ArrayList<>();
+    private static List<NotificationMessage.Notification> notificationMap = new CopyOnWriteArrayList<>();
     @Getter
     private static RMap<String, List<RoutingMessage.Order>> preSelectordersMap;
     @Getter

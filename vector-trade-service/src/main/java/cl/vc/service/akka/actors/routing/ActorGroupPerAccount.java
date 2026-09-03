@@ -10,6 +10,7 @@ import cl.vc.module.protocolbuff.generator.TopicGenerator;
 import cl.vc.module.protocolbuff.mkd.MarketDataMessage;
 import cl.vc.module.protocolbuff.routing.RoutingMessage;
 import cl.vc.service.MainApp;
+import cl.vc.service.admin.MonitorMetrics;
 import cl.vc.service.akka.actors.ActorPerSession;
 import cl.vc.service.admin.ManualSaldoOverride;
 import cl.vc.service.admin.OdAttempt;
@@ -984,16 +985,13 @@ public class ActorGroupPerAccount extends AbstractActor {
                 return;
             }
 
-            if (orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BEST) ||
-                    orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.HOLGURA) ||
-                    orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.TRAILING) ||
-                    orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_AGGRESSIVE) ||
-                    orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_LAST) ||
-                    orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.VWAP) ||
-                    orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_PASSIVE) ||
-                    orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.OCO)) {
-
-                strategyActors.get(msg.getId()).tell(msg, ActorRef.noSender());
+            if (isStrategyManagedByActor(orderRequest.getStrategyOrder())) {
+                ActorRef strategyActor = strategyActors.get(msg.getId());
+                if (strategyActor == null) {
+                    rejectStrategyRequestWithoutActor(orderRequest, "cancel");
+                    return;
+                }
+                strategyActor.tell(msg, ActorRef.noSender());
 
             } else if (orderRequest.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET)) {
                 MainApp.getConnections().get(RoutingMessage.SecurityExchangeRouting.BASKETS).sendMessage(msg);
@@ -1081,15 +1079,15 @@ public class ActorGroupPerAccount extends AbstractActor {
                 return;
             }
 
-            if (order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BEST) ||
-                    order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.HOLGURA) ||
-                    order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.TRAILING) ||
-                    order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_AGGRESSIVE) ||
-                    order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_LAST) ||
-                    order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET_PASSIVE) ||
-                    order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.OCO)) {
-
-                strategyActors.get(effectiveMsg.getId()).tell(effectiveMsg, ActorRef.noSender());
+            if (isStrategyManagedByActor(order.getStrategyOrder())) {
+                // Mismo criterio que el alta, la restauracion y el cancel: incluye VWAP, que la
+                // lista literal anterior omitia y mandaba el replace a la bolsa con el id del padre.
+                ActorRef strategyActor = strategyActors.get(effectiveMsg.getId());
+                if (strategyActor == null) {
+                    rejectStrategyRequestWithoutActor(order, "replace");
+                    return;
+                }
+                strategyActor.tell(effectiveMsg, ActorRef.noSender());
 
             } else if (order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET)) {
                 MainApp.getConnections().get(RoutingMessage.SecurityExchangeRouting.BASKETS).sendMessage(effectiveMsg);
@@ -1365,8 +1363,31 @@ public class ActorGroupPerAccount extends AbstractActor {
             // como VWAP de los fills de esa orden. No pisa el valor si la bolsa sí lo manda.
             RoutingMessage.Order incomingOrder = normalizeInconsistentFilledState(enrichAvgPx(rawOrder));
 
+            // La bolsa a veces responde con el id interno vacio (solo clOrdId / orderID). Se
+            // reconcilia contra las ordenes conocidas; si no se puede, se descarta el mensaje en
+            // vez de indexar basura bajo la clave "" y dejar la orden sin poder cancelarse.
+            if (incomingOrder.getId().isBlank()) {
+                String reconciledId = resolveOrderId(incomingOrder, ordersMap);
+                if (reconciledId.isBlank()) {
+                    log.warn("[OrderId] update sin id interno y sin correlacion: cuenta={} clOrdId={} orderID={} status={} - descartado",
+                            account, incomingOrder.getClOrdId(), incomingOrder.getOrderID(), incomingOrder.getOrdStatus());
+                    return;
+                }
+                log.info("[OrderId] update sin id interno reconciliado por {}: cuenta={} id={} status={}",
+                        incomingOrder.getClOrdId().isBlank() ? "orderID" : "clOrdId",
+                        account, reconciledId, incomingOrder.getOrdStatus());
+                incomingOrder = incomingOrder.toBuilder().setId(reconciledId).build();
+            }
+
             if (incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_PENDING_REPLACE)) {
                 return;
+            }
+
+            // Punto unico de conteo: aca pasan tanto los rechazos propios (riesgo, OD, sin custodia)
+            // como los de la bolsa. El monitor externo lee el agregado por /api/monitor/rejects.
+            if (incomingOrder.getExecType().equals(RoutingMessage.ExecutionType.EXEC_REJECTED)) {
+                MonitorMetrics.recordReject(account, incomingOrder.getSymbol(),
+                        incomingOrder.getId(), incomingOrder.getText());
             }
 
             if (incomingOrder.getStrategyOrder().equals(RoutingMessage.StrategyOrder.BASKET)) {
@@ -1434,6 +1455,12 @@ public class ActorGroupPerAccount extends AbstractActor {
                 }
 
                 if (terminalOrder) {
+
+                    // Historico multi-dia: el estado terminal de la orden, haya ejecutado o no.
+                    // Sin esto, una CANCELED o REJECTED desaparece del historico y se pierde el
+                    // rastro del id. Encola, no toca la red.
+                    MongoHistoryRepository.recordOrderTerminal(order);
+
                     if (strategyActors.containsKey(order.getId()) && !order.getStrategyOrder().equals(RoutingMessage.StrategyOrder.VWAP)) {
                         strategyActors.get(order.getId()).tell(PoisonPill.getInstance(), ActorRef.noSender());
                         strategyActors.remove(order.getId());
@@ -2020,6 +2047,25 @@ public class ActorGroupPerAccount extends AbstractActor {
         private BlotterMessage.SnapshotPrestamos snapshotPrestamos;
     }
 
+    /**
+     * Un replace o cancel sobre una estrategia cuyo ActorStrategy ya no existe (termino, se
+     * purgo o no se restauro) antes terminaba en NullPointerException dentro del catch: el
+     * operador no recibia ni confirmacion ni rechazo y la orden quedaba "viva" en pantalla.
+     * Ahora se responde con un OrderCancelReject explicito, igual que los demas rechazos locales.
+     */
+    private void rejectStrategyRequestWithoutActor(RoutingMessage.Order order, String requestKind) {
+        String reason = String.format(
+                "No hay estrategia %s activa para la orden %s: no se puede procesar el %s",
+                order.getStrategyOrder(), order.getId(), requestKind);
+        log.warn("[Strategy] {} cuenta={} id={}", reason, account, order.getId());
+        RoutingMessage.OrderCancelReject reject = RoutingMessage.OrderCancelReject.newBuilder()
+                .setId(order.getId())
+                .setExecId(IDGenerator.getID())
+                .setText(reason)
+                .build();
+        getSelf().tell(reject, ActorRef.noSender());
+    }
+
     private boolean isStrategyManagedByActor(RoutingMessage.StrategyOrder strategyOrder) {
         return EnumSet.of(
                 RoutingMessage.StrategyOrder.BEST,
@@ -2127,6 +2173,57 @@ public class ActorGroupPerAccount extends AbstractActor {
             changed = true;
         }
         return changed ? merged.build() : incoming;
+    }
+
+    /**
+     * Devuelve el id interno con el que se debe indexar un Order que llega de la bolsa.
+     *
+     * <p>Incidente real del 2026-09-02 en RICCI: 86 de 6.708 Order (1,3%) llegaron con el campo
+     * {@code id} VACIO, trayendo solo {@code clOrdId} y el {@code orderID} de la bolsa. Sin id no
+     * habia forma de correlacionarlos: la orden quedaba viva en el blotter aunque en la bolsa ya no
+     * existiera, y el operador cancelaba sin efecto ("perdi el id y no puedo cancelarla"). Ademas
+     * se indexaba basura bajo la clave "".
+     *
+     * <p>Se reconcilia contra las ordenes conocidas por {@code clOrdId} y, si no alcanza, por el
+     * {@code orderID} externo. Si no se puede reconciliar devuelve cadena vacia y el llamador
+     * descarta el mensaje en vez de contaminar el mapa.
+     *
+     * <p>Nota: produccion tampoco resuelve esto (PROD CORE no usa getClOrdId() en esta clase), asi
+     * que es una mejora sobre el comportamiento actual de la rueda, no un port.
+     */
+    static String resolveOrderId(RoutingMessage.Order incoming,
+                                 java.util.Map<String, RoutingMessage.Order> knownOrders) {
+        if (incoming == null) {
+            return "";
+        }
+        if (!incoming.getId().isBlank()) {
+            return incoming.getId();
+        }
+        if (knownOrders == null || knownOrders.isEmpty()) {
+            return "";
+        }
+
+        String clOrdId = incoming.getClOrdId();
+        if (!clOrdId.isBlank()) {
+            for (java.util.Map.Entry<String, RoutingMessage.Order> e : knownOrders.entrySet()) {
+                RoutingMessage.Order known = e.getValue();
+                if (known != null
+                        && (clOrdId.equals(known.getClOrdId()) || clOrdId.equals(known.getOrigClOrdID()))) {
+                    return e.getKey();
+                }
+            }
+        }
+
+        String exchangeId = incoming.getOrderID();
+        if (!exchangeId.isBlank()) {
+            for (java.util.Map.Entry<String, RoutingMessage.Order> e : knownOrders.entrySet()) {
+                RoutingMessage.Order known = e.getValue();
+                if (known != null && exchangeId.equals(known.getOrderID())) {
+                    return e.getKey();
+                }
+            }
+        }
+        return "";
     }
 
     static String canonicalOrderId(String persistedKey, RoutingMessage.Order order) {
